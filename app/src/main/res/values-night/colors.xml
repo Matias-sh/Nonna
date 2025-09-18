@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Paleta cálida y nostálgica para Nonna - Modo Oscuro -->
+    <!-- Colores primarios -->
+    <color name="primary_warm">#FFB8860B</color>        <!-- Marrón dorado más claro -->
+    <color name="primary_warm_dark">#FF8B4513</color>    <!-- Marrón cálido -->
+    <color name="primary_warm_light">#FFDAA520</color>   <!-- Dorado cálido -->
+    
+    <!-- Colores secundarios -->
+    <color name="secondary_cream">#FF2D2D2D</color>      <!-- Gris cálido oscuro -->
+    <color name="secondary_gold">#FFB8860B</color>       <!-- Dorado oscuro -->
+    <color name="secondary_amber">#FFDAA520</color>      <!-- Ámbar dorado -->
+    
+    <!-- Colores de acento -->
+    <color name="accent_terracotta">#FFCD5C5C</color>    <!-- Terracota más suave -->
+    <color name="accent_sage">#FF8FBC8F</color>          <!-- Salvia más suave -->
+    <color name="accent_lavender">#FF9370DB</color>      <!-- Lavanda más intensa -->
+    
+    <!-- Colores de superficie -->
+    <color name="surface_warm">#FF1E1E1E</color>         <!-- Superficie oscura cálida -->
+    <color name="surface_light">#FF2D2D2D</color>        <!-- Superficie oscura clara -->
+    <color name="surface_medium">#FF3D3D3D</color>       <!-- Superficie oscura media -->
+    
+    <!-- Colores de texto -->
+    <color name="text_primary">#FFE0E0E0</color>         <!-- Texto principal claro -->
+    <color name="text_secondary">#FFB0B0B0</color>       <!-- Texto secundario -->
+    <color name="text_hint">#FF808080</color>            <!-- Texto de pista -->
+    <color name="text_on_primary">#FF000000</color>      <!-- Texto sobre primario -->
+    
+    <!-- Colores de estado -->
+    <color name="success">#FF66BB6A</color>              <!-- Verde éxito más suave -->
+    <color name="warning">#FFFFB74D</color>              <!-- Naranja advertencia más suave -->
+    <color name="error">#FFEF5350</color>                <!-- Rojo error más suave -->
+    <color name="info">#FF42A5F5</color>                 <!-- Azul información más suave -->
+    
+    <!-- Colores de fondo -->
+    <color name="background_primary">#FF121212</color>   <!-- Fondo principal oscuro -->
+    <color name="background_secondary">#FF1E1E1E</color> <!-- Fondo secundario oscuro -->
+    <color name="background_card">#FF2D2D2D</color>      <!-- Fondo de tarjetas oscuro -->
+    
+    <!-- Colores de borde -->
+    <color name="border_light">#FF404040</color>         <!-- Borde claro oscuro -->
+    <color name="border_medium">#FF606060</color>        <!-- Borde medio oscuro -->
+    <color name="border_dark">#FF808080</color>          <!-- Borde oscuro -->
+    
+    <!-- Colores de sombra -->
+    <color name="shadow_light">#1AFFFFFF</color>         <!-- Sombra ligera clara -->
+    <color name="shadow_medium">#33FFFFFF</color>        <!-- Sombra media clara -->
+    <color name="shadow_dark">#4DFFFFFF</color>          <!-- Sombra oscura clara -->
+</resources>
+
+

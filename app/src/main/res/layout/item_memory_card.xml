@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    app:cardBackgroundColor="@color/surface_light"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:contentPadding="0dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Imagen del recuerdo -->
+        <ImageView
+            android:id="@+id/imageViewMemory"
+            android:layout_width="0dp"
+            android:layout_height="120dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_launcher_foreground"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:src="@drawable/ic_launcher_foreground" />
+
+        <!-- Overlay con gradiente -->
+        <View
+            android:id="@+id/viewGradientOverlay"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:background="@drawable/gradient_overlay"
+            app:layout_constraintBottom_toBottomOf="@id/imageViewMemory"
+            app:layout_constraintEnd_toEndOf="@id/imageViewMemory"
+            app:layout_constraintStart_toStartOf="@id/imageViewMemory" />
+
+        <!-- Indicador de audio -->
+        <ImageView
+            android:id="@+id/imageViewAudioIndicator"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_margin="8dp"
+            android:background="@drawable/type_indicator_background"
+            android:contentDescription="Tiene audio"
+            android:padding="4dp"
+            android:src="@drawable/ic_launcher_foreground"
+            android:tint="@color/white"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="@id/imageViewMemory"
+            app:layout_constraintTop_toTopOf="@id/imageViewMemory"
+            tools:visibility="visible" />
+
+        <!-- Indicador de tipo -->
+        <TextView
+            android:id="@+id/textViewTypeIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:background="@drawable/type_indicator_background"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:text="FOTO"
+            android:textColor="@color/white"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="@id/imageViewMemory"
+            app:layout_constraintTop_toTopOf="@id/imageViewMemory"
+            tools:text="FOTO+AUDIO" />
+
+        <!-- Título del recuerdo -->
+        <TextView
+            android:id="@+id/textViewTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:text="Título del recuerdo"
+            android:textAppearance="@style/TextAppearance.Nonna.Body1"
+            android:textColor="@color/text_primary"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/imageViewMemory"
+            tools:text="Abuela cocinando en la cocina familiar" />
+
+        <!-- Fecha -->
+        <TextView
+            android:id="@+id/textViewDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:text="Sin fecha"
+            android:textAppearance="@style/TextAppearance.Nonna.Caption"
+            android:textColor="@color/text_secondary"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/textViewTitle"
+            tools:text="15 de diciembre, 2023" />
+
+        <!-- Tags -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupTags"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            app:chipSpacingHorizontal="4dp"
+            app:chipSpacingVertical="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/textViewDate"
+            app:singleLine="true"
+            app:singleSelection="true">
+
+            <!-- Tags se agregan dinámicamente -->
+
+        </com.google.android.material.chip.ChipGroup>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

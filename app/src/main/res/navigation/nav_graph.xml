@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/loginFragment">
+
+    <!-- Autenticación -->
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.cocido.nonna.ui.auth.LoginFragment"
+        android:label="Iniciar Sesión"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_login_to_register"
+            app:destination="@id/registerFragment" />
+        <action
+            android:id="@+id/action_login_to_home"
+            app:destination="@id/homeFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.cocido.nonna.ui.auth.RegisterFragment"
+        android:label="Crear Cuenta"
+        tools:layout="@layout/fragment_register">
+        <action
+            android:id="@+id/action_register_to_login"
+            app:destination="@id/loginFragment" />
+    </fragment>
+
+    <!-- Pantalla principal -->
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.cocido.nonna.ui.memories.HomeFragment"
+        android:label="Cofre"
+        tools:layout="@layout/fragment_home">
+        <action
+            android:id="@+id/action_home_to_memory_detail"
+            app:destination="@id/memoryDetailFragment" />
+        <action
+            android:id="@+id/action_home_to_create_memory"
+            app:destination="@id/createMemoryFragment" />
+        <action
+            android:id="@+id/action_home_to_timeline"
+            app:destination="@id/timelineFragment" />
+        <action
+            android:id="@+id/action_home_to_genealogy"
+            app:destination="@id/genealogyFragment" />
+        <action
+            android:id="@+id/action_home_to_settings"
+            app:destination="@id/settingsFragment" />
+    </fragment>
+
+    <!-- Detalle de recuerdo -->
+    <fragment
+        android:id="@+id/memoryDetailFragment"
+        android:name="com.cocido.nonna.ui.memories.MemoryDetailFragment"
+        android:label="Recuerdo"
+        tools:layout="@layout/fragment_memory_detail">
+        <argument
+            android:name="memoryId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_memory_detail_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
+    <!-- Crear recuerdo -->
+    <fragment
+        android:id="@+id/createMemoryFragment"
+        android:name="com.cocido.nonna.ui.memories.CreateMemoryFragment"
+        android:label="Crear Recuerdo"
+        tools:layout="@layout/fragment_create_memory">
+        <action
+            android:id="@+id/action_create_memory_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
+    <!-- Línea de tiempo -->
+    <fragment
+        android:id="@+id/timelineFragment"
+        android:name="com.cocido.nonna.ui.timeline.TimelineFragment"
+        android:label="Línea de Tiempo"
+        tools:layout="@layout/fragment_timeline">
+        <action
+            android:id="@+id/action_timeline_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
+    <!-- Árbol genealógico -->
+    <fragment
+        android:id="@+id/genealogyFragment"
+        android:name="com.cocido.nonna.ui.genealogy.GenealogyFragment"
+        android:label="Árbol Genealógico"
+        tools:layout="@layout/fragment_genealogy">
+        <action
+            android:id="@+id/action_genealogy_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
+    <!-- Modo conversación -->
+    <fragment
+        android:id="@+id/conversationFragment"
+        android:name="com.cocido.nonna.ui.conversation.ConversationFragment"
+        android:label="Conversación"
+        tools:layout="@layout/fragment_conversation">
+        <action
+            android:id="@+id/action_conversation_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
+    <!-- Configuración -->
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.cocido.nonna.ui.settings.SettingsFragment"
+        android:label="Configuración"
+        tools:layout="@layout/fragment_settings">
+        <action
+            android:id="@+id/action_settings_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
+</navigation>
+
+

@@ -1,0 +1,429 @@
+PROMPT
+
+Quiero que crees desde cero un proyecto Android nativo en Kotlin llamado Nonna, siguiendo estas especificaciones detalladas. No hagas preguntas: implementá. Si algo no está explícito, elegí la opción estándar y documentá en comentarios.
+
+0) Objetivo emocional y de producto (contexto)
+
+Nonna es un “cofre digital” para preservar recuerdos sensoriales de la familia (fotos, audios/narraciones, frases, recetas), con árbol genealógico interactivo, línea de tiempo y legado colaborativo entre familiares. Debe sentirse cálido, nostálgico y sereno (como un videojuego emotivo donde inspeccionás una foto y suena una narración de esa época).
+
+MVP: subir foto + grabar voz asociada a esa foto, reproducir la narración al visualizarla; timeline de recuerdos; colección de frases (“modo conversación”); árbol genealógico básico.
+
+Diferenciales a incorporar gradualmente: cofres sensoriales (foto + audio + tags de aroma/receta), colaboración familiar, línea de tiempo, árbol genealógico emocional con anécdotas.
+
+Tono visual: nostalgia minimalista (paleta cálida, tipografía legible, micro-animaciones suaves, sonido sutil al iniciar recuerdos).
+
+1) Tech stack y baseline del proyecto
+
+Lenguaje: Kotlin, Gradle KTS, minSdk 24, target/compileSdk 35.
+
+UI con Android Views/XML:
+
+AppCompat + Material Components (Theme.Material3 si aplica, pero con Views).
+
+ConstraintLayout + MotionLayout para transiciones y micro-animaciones.
+
+Fragments y Navigation Component (Safe Args) para la navegación.
+
+Arquitectura: Clean Architecture + MVVM, modular por features.
+
+DI: Hilt.
+
+Persistencia local (cache/offline-first): Room (datos), DataStore (Preferences) para ajustes.
+
+Networking: Retrofit + OkHttp + Moshi (o Kotlinx Serialization) contra mi backend (el backend se encarga de auth, almacenamiento de medios y sincronización server-side).
+
+Multimedia:
+
+CameraX (con PreviewView) o ACTION_PICK para elegir de galería.
+
+MediaRecorder (grabación .m4a AAC 96 kbps; 44.1 kHz; mono).
+
+ExoPlayer (reproducción de narraciones).
+
+Waveform: View personalizada o librería liviana (renderizado por picos).
+
+Sync:
+
+WorkManager para colas de subida/descarga y reintentos.
+
+Estrategia offline-first (Room como fuente de verdad local + sync diferencial contra backend vía Retrofit).
+
+Seguridad local:
+
+EncryptedFile / Jetpack Security para cifrar archivos locales (fotos/audios cacheados).
+
+Testing: JUnit5, MockK, Coroutines Test, Espresso, UIAutomator (si hace falta), Robolectric para tests de views.
+
+Calidad: Detekt + ktlint, ProGuard/R8, ShrinkResources.
+
+Build:
+
+Version Catalog (libs.versions.toml).
+
+Flavors: free (freemium) y premium.
+
+Build types: debug/release.
+
+Telemetría/Crashes: dejar preparado un wrapper que pueda apuntar a Sentry/otro (pero no integrar Firebase).
+
+2) Estructura de módulos (settings.gradle.kts)
+
+Crear módulos con prefijo por capa/feature:
+
+app (launcher, contenedor de NavHostFragment, setup global).
+
+core:ui (temas, estilos, colores, tipografías, drawables, componentes Views reutilizables, utilidades de MotionLayout).
+
+core:common (utils, Either/Result, extensiones, manejo de permisos, formateadores).
+
+core:domain (modelos de dominio, use cases, validaciones).
+
+core:data (repositorios, Room DAOs, Retrofit services, mappers).
+
+feature:onboarding (tour, permisos, creación/ingreso a cofre).
+
+feature:auth (pantallas y lógica de login/registro/recupero contra backend).
+
+feature:memories (CRUD recuerdos sensoriales: foto+audio+tags).
+
+feature:timeline (lista cronológica filtrable).
+
+feature:conversation (frases típicas + reproducción).
+
+feature:genealogy (árbol genealógico interactivo básico).
+
+feature:room3d (opcional: “habitación nostálgica” 2.5D/3D).
+
+feature:sharing (invitar familiares, roles, coautoría).
+
+feature:settings (preferencias, privacidad, exportar/backup local).
+
+Navegación entre features con Navigation Component (grafo en app, destinos por feature, deep links si aplica).
+
+3) Diseño UX/UI (Views/XML, accesibilidad y tono)
+
+Paleta: base cálida, contrastes suaves, dark mode. Implementar colors.xml (light/dark) + themes.xml.
+
+Tipografía: títulos serenos (p.ej. Cormorant/DM Serif para headers como TextView estilizados), cuerpo Inter/Source Sans 16sp min (lineSpacingExtra cómodo).
+
+Accesibilidad: contentDescription, focos visibles, mínimo 48dp targets táctiles, contraste adecuado. Opción de subtítulos/transcripción en detalle de audio.
+
+Microinteracciones:
+
+Al abrir un recuerdo: MotionScene con fade-in de foto y Audio fade-up manual (controlando volumen de ExoPlayer).
+
+Háptica leve (Vibrator) al comenzar reproducción.
+
+Navegación: BottomNavigationView con 4 tabs: Cofre, Línea de tiempo, Árbol, Ajustes. FAB contextual “Agregar recuerdo”.
+
+Estados vacíos/errores: diseños claros con CTA (reintentar, grabar, invitar familiar).
+
+Pantallas clave (Views/XML)
+
+Home / Cofre (Fragment)
+
+RecyclerView en grid (miniaturas). Cada ViewHolder muestra si hay audio (icono “onda”).
+
+Acciones: ver, compartir (link generado por backend), editar metadatos (personas, etiquetas, “aroma”, receta).
+
+Detalle de recuerdo (Fragment)
+
+PhotoView (zoom) o GestureImageView.
+
+Controles de audio (Play/Pause/Seek) + WaveformView (render de picos).
+
+Sección “A qué huele / Receta”.
+
+Chips de personas, fecha/lugar si existen.
+
+Crear recuerdo (Wizard en 3 pasos)
+
+Paso 1: Foto (CameraX con PreviewView + captura; o elegir de galería con ACTION_PICK).
+
+Paso 2: Grabar voz (REC/Pause/Stop; pre-escucha; borrar/rehacer) con MediaRecorder.
+
+Paso 3: Metadatos (título, fecha, personas, tags, aroma/receta, privacidad).
+
+Guardar local (Room) → WorkManager enqueue para subir a backend.
+
+Línea de tiempo (Fragment)
+
+RecyclerView cronológica con headers por año/efemérides; filtros por persona/tipo/etiqueta.
+
+Modo conversación (Fragment)
+
+Lista de frases (cards grandes). Tap = TTS (TextToSpeech) suave o audio real si existe.
+
+Árbol genealógico (MVP, Fragment)
+
+Custom View sobre Canvas o Recycler + ItemDecorations para edges, con gestos de zoom/pan (ScaleGestureDetector).
+
+Tocar nodo → mini ficha + atajos a recuerdos.
+
+Habitación nostálgica (opcional, detrás de flag)
+
+Plan A (2.5D con Views): FrameLayout con capas (parallax on scroll/gyroscope), PNGs superpuestos, partículas (Custom View) y hotspots invisibles sobre ImageView (abre cofres/timeline).
+
+Plan B (3D): Filament en un SurfaceView o Unity as a Library (stub y wrapper), cargar GLTF simple con hotspots.
+
+Fallback automático al Plan A si el dispositivo no soporta.
+
+4) Modelo de datos (dominio)
+
+En core:domain define:
+
+data class PersonId(val value: String)
+data class MemoryId(val value: String)
+data class VaultId(val value: String)
+
+enum class MemoryType { PHOTO_WITH_AUDIO, PHOTO_ONLY, AUDIO_ONLY, RECIPE, NOTE }
+
+data class Memory(
+  val id: MemoryId,
+  val vaultId: VaultId,
+  val title: String,
+  val type: MemoryType,
+  val photoLocalPath: String?,   // cifrado local si aplica
+  val photoRemoteUrl: String?,   // provisto por backend
+  val audioLocalPath: String?,   // m4a cifrado local
+  val audioRemoteUrl: String?,   // provisto por backend
+  val hasTranscript: Boolean,
+  val transcript: String?,
+  val people: List<PersonId>,
+  val tags: List<String>,
+  val dateTaken: Long?,
+  val location: String?,
+  val createdAt: Long,
+  val updatedAt: Long
+)
+
+data class Person(
+  val id: PersonId,
+  val fullName: String,
+  val birthDate: Long?,
+  val deathDate: Long?,
+  val avatarUrl: String?,
+  val notes: String?
+)
+
+enum class RelationType { PARENT, CHILD, SPOUSE, SIBLING }
+
+data class Relation(
+  val from: PersonId,
+  val to: PersonId,
+  val type: RelationType
+)
+
+data class Vault(
+  val id: VaultId,
+  val name: String,
+  val ownerUid: String,
+  val memberUids: List<String>,
+  val createdAt: Long
+)
+
+
+Implementar use cases: CreateMemory, AttachAudioToMemory, ListMemoriesByVault, SearchMemories, CreateVault, InviteMember, GetTimeline, AddPhrase, ListPhrases, GetGenealogyGraph.
+
+5) Persistencia y sync (Room + Retrofit contra MI BACKEND)
+
+Room: tablas memories, persons, relations, phrases, vaults, memory_person_crossref. Índices por fecha/título.
+
+Retrofit services (contratos listos para apuntar al backend del usuario):
+
+POST /auth/login, POST /auth/register, POST /auth/refresh
+
+GET/POST/PUT/DELETE /vaults, /vaults/{id}/invite
+
+GET/POST/PUT/DELETE /vaults/{id}/memories
+
+POST /uploads/photo, POST /uploads/audio (devolver URLs)
+
+GET/POST/PUT/DELETE /vaults/{id}/phrases
+
+GET/POST/PUT/DELETE /vaults/{id}/persons, /relations
+
+Estrategia offline-first:
+
+Crear localmente → estado PENDING_SYNC en Room → WorkManager sube al backend (multipart para medios) → responde URLs → actualizar fila local y limpiar flags.
+
+Descargas diferidas y cifrado local (EncryptedFile) para medios.
+
+Conflictos: last-write-wins con updatedAt + merge seguro de listas (people/tags) donde sea posible.
+
+Auth: Token Bearer provisto por backend; interceptor OkHttp para refresco de token.
+
+6) Multimedia: grabación, forma de onda y transcript
+
+Grabación: AudioRecorder wrapper de MediaRecorder (AAC, 44.1kHz, 96kbps, mono). Carpeta privada de la app.
+
+Reproductor: ExoPlayer con PlayerView y controladores (seekbar, duraciones).
+
+Waveform: al finalizar la grabación, extraer picos (FFT simple o downsampling) y guardar un IntArray en DB para render inmediato en un Custom View.
+
+Transcripción (opcional MVP+): utilizar SpeechRecognizer/TextToSpeech locales; si el backend provee STT, enviar audio y guardar transcript.
+
+7) Árbol genealógico (MVP con Views)
+
+Custom View para grafo: dibujar nodos (personas) y aristas (relaciones) con Canvas.
+
+Gestos: ScaleGestureDetector (zoom) + GestureDetector (pan/tap).
+
+Performance: cachear bitmaps de avatares, invalidaciones parciales.
+
+8) Habitación Nostálgica (opcional, detrás de flag)
+
+Plan A (2.5D): FrameLayout + capas ImageView con parallax (sensor o scroll), partículas con Custom View, hotspots View transparentes que abren cofres/timeline.
+
+Plan B (3D): Filament en SurfaceView (cargar GLTF simple, 3 hotspots).
+
+Fallback automático si el dispositivo no cumple.
+
+9) Onboarding, permisos y configuración
+
+Onboarding de 3 pantallas (visión, cómo funciona, privacidad).
+
+Permisos en contexto (micrófono/almacenamiento/cámara) cuando se usan.
+
+Crear o entrar a un Cofre familiar (Vault).
+
+Auth contra backend (email/contraseña u OAuth si el backend lo expone).
+
+Preferencias iniciales: idioma, tamaño de fuente, activar “habitación nostálgica”.
+
+10) Colaboración y privacidad
+
+Invitaciones por link (generadas por backend) y roles: owner, editor, viewer.
+
+Privacidad por recuerdo (privado/familia/link).
+
+Exportar/Backup local (MVP+): zip de metadatos + medios descargados (sólo owner).
+
+11) Navegación raíz (Views)
+
+Grafo en Navigation Component con rutas:
+onboarding, auth, home, memory/{id}, createMemory, timeline, conversation, genealogy, room, settings.
+
+12) Paquetes y nombres
+
+Package raíz: com.nonna.app.
+
+Convenciones: ui/, domain/, data/, di/, navigation/, widgets/, adapters/, viewmodel/.
+
+13) Dependencias (Version Catalog)
+
+Agregar (nombres referenciales):
+
+Kotlin stdlib, coroutines.
+
+AndroidX core-ktx, appcompat, fragment-ktx, activity-ktx.
+
+Material Components.
+
+ConstraintLayout, MotionLayout.
+
+Navigation Component (fragment-ktx, ui-ktx, safe-args).
+
+Hilt (dagger-hilt-android, compiler KSP/KAPT).
+
+Room (runtime, ktx, compiler KSP).
+
+DataStore (preferences).
+
+WorkManager (ktx).
+
+Retrofit + Moshi (o Kotlinx Serialization) + OkHttp (logging).
+
+CameraX (core, camera2, lifecycle).
+
+ExoPlayer.
+
+Security Crypto (EncryptedFile).
+
+Glide o Coil (para imágenes en ImageView).
+
+Detekt, ktlint.
+
+JUnit5, MockK, Coroutines Test, Espresso, Robolectric, UIAutomator.
+
+Configurar en gradle/libs.versions.toml, aplicar KSP/KAPT según corresponda.
+
+14) Tareas que debés realizar ahora (orden de implementación)
+
+Inicializar proyecto con módulos listados y Version Catalog.
+
+Configurar Hilt, Navigation Component, tema y tipografías en core:ui.
+
+Implementar Room (entidades/DAOs) y core:data con repositorios + Retrofit services hacia el backend (interfaces vacías con endpoints preparados).
+
+Implementar Auth (pantallas y flujo completo contra backend; token interceptor).
+
+Implementar feature:memories:
+
+Lista (grid con RecyclerView), detalle, y Crear recuerdo (wizard Foto→Audio→Metadatos).
+
+AudioRecorder + ExoPlayer + WaveformView.
+
+Guardar local (Room + cifrado si aplica) y sync con WorkManager al backend (subida de archivos vía multipart).
+
+Timeline con filtros por persona/tipo/etiqueta.
+
+Modo conversación (CRUD frases + TTS/audio).
+
+Árbol genealógico (Custom View con zoom/pan).
+
+Habitación nostálgica: implementar Plan A (2.5D) con flag; dejar stub del Plan B (3D).
+
+Testing unitario y de UI en flujos críticos (crear y reproducir recuerdo, sync básico).
+
+Detekt/ktlint, ProGuard/R8, ShrinkResources.
+
+Flavors free/premium (en free limitar p.ej. 50 recuerdos por cofre y ocultar árbol avanzado).
+
+15) Criterios de aceptación (MVP)
+
+Puedo crear un recuerdo con foto + narración de voz en ≤3 pasos.
+
+Puedo reproducir la narración (seekbar + waveform) sin tartamudeos.
+
+Offline-first: si creo 3 recuerdos sin internet, se ven y se sincronizan al reconectar.
+
+Búsqueda/filtros en timeline por persona/etiqueta.
+
+Modo conversación: agregar ≥3 frases y reproducir (TTS o audio).
+
+Árbol genealógico: navegar, hacer zoom, abrir persona y ver recuerdos asociados.
+
+Performance: abrir detalle con audio ≤120ms TTFMP en gama media 2021.
+
+Accesibilidad: contentDescription, targets ≥48dp, tamaños tipográficos y contraste correctos.
+
+16) Entregables esperados
+
+Proyecto Android Studio compilable sin errores.
+
+Árbol de archivos completo.
+
+Código documentado (KDoc en domain/data).
+
+Tests básicos pasando en local.
+
+README.md con permisos, cómo configurar base URL del backend, cómo correr WorkManager en debug, y cómo activar la habitación nostálgica.
+
+Recursos de diseño (colores, estilos, íconos) en core:ui.
+
+Dummy assets (1 foto y 1 audio en debug) y seed local.
+
+17) Guardrails
+
+No pedís aclaraciones: implementás y documentás.
+
+No agregar dependencias experimentales innecesarias.
+
+Privacidad por defecto (recuerdos privados al crear).
+
+Estructura y nombres en inglés en código; textos de UI en español.
+
+Todo lo detrás de feature flags debe compilar aunque esté desactivado.
+
+Fin del prompt
