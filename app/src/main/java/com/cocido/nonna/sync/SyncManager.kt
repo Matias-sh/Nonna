@@ -60,7 +60,7 @@ class SyncManager @Inject constructor(
         
         workManager.enqueueUniquePeriodicWork(
             SYNC_WORK_NAME,
-            ExistingWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.KEEP,
             syncRequest
         )
     }

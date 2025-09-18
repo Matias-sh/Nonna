@@ -50,7 +50,7 @@ class RegisterFragment : Fragment() {
             val confirmPassword = binding.editTextConfirmPassword.text?.toString() ?: ""
             
             if (validateInput(name, email, password, confirmPassword)) {
-                viewModel.register(name, email, password)
+                viewModel.register(name, email, password, confirmPassword)
             }
         }
         
@@ -111,6 +111,9 @@ class RegisterFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect { state ->
                 when (state) {
+                    is RegisterUiState.Idle -> {
+                        showLoading(false)
+                    }
                     is RegisterUiState.Loading -> {
                         showLoading(true)
                     }

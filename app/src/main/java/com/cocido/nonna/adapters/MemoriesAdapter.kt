@@ -1,6 +1,7 @@
 package com.cocido.nonna.adapters
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -62,7 +63,7 @@ class MemoriesAdapter(
                 }
                 
                 // Indicador de tipo
-                textViewTypeIndicator.text = when (memory.type) {
+                chipTypeIndicator.text = when (memory.type) {
                     MemoryType.PHOTO_WITH_AUDIO -> "FOTO+AUDIO"
                     MemoryType.PHOTO_ONLY -> "FOTO"
                     MemoryType.AUDIO_ONLY -> "AUDIO"
@@ -83,9 +84,9 @@ class MemoriesAdapter(
                     // Mostrar placeholder según el tipo
                     imageViewMemory.setImageResource(
                         when (memory.type) {
-                            MemoryType.AUDIO_ONLY -> R.drawable.ic_launcher_foreground // TODO: Icono de audio
-                            MemoryType.RECIPE -> R.drawable.ic_launcher_foreground // TODO: Icono de receta
-                            MemoryType.NOTE -> R.drawable.ic_launcher_foreground // TODO: Icono de nota
+                            MemoryType.AUDIO_ONLY -> R.drawable.ic_audio
+                            MemoryType.RECIPE -> R.drawable.ic_recipe
+                            MemoryType.NOTE -> R.drawable.ic_note
                             else -> R.drawable.ic_launcher_foreground
                         }
                     )

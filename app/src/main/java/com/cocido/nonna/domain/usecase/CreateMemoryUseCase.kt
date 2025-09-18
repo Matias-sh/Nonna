@@ -15,8 +15,8 @@ class CreateMemoryUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(memory: Memory): Result<MemoryId> {
         return try {
-            memoryRepository.saveMemory(memory)
-            Result.success(memory.id)
+            val memoryId = memoryRepository.createMemory(memory)
+            Result.success(memoryId)
         } catch (e: Exception) {
             Result.failure(e)
         }

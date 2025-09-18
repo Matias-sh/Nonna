@@ -185,6 +185,9 @@ class CreateMemoryFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect { state ->
                 when (state) {
+                    is CreateMemoryUiState.Idle -> {
+                        showLoading(false)
+                    }
                     is CreateMemoryUiState.Loading -> {
                         showLoading(true)
                     }

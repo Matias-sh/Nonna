@@ -2,25 +2,30 @@
 <resources>
     <!-- Estilos de texto para Nonna -->
     
+    <!-- Estilo base para TextAppearance.Nonna -->
+    <style name="TextAppearance.Nonna" parent="TextAppearance.Nonna.Body1" />
+    
     <!-- Títulos principales con tipografía serena -->
     <style name="TextAppearance.Nonna.Headline1">
-        <item name="android:fontFamily">@font/cormorant_garamond_bold</item>
+        <item name="android:fontFamily">serif</item>
         <item name="android:textSize">32sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:lineSpacingExtra">4dp</item>
         <item name="android:letterSpacing">0.02</item>
+        <item name="android:textStyle">bold</item>
     </style>
     
     <style name="TextAppearance.Nonna.Headline2">
-        <item name="android:fontFamily">@font/cormorant_garamond_bold</item>
+        <item name="android:fontFamily">serif</item>
         <item name="android:textSize">28sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:lineSpacingExtra">4dp</item>
         <item name="android:letterSpacing">0.01</item>
+        <item name="android:textStyle">bold</item>
     </style>
     
     <style name="TextAppearance.Nonna.Headline3">
-        <item name="android:fontFamily">@font/cormorant_garamond_regular</item>
+        <item name="android:fontFamily">serif</item>
         <item name="android:textSize">24sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:lineSpacingExtra">3dp</item>
@@ -29,14 +34,15 @@
     
     <!-- Subtítulos -->
     <style name="TextAppearance.Nonna.Subtitle1">
-        <item name="android:fontFamily">@font/source_sans_pro_bold</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">18sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:lineSpacingExtra">2dp</item>
+        <item name="android:textStyle">bold</item>
     </style>
     
     <style name="TextAppearance.Nonna.Subtitle2">
-        <item name="android:fontFamily">@font/source_sans_pro_regular</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/text_secondary</item>
         <item name="android:lineSpacingExtra">2dp</item>
@@ -44,14 +50,14 @@
     
     <!-- Cuerpo de texto -->
     <style name="TextAppearance.Nonna.Body1">
-        <item name="android:fontFamily">@font/source_sans_pro_regular</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:lineSpacingExtra">4dp</item>
     </style>
     
     <style name="TextAppearance.Nonna.Body2">
-        <item name="android:fontFamily">@font/source_sans_pro_regular</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/text_secondary</item>
         <item name="android:lineSpacingExtra">3dp</item>
@@ -59,67 +65,119 @@
     
     <!-- Botones -->
     <style name="TextAppearance.Nonna.Button">
-        <item name="android:fontFamily">@font/source_sans_pro_bold</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/text_on_primary</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0.02</item>
+        <item name="android:textStyle">bold</item>
     </style>
     
     <style name="TextAppearance.Nonna.ButtonSecondary">
-        <item name="android:fontFamily">@font/source_sans_pro_bold</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/primary_warm</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0.02</item>
+        <item name="android:textStyle">bold</item>
     </style>
     
     <!-- Caption y overline -->
     <style name="TextAppearance.Nonna.Caption">
-        <item name="android:fontFamily">@font/source_sans_pro_regular</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/text_hint</item>
         <item name="android:lineSpacingExtra">2dp</item>
     </style>
     
     <style name="TextAppearance.Nonna.Overline">
-        <item name="android:fontFamily">@font/source_sans_pro_bold</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">10sp</item>
         <item name="android:textColor">@color/text_hint</item>
         <item name="android:textAllCaps">true</item>
         <item name="android:letterSpacing">0.05</item>
+        <item name="android:textStyle">bold</item>
     </style>
     
     <!-- Estilos especiales para Nonna -->
     <style name="TextAppearance.Nonna.MemoryTitle">
-        <item name="android:fontFamily">@font/cormorant_garamond_regular</item>
+        <item name="android:fontFamily">serif</item>
         <item name="android:textSize">20sp</item>
         <item name="android:textColor">@color/text_primary</item>
-        <item name="android:lineSpacingExtra">3dp</item>
+        <item name="android:lineSpacingExtra">4dp</item>
         <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <!-- Nuevo estilo para títulos muy especiales -->
+    <style name="TextAppearance.Nonna.Hero">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textSize">36sp</item>
+        <item name="android:textColor">@color/primary_warm_dark</item>
+        <item name="android:lineSpacingExtra">6dp</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Estilo para texto poético/frases -->
+    <style name="TextAppearance.Nonna.Quote">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:lineSpacingExtra">8dp</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:fontStyle">italic</item>
+        <item name="android:gravity">center</item>
     </style>
     
     <style name="TextAppearance.Nonna.MemoryDate">
-        <item name="android:fontFamily">@font/source_sans_pro_regular</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/text_hint</item>
         <item name="android:lineSpacingExtra">1dp</item>
     </style>
     
     <style name="TextAppearance.Nonna.PersonName">
-        <item name="android:fontFamily">@font/cormorant_garamond_bold</item>
+        <item name="android:fontFamily">serif</item>
         <item name="android:textSize">18sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:lineSpacingExtra">2dp</item>
+        <item name="android:textStyle">bold</item>
     </style>
     
     <style name="TextAppearance.Nonna.PhraseText">
-        <item name="android:fontFamily">@font/source_sans_pro_regular</item>
+        <item name="android:fontFamily">serif</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:lineSpacingExtra">6dp</item>
         <item name="android:fontStyle">italic</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <!-- Nuevos estilos refinados -->
+    <style name="TextAppearance.Nonna.CardTitle">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/primary_warm_dark</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.Nonna.MetaInfo">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <style name="TextAppearance.Nonna.EmptyState">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textColor">@color/accent_warm_grey</item>
+        <item name="android:lineSpacingExtra">4dp</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="android:gravity">center</item>
     </style>
 </resources>
-
-

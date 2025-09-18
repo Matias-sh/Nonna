@@ -2,18 +2,18 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.navigation.safe.args)
 }
 
 android {
     namespace = "com.cocido.nonna"
-    compileSdk = 35
+    compileSdk = 33
 
     defaultConfig {
         applicationId = "com.cocido.nonna"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 33
         versionCode = 1
         versionName = "1.0"
 
@@ -84,12 +84,13 @@ dependencies {
     
     // Hilt
     implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
+    implementation(libs.hilt.work)
+    kapt(libs.hilt.compiler)
     
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
+    kapt(libs.androidx.room.compiler)
     
     // DataStore
     implementation(libs.androidx.datastore.preferences)
@@ -104,7 +105,7 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
-    ksp(libs.moshi.codegen)
+    kapt(libs.moshi.codegen)
     
     // Camera
     implementation(libs.androidx.camera.core)
@@ -121,7 +122,7 @@ dependencies {
     
     // Image Loading
     implementation(libs.glide)
-    ksp(libs.glide.compiler)
+    kapt(libs.glide.compiler)
     
     // Testing
     testImplementation(libs.junit)

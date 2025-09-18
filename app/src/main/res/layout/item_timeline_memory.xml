@@ -69,7 +69,7 @@
                 android:layout_width="16dp"
                 android:layout_height="16dp"
                 android:layout_margin="4dp"
-                android:src="@drawable/ic_launcher_foreground"
+                android:src="@drawable/ic_audio"
                 android:tint="@color/white"
                 android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="@id/imageViewMemory"
@@ -126,19 +126,19 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="familia"
+                        android:textSize="10sp"
                         app:chipBackgroundColor="@color/surface_light"
                         app:chipStrokeColor="@color/border_medium"
-                        app:chipStrokeWidth="1dp"
-                        app:chipTextSize="10sp" />
+                        app:chipStrokeWidth="1dp" />
 
                     <com.google.android.material.chip.Chip
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="cocina"
+                        android:textSize="10sp"
                         app:chipBackgroundColor="@color/surface_light"
                         app:chipStrokeColor="@color/border_medium"
-                        app:chipStrokeWidth="1dp"
-                        app:chipTextSize="10sp" />
+                        app:chipStrokeWidth="1dp" />
 
                 </com.google.android.material.chip.ChipGroup>
 

@@ -1,20 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.Nonna.Card.Memory"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
+    android:layout_margin="12dp"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?android:attr/selectableItemBackground"
-    app:cardBackgroundColor="@color/background_card"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
-    app:strokeColor="@color/border_light"
-    app:strokeWidth="1dp"
-    app:contentPadding="20dp">
+    app:contentPadding="24dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -26,10 +21,11 @@
             android:id="@+id/textViewPhrase"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.Nonna.PhraseText"
-            android:text="\"¡Ay, mi vida!\""
+            android:layout_marginBottom="16dp"
+            android:text="¡Ay, mi vida!"
             android:textAlignment="center"
-            tools:text="\"¡Ay, mi vida!\"" />
+            android:textAppearance="@style/TextAppearance.Nonna.PhraseText"
+            tools:text="¡Ay, mi vida!" />
 
         <!-- Información adicional -->
         <LinearLayout
@@ -46,18 +42,18 @@
                 android:orientation="horizontal">
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginEnd="4dp"
-                    android:src="@drawable/ic_launcher_foreground"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="6dp"
+                    android:src="@drawable/ic_person"
                     android:tint="@color/primary_warm" />
 
                 <TextView
                     android:id="@+id/textViewPerson"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAppearance="@style/TextAppearance.Nonna.Caption"
                     android:text="Abuela María"
+                    android:textAppearance="@style/TextAppearance.Nonna.MetaInfo"
                     tools:text="Abuela María" />
 
             </LinearLayout>
@@ -65,11 +61,12 @@
             <!-- Indicador de audio -->
             <ImageView
                 android:id="@+id/imageViewAudioIndicator"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:layout_marginStart="8dp"
-                android:src="@drawable/ic_launcher_foreground"
-                android:tint="@color/primary_warm"
+                android:contentDescription="Tiene audio"
+                android:src="@drawable/ic_audio_wave"
+                android:tint="@color/accent_terracotta"
                 android:visibility="gone"
                 tools:visibility="visible" />
 
@@ -78,13 +75,13 @@
         <!-- Botón de reproducción -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonPlay"
+            style="@style/Widget.Nonna.Button.Gentle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginTop="12dp"
-            android:text="Reproducir"
-            app:icon="@drawable/ic_launcher_foreground"
-            style="@style/Widget.Nonna.Button.Outlined" />
+            android:layout_marginTop="16dp"
+            android:text="Escuchar frase"
+            app:icon="@drawable/ic_play_arrow" />
 
     </LinearLayout>
 

@@ -5,7 +5,7 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/loginFragment">
 
-    <!-- Autenticación -->
+    <!-- Autenticación - Solo se accede desde configuración o logout -->
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.cocido.nonna.ui.auth.LoginFragment"
@@ -16,7 +16,9 @@
             app:destination="@id/registerFragment" />
         <action
             android:id="@+id/action_login_to_home"
-            app:destination="@id/homeFragment" />
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment
@@ -27,6 +29,11 @@
         <action
             android:id="@+id/action_register_to_login"
             app:destination="@id/loginFragment" />
+        <action
+            android:id="@+id/action_register_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <!-- Pantalla principal -->
@@ -50,6 +57,9 @@
         <action
             android:id="@+id/action_home_to_settings"
             app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_home_to_conversation"
+            app:destination="@id/conversationFragment" />
     </fragment>
 
     <!-- Detalle de recuerdo -->
@@ -92,6 +102,9 @@
             app:destination="@id/homeFragment"
             app:popUpTo="@id/homeFragment"
             app:popUpToInclusive="false" />
+        <action
+            android:id="@+id/action_timeline_to_memory_detail"
+            app:destination="@id/memoryDetailFragment" />
     </fragment>
 
     <!-- Árbol genealógico -->

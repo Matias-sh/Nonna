@@ -12,10 +12,15 @@
         android:title="Línea de Tiempo" />
     
     <item
+        android:id="@+id/conversationFragment"
+        android:icon="@drawable/ic_conversation"
+        android:title="Frases" />
+
+    <item
         android:id="@+id/genealogyFragment"
         android:icon="@drawable/ic_family_tree"
         android:title="Árbol" />
-    
+
     <item
         android:id="@+id/settingsFragment"
         android:icon="@drawable/ic_settings"

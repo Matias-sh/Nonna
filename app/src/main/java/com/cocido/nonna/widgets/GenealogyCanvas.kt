@@ -46,18 +46,6 @@ class GenealogyCanvas @JvmOverloads constructor(
         gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDown(e: MotionEvent): Boolean = true
             
-            override fun onScroll(
-                e1: MotionEvent?,
-                e2: MotionEvent,
-                distanceX: Float,
-                distanceY: Float
-            ): Boolean {
-                focusX -= distanceX
-                focusY -= distanceY
-                invalidate()
-                return true
-            }
-            
             override fun onSingleTapUp(e: MotionEvent): Boolean {
                 val person = getPersonAt(e.x, e.y)
                 person?.let { onPersonClickListener?.invoke(it) }
@@ -169,6 +157,23 @@ class GenealogyCanvas @JvmOverloads constructor(
         scaleGestureDetector.onTouchEvent(event)
         if (!scaleGestureDetector.isInProgress) {
             gestureDetector.onTouchEvent(event)
+            
+            // Manejar scroll manualmente
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    lastTouchX = event.x
+                    lastTouchY = event.y
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val deltaX = event.x - lastTouchX
+                    val deltaY = event.y - lastTouchY
+                    focusX -= deltaX
+                    focusY -= deltaY
+                    lastTouchX = event.x
+                    lastTouchY = event.y
+                    invalidate()
+                }
+            }
         }
         return true
     }

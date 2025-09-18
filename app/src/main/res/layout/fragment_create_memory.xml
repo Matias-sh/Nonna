@@ -17,13 +17,16 @@
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
+            style="@style/Widget.Nonna.Toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/background_primary"
-            app:navigationIcon="@drawable/ic_launcher_foreground"
-            app:title="Crear Recuerdo"
-            app:titleTextAppearance="@style/TextAppearance.Nonna.Headline3"
-            app:titleTextColor="@color/text_primary" />
+            android:layout_height="80dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:title="Crear Nuevo Recuerdo"
+            app:subtitle="Preserva un momento especial"
+            app:subtitleTextAppearance="@style/TextAppearance.Nonna.Body2"
+            app:titleTextAppearance="@style/TextAppearance.Nonna.Headline2" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -43,31 +46,64 @@
             <!-- Paso 1: Foto -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardPhoto"
+                style="@style/Widget.Nonna.Card.Memory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/background_card"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp"
-                app:contentPadding="16dp">
+                android:layout_marginBottom="24dp"
+                app:contentPadding="24dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="1. Foto"
-                        android:textAppearance="@style/TextAppearance.Nonna.Subtitle1" />
+                        android:layout_marginBottom="16dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Agrega una foto para tu recuerdo"
-                        android:textAppearance="@style/TextAppearance.Nonna.Body2" />
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginEnd="16dp"
+                            app:cardBackgroundColor="@color/primary_warm_light"
+                            app:cardCornerRadius="24dp"
+                            app:cardElevation="2dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="1"
+                                android:textAppearance="@style/TextAppearance.Nonna.Headline3"
+                                android:textColor="@color/primary_warm_dark" />
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Selecciona una foto"
+                                android:textAppearance="@style/TextAppearance.Nonna.CardTitle" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Elige una imagen que capture este momento especial"
+                                android:textAppearance="@style/TextAppearance.Nonna.MetaInfo" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
 
                     <!-- Preview de imagen -->
                     <ImageView
@@ -89,22 +125,23 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/buttonTakePhoto"
+                            style="@style/Widget.Nonna.Button"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
+                            android:layout_marginEnd="12dp"
                             android:layout_weight="1"
                             android:text="Tomar Foto"
-                            app:icon="@drawable/ic_launcher_foreground" />
+                            app:icon="@drawable/ic_camera" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/buttonChoosePhoto"
+                            style="@style/Widget.Nonna.Button.Outlined"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
+                            android:layout_marginStart="12dp"
                             android:layout_weight="1"
                             android:text="Elegir de Galería"
-                            app:icon="@drawable/ic_launcher_foreground"
-                            style="@style/Widget.Nonna.Button.Outlined" />
+                            app:icon="@drawable/ic_photo_library" />
 
                     </LinearLayout>
 
@@ -225,12 +262,11 @@
                     <!-- Título -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/textInputLayoutTitle"
+                        style="@style/Widget.Nonna.TextInputLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:hint="Título del recuerdo"
-                        app:boxStrokeColor="@color/primary_warm"
-                        app:hintTextColor="@color/primary_warm">
+                        android:layout_marginTop="20dp"
+                        android:hint="Título del recuerdo">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/editTextTitle"
@@ -243,14 +279,13 @@
                     <!-- Fecha -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/textInputLayoutDate"
+                        style="@style/Widget.Nonna.TextInputLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="16dp"
                         android:hint="Fecha del recuerdo"
-                        app:boxStrokeColor="@color/primary_warm"
                         app:endIconMode="custom"
-                        app:endIconDrawable="@drawable/ic_launcher_foreground"
-                        app:hintTextColor="@color/primary_warm">
+                        app:endIconDrawable="@drawable/ic_calendar">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/editTextDate"
@@ -264,12 +299,11 @@
                     <!-- Tags -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/textInputLayoutTags"
+                        style="@style/Widget.Nonna.TextInputLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Etiquetas (separadas por comas)"
-                        app:boxStrokeColor="@color/primary_warm"
-                        app:hintTextColor="@color/primary_warm">
+                        android:layout_marginTop="16dp"
+                        android:hint="Etiquetas (separadas por comas)">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/editTextTags"
@@ -283,14 +317,16 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Botón de guardar -->
+            <!-- Botón de guardar elegante -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonSave"
+                style="@style/Widget.Nonna.Button.Hero"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Guardar Recuerdo"
-                android:textAppearance="@style/TextAppearance.Nonna.Button" />
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="16dp"
+                android:text="Preservar este recuerdo"
+                app:icon="@drawable/ic_save" />
 
         </LinearLayout>
 

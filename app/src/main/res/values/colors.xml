@@ -5,25 +5,32 @@
     <color name="white">#FFFFFFFF</color>
     
     <!-- Paleta cálida y nostálgica para Nonna -->
-    <!-- Colores primarios -->
-    <color name="primary_warm">#FF8B4513</color>        <!-- Marrón cálido -->
-    <color name="primary_warm_dark">#FF654321</color>    <!-- Marrón oscuro -->
-    <color name="primary_warm_light">#FFCD853F</color>   <!-- Marrón claro -->
+    <!-- Colores primarios - Refinados para más calidez -->
+    <color name="primary_warm">#FF8B6F47</color>        <!-- Marrón cálido refinado -->
+    <color name="primary_warm_dark">#FF5D4037</color>    <!-- Marrón chocolate -->
+    <color name="primary_warm_light">#FFD7CCC8</color>   <!-- Marrón muy claro -->
+    <color name="primary_warm_variant">#FFBCAAA4</color> <!-- Marrón medio -->
     
-    <!-- Colores secundarios -->
-    <color name="secondary_cream">#FFF5F5DC</color>      <!-- Crema suave -->
-    <color name="secondary_gold">#FFDAA520</color>       <!-- Dorado cálido -->
-    <color name="secondary_amber">#FFFFBF00</color>      <!-- Ámbar -->
+    <!-- Colores secundarios - Paleta vintage nostálgica -->
+    <color name="secondary_cream">#FFFAF7F2</color>      <!-- Crema papel antiguo -->
+    <color name="secondary_gold">#FFD4AF37</color>       <!-- Oro viejo -->
+    <color name="secondary_amber">#FFF4E4BC</color>      <!-- Ámbar suave -->
+    <color name="secondary_sepia">#FFF4F1E8</color>      <!-- Sepia claro -->
+    <color name="secondary_parchment">#FFFDF6E3</color>   <!-- Pergamino -->
     
-    <!-- Colores de acento -->
-    <color name="accent_terracotta">#FFE2725B</color>    <!-- Terracota -->
-    <color name="accent_sage">#FF9CAF88</color>          <!-- Salvia -->
-    <color name="accent_lavender">#FFE6E6FA</color>      <!-- Lavanda suave -->
+    <!-- Colores de acento - Emocionales y nostálgicos -->
+    <color name="accent_terracotta">#FFD84315</color>    <!-- Terracota profunda -->
+    <color name="accent_sage">#FF8BC34A</color>          <!-- Verde salvia -->
+    <color name="accent_lavender">#FFE8EAF6</color>      <!-- Lavanda muy suave -->
+    <color name="accent_rose_dust">#FFEFEBE9</color>     <!-- Polvo de rosa -->
+    <color name="accent_warm_grey">#FF8D6E63</color>     <!-- Gris cálido -->
     
-    <!-- Colores de superficie -->
-    <color name="surface_warm">#FFFFF8DC</color>         <!-- Superficie cálida -->
-    <color name="surface_light">#FFFFFEF7</color>        <!-- Superficie muy clara -->
-    <color name="surface_medium">#FFF0E68C</color>       <!-- Superficie media -->
+    <!-- Colores de superficie - Sistema refinado -->
+    <color name="surface_warm">#FFFBF9F7</color>         <!-- Superficie cálida -->
+    <color name="surface_light">#FFFEFEFC</color>        <!-- Superficie muy clara -->
+    <color name="surface_medium">#FFF8F5F1</color>       <!-- Superficie media -->
+    <color name="surface_elevated">#FFFFFFFF</color>     <!-- Superficie elevada -->
+    <color name="surface_container">#FFF6F3EF</color>    <!-- Contenedor de superficie -->
     
     <!-- Colores de texto -->
     <color name="text_primary">#FF2F2F2F</color>         <!-- Texto principal oscuro -->

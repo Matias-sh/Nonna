@@ -2,6 +2,7 @@ package com.cocido.nonna.data.remote.interceptor
 
 import android.content.SharedPreferences
 import okhttp3.Interceptor
+import okhttp3.Request
 import okhttp3.Response
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -58,7 +59,7 @@ class AuthInterceptor @Inject constructor(
         return System.currentTimeMillis() >= expiryTime
     }
     
-    private fun handleTokenRefresh(chain: Interceptor.Chain, originalRequest: Interceptor.Chain.Request): Response {
+    private fun handleTokenRefresh(chain: Interceptor.Chain, originalRequest: Request): Response {
         // TODO: Implementar lógica de refresco de token
         // Por ahora, simplemente proceder sin token
         return chain.proceed(originalRequest)

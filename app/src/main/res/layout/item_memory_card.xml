@@ -2,69 +2,79 @@
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.Nonna.Card.Memory"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
-    app:cardBackgroundColor="@color/surface_light"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
+    android:layout_margin="8dp"
     app:contentPadding="0dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- Imagen del recuerdo -->
+        <!-- Imagen del recuerdo con aspect ratio mejorado -->
         <ImageView
             android:id="@+id/imageViewMemory"
             android:layout_width="0dp"
-            android:layout_height="120dp"
+            android:layout_height="140dp"
             android:scaleType="centerCrop"
             android:src="@drawable/ic_launcher_foreground"
+            android:background="@color/surface_medium"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:src="@drawable/ic_launcher_foreground" />
 
-        <!-- Overlay con gradiente -->
+        <!-- Overlay con gradiente mejorado -->
         <View
             android:id="@+id/viewGradientOverlay"
             android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:background="@drawable/gradient_overlay"
+            android:layout_height="60dp"
+            android:background="@drawable/memory_card_gradient"
             app:layout_constraintBottom_toBottomOf="@id/imageViewMemory"
             app:layout_constraintEnd_toEndOf="@id/imageViewMemory"
             app:layout_constraintStart_toStartOf="@id/imageViewMemory" />
 
-        <!-- Indicador de audio -->
-        <ImageView
-            android:id="@+id/imageViewAudioIndicator"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_margin="8dp"
-            android:background="@drawable/type_indicator_background"
-            android:contentDescription="Tiene audio"
-            android:padding="4dp"
-            android:src="@drawable/ic_launcher_foreground"
-            android:tint="@color/white"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="@id/imageViewMemory"
-            app:layout_constraintTop_toTopOf="@id/imageViewMemory"
-            tools:visibility="visible" />
-
-        <!-- Indicador de tipo -->
-        <TextView
-            android:id="@+id/textViewTypeIndicator"
+        <!-- Indicador de audio mejorado -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardAudioIndicator"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            android:background="@drawable/type_indicator_background"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
+            android:layout_margin="12dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/accent_terracotta"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:contentPadding="6dp"
+            app:layout_constraintEnd_toEndOf="@id/imageViewMemory"
+            app:layout_constraintTop_toTopOf="@id/imageViewMemory"
+            tools:visibility="visible">
+
+            <ImageView
+                android:id="@+id/imageViewAudioIndicator"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:contentDescription="Tiene narración"
+                android:src="@drawable/ic_audio_wave"
+                android:tint="@color/white" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Indicador de tipo refinado -->
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipTypeIndicator"
+            style="@style/Widget.Nonna.Chip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
             android:text="FOTO"
             android:textColor="@color/white"
             android:textSize="10sp"
             android:textStyle="bold"
+            app:chipBackgroundColor="@color/primary_warm_dark"
+            app:chipCornerRadius="8dp"
+            app:chipMinHeight="24dp"
+            app:chipStrokeWidth="0dp"
             app:layout_constraintStart_toStartOf="@id/imageViewMemory"
             app:layout_constraintTop_toTopOf="@id/imageViewMemory"
             tools:text="FOTO+AUDIO" />
@@ -74,14 +84,13 @@
             android:id="@+id/textViewTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
             android:ellipsize="end"
             android:maxLines="2"
             android:text="Título del recuerdo"
-            android:textAppearance="@style/TextAppearance.Nonna.Body1"
-            android:textColor="@color/text_primary"
+            android:textAppearance="@style/TextAppearance.Nonna.MemoryTitle"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/imageViewMemory"
@@ -92,12 +101,11 @@
             android:id="@+id/textViewDate"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="4dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="16dp"
             android:text="Sin fecha"
-            android:textAppearance="@style/TextAppearance.Nonna.Caption"
-            android:textColor="@color/text_secondary"
+            android:textAppearance="@style/TextAppearance.Nonna.MemoryDate"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/textViewTitle"
@@ -108,17 +116,17 @@
             android:id="@+id/chipGroupTags"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
-            app:chipSpacingHorizontal="4dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            app:chipSpacingHorizontal="6dp"
             app:chipSpacingVertical="4dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/textViewDate"
             app:singleLine="true"
-            app:singleSelection="true">
+            app:singleSelection="false">
 
             <!-- Tags se agregan dinámicamente -->
 

@@ -1,10 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme para Nonna -->
     <style name="Base.Theme.Nonna" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Colores primarios -->
+        <!-- Colores primarios - Actualizados -->
         <item name="colorPrimary">@color/primary_warm</item>
         <item name="colorPrimaryVariant">@color/primary_warm_dark</item>
         <item name="colorOnPrimary">@color/text_on_primary</item>
+        <item name="colorPrimaryContainer">@color/primary_warm_light</item>
+        <item name="colorOnPrimaryContainer">@color/primary_warm_dark</item>
         
         <!-- Colores secundarios -->
         <item name="colorSecondary">@color/secondary_gold</item>
@@ -14,8 +16,6 @@
         <!-- Colores de superficie -->
         <item name="colorSurface">@color/surface_warm</item>
         <item name="colorOnSurface">@color/text_primary</item>
-        <item name="colorSurfaceVariant">@color/surface_light</item>
-        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
         
         <!-- Colores de fondo -->
         <item name="android:colorBackground">@color/background_primary</item>
@@ -33,31 +33,23 @@
         <item name="colorOutline">@color/border_medium</item>
         <item name="colorOutlineVariant">@color/border_light</item>
         
-        <!-- Colores de estado -->
-        <item name="colorPrimaryContainer">@color/surface_light</item>
-        <item name="colorOnPrimaryContainer">@color/text_primary</item>
-        <item name="colorSecondaryContainer">@color/surface_medium</item>
+        <!-- Colores de superficie adicionales -->
+        <item name="colorPrimaryContainer">@color/primary_warm_light</item>
+        <item name="colorOnPrimaryContainer">@color/primary_warm_dark</item>
+        <item name="colorSecondaryContainer">@color/secondary_sepia</item>
         <item name="colorOnSecondaryContainer">@color/text_primary</item>
         
-        <!-- Colores de superficie especiales -->
-        <item name="colorSurfaceContainer">@color/background_card</item>
-        <item name="colorSurfaceContainerHigh">@color/surface_light</item>
-        <item name="colorSurfaceContainerHighest">@color/surface_medium</item>
+        <!-- Colores adicionales disponibles -->
+        <item name="android:colorBackground">@color/background_primary</item>
+        <item name="colorOnBackground">@color/text_primary</item>
         
         <!-- Colores de texto -->
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="android:textColorHint">@color/text_hint</item>
         
-        <!-- Estilos de texto por defecto -->
-        <item name="textAppearanceHeadline1">@style/TextAppearance.Nonna.Headline1</item>
-        <item name="textAppearanceHeadline2">@style/TextAppearance.Nonna.Headline2</item>
-        <item name="textAppearanceHeadline3">@style/TextAppearance.Nonna.Headline3</item>
-        <item name="textAppearanceBodyLarge">@style/TextAppearance.Nonna.Body1</item>
-        <item name="textAppearanceBodyMedium">@style/TextAppearance.Nonna.Body2</item>
-        <item name="textAppearanceLabelLarge">@style/TextAppearance.Nonna.Button</item>
-        <item name="textAppearanceLabelMedium">@style/TextAppearance.Nonna.Subtitle1</item>
-        <item name="textAppearanceLabelSmall">@style/TextAppearance.Nonna.Caption</item>
+        <!-- Estilos de texto estándar -->
+        <item name="android:textAppearance">@style/TextAppearance.Nonna.Body1</item>
         
         <!-- Estilos de componentes -->
         <item name="android:windowBackground">@color/background_primary</item>
@@ -69,7 +61,6 @@
         <!-- Estilos de botones -->
         <item name="materialButtonStyle">@style/Widget.Nonna.Button</item>
         <item name="materialButtonOutlinedStyle">@style/Widget.Nonna.Button.Outlined</item>
-        <item name="materialButtonTextStyle">@style/Widget.Nonna.Button.Text</item>
         
         <!-- Estilos de tarjetas -->
         <item name="materialCardViewStyle">@style/Widget.Nonna.Card</item>
@@ -87,9 +78,30 @@
     <style name="Widget.Nonna.Button" parent="Widget.Material3.Button">
         <item name="android:textAppearance">@style/TextAppearance.Nonna.Button</item>
         <item name="backgroundTint">@color/primary_warm</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:elevation">4dp</item>
+        <item name="android:paddingHorizontal">24dp</item>
+        <item name="android:paddingVertical">12dp</item>
+        <item name="iconPadding">8dp</item>
+        <item name="iconGravity">textStart</item>
+    </style>
+
+    <!-- Botón hero para acciones principales -->
+    <style name="Widget.Nonna.Button.Hero" parent="Widget.Nonna.Button">
+        <item name="android:minHeight">56dp</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="android:elevation">8dp</item>
+        <item name="backgroundTint">@color/accent_terracotta</item>
+        <item name="android:paddingHorizontal">32dp</item>
+    </style>
+
+    <!-- Botón sutil para acciones secundarias -->
+    <style name="Widget.Nonna.Button.Gentle" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textAppearance">@style/TextAppearance.Nonna.ButtonSecondary</item>
         <item name="android:minHeight">48dp</item>
-        <item name="cornerRadius">8dp</item>
-        <item name="android:elevation">2dp</item>
+        <item name="android:paddingHorizontal">20dp</item>
+        <item name="rippleColor">@color/primary_warm_light</item>
     </style>
     
     <style name="Widget.Nonna.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
@@ -102,27 +114,122 @@
     <style name="Widget.Nonna.Button.Text" parent="Widget.Material3.Button.TextButton">
         <item name="android:textAppearance">@style/TextAppearance.Nonna.ButtonSecondary</item>
         <item name="android:minHeight">48dp</item>
+        <item name="android:paddingHorizontal">20dp</item>
+        <item name="rippleColor">@color/primary_warm_light</item>
+        <item name="android:textColor">@color/primary_warm</item>
     </style>
+    
     
     <style name="Widget.Nonna.Card" parent="Widget.Material3.CardView.Elevated">
         <item name="cardBackgroundColor">@color/background_card</item>
-        <item name="cardCornerRadius">12dp</item>
-        <item name="cardElevation">4dp</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">6dp</item>
         <item name="strokeColor">@color/border_light</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="cardMaxElevation">12dp</item>
+        <item name="cardUseCompatPadding">true</item>
+    </style>
+
+    <!-- Nueva variación de card para memorias especiales -->
+    <style name="Widget.Nonna.Card.Memory" parent="Widget.Nonna.Card">
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">8dp</item>
+        <item name="cardBackgroundColor">@color/surface_elevated</item>
+        <item name="strokeColor">@color/primary_warm_light</item>
         <item name="strokeWidth">1dp</item>
+    </style>
+
+    <!-- Card para estados especiales -->
+    <style name="Widget.Nonna.Card.Highlight" parent="Widget.Nonna.Card">
+        <item name="cardBackgroundColor">@color/secondary_sepia</item>
+        <item name="cardElevation">12dp</item>
+        <item name="strokeColor">@color/secondary_gold</item>
+        <item name="strokeWidth">2dp</item>
     </style>
     
     <style name="Widget.Nonna.Chip" parent="Widget.Material3.Chip.Filter">
         <item name="chipBackgroundColor">@color/surface_light</item>
-        <item name="chipStrokeColor">@color/border_medium</item>
+        <item name="chipStrokeColor">@color/primary_warm_light</item>
         <item name="chipStrokeWidth">1dp</item>
         <item name="android:textColor">@color/text_primary</item>
-        <item name="chipCornerRadius">16dp</item>
+        <item name="chipCornerRadius">20dp</item>
+        <item name="chipMinHeight">36dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="chipIconSize">18dp</item>
+        <item name="chipStartPadding">12dp</item>
+        <item name="chipEndPadding">12dp</item>
+    </style>
+
+    <!-- Chip destacado -->
+    <style name="Widget.Nonna.Chip.Selected" parent="Widget.Nonna.Chip">
+        <item name="chipBackgroundColor">@color/primary_warm_light</item>
+        <item name="chipStrokeColor">@color/primary_warm</item>
+        <item name="chipStrokeWidth">2dp</item>
+        <item name="android:textColor">@color/primary_warm_dark</item>
+    </style>
+
+    <!-- Chip para personas -->
+    <style name="Widget.Nonna.Chip.Person" parent="Widget.Nonna.Chip">
+        <item name="chipBackgroundColor">@color/accent_lavender</item>
+        <item name="chipStrokeColor">@color/accent_warm_grey</item>
+        <item name="android:textColor">@color/text_primary</item>
     </style>
     
     <style name="Widget.Nonna.FAB" parent="Widget.Material3.FloatingActionButton.Primary">
         <item name="backgroundTint">@color/accent_terracotta</item>
         <item name="tint">@color/white</item>
-        <item name="elevation">6dp</item>
+        <item name="elevation">12dp</item>
+        <item name="maxImageSize">28dp</item>
+        <item name="borderWidth">0dp</item>
+        <item name="rippleColor">@color/white</item>
     </style>
+
+    <!-- FAB extendido para textos -->
+    <style name="Widget.Nonna.FAB.Extended" parent="Widget.Material3.ExtendedFloatingActionButton.Primary">
+        <item name="backgroundTint">@color/accent_terracotta</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="elevation">12dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.Nonna.Button</item>
+        <item name="cornerRadius">28dp</item>
+        <item name="iconPadding">8dp</item>
+    </style>
+
+    <!-- Estilos para Bottom Navigation -->
+    <style name="Widget.Nonna.BottomNavigation.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/primary_warm_light</item>
+        <item name="android:width">64dp</item>
+        <item name="android:height">32dp</item>
+    </style>
+
+    <!-- Shape Appearance para FAB -->
+    <style name="ShapeAppearance.Nonna.FAB" parent="ShapeAppearance.Material3.Corner.Full">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <!-- Estilos adicionales para componentes especiales -->
+    <style name="Widget.Nonna.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="titleTextAppearance">@style/TextAppearance.Nonna.Headline3</item>
+        <item name="android:background">@color/background_primary</item>
+        <item name="android:elevation">0dp</item>
+    </style>
+
+    <!-- AppBarLayout estilo Nonna -->
+    <style name="Widget.Nonna.AppBarLayout" parent="Widget.Material3.AppBarLayout">
+        <item name="android:background">@drawable/appbar_background</item>
+        <item name="elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
+    <!-- TextInputLayout refinado -->
+    <style name="Widget.Nonna.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/primary_warm</item>
+        <item name="boxStrokeWidth">2dp</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+        <item name="hintTextColor">@color/primary_warm</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+    </style>
+
 </resources>

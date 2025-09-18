@@ -33,31 +33,20 @@
         <item name="colorOutline">@color/border_medium</item>
         <item name="colorOutlineVariant">@color/border_light</item>
         
-        <!-- Colores de estado -->
-        <item name="colorPrimaryContainer">@color/surface_light</item>
-        <item name="colorOnPrimaryContainer">@color/text_primary</item>
-        <item name="colorSecondaryContainer">@color/surface_medium</item>
+        <!-- Colores de superficie adicionales -->
+        <item name="colorPrimaryContainer">@color/primary_warm_light</item>
+        <item name="colorOnPrimaryContainer">@color/primary_warm_dark</item>
+        <item name="colorSecondaryContainer">@color/secondary_sepia</item>
         <item name="colorOnSecondaryContainer">@color/text_primary</item>
         
-        <!-- Colores de superficie especiales -->
-        <item name="colorSurfaceContainer">@color/background_card</item>
-        <item name="colorSurfaceContainerHigh">@color/surface_light</item>
-        <item name="colorSurfaceContainerHighest">@color/surface_medium</item>
         
         <!-- Colores de texto -->
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="android:textColorHint">@color/text_hint</item>
         
-        <!-- Estilos de texto por defecto -->
-        <item name="textAppearanceHeadline1">@style/TextAppearance.Nonna.Headline1</item>
-        <item name="textAppearanceHeadline2">@style/TextAppearance.Nonna.Headline2</item>
-        <item name="textAppearanceHeadline3">@style/TextAppearance.Nonna.Headline3</item>
-        <item name="textAppearanceBodyLarge">@style/TextAppearance.Nonna.Body1</item>
-        <item name="textAppearanceBodyMedium">@style/TextAppearance.Nonna.Body2</item>
-        <item name="textAppearanceLabelLarge">@style/TextAppearance.Nonna.Button</item>
-        <item name="textAppearanceLabelMedium">@style/TextAppearance.Nonna.Subtitle1</item>
-        <item name="textAppearanceLabelSmall">@style/TextAppearance.Nonna.Caption</item>
+        <!-- Estilos de texto estándar -->
+        <item name="android:textAppearance">@style/TextAppearance.Nonna.Body1</item>
         
         <!-- Estilos de componentes -->
         <item name="android:windowBackground">@color/background_primary</item>
@@ -69,7 +58,6 @@
         <!-- Estilos de botones -->
         <item name="materialButtonStyle">@style/Widget.Nonna.Button</item>
         <item name="materialButtonOutlinedStyle">@style/Widget.Nonna.Button.Outlined</item>
-        <item name="materialButtonTextStyle">@style/Widget.Nonna.Button.Text</item>
         
         <!-- Estilos de tarjetas -->
         <item name="materialCardViewStyle">@style/Widget.Nonna.Card</item>

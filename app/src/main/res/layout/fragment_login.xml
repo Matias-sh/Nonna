@@ -71,7 +71,7 @@
                     android:hint="Correo electrónico"
                     app:boxStrokeColor="@color/primary_warm"
                     app:hintTextColor="@color/primary_warm"
-                    app:startIconDrawable="@drawable/ic_launcher_foreground"
+                    app:startIconDrawable="@drawable/ic_email"
                     app:startIconTint="@color/primary_warm">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -92,7 +92,7 @@
                     app:boxStrokeColor="@color/primary_warm"
                     app:endIconMode="password_toggle"
                     app:hintTextColor="@color/primary_warm"
-                    app:startIconDrawable="@drawable/ic_launcher_foreground"
+                    app:startIconDrawable="@drawable/ic_lock"
                     app:startIconTint="@color/primary_warm">
 
                     <com.google.android.material.textfield.TextInputEditText

@@ -65,9 +65,8 @@ class MemoryDetailViewModel @Inject constructor(
             if (player.isPlaying.value) {
                 player.pause()
             } else {
-                if (player.currentMediaItem == null) {
-                    player.loadAudio(audioPath)
-                }
+                // Siempre cargar el audio antes de reproducir
+                player.loadAudio(audioPath)
                 player.play()
             }
         }

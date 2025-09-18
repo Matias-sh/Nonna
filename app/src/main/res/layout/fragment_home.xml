@@ -6,23 +6,25 @@
     android:layout_height="match_parent"
     tools:context=".ui.memories.HomeFragment">
 
-    <!-- AppBar -->
+    <!-- AppBar - Rediseñado -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
+        style="@style/Widget.Nonna.AppBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/background_primary"
-        app:elevation="0dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
+            style="@style/Widget.Nonna.Toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/background_primary"
-            app:title="Mi Cofre"
-            app:titleTextAppearance="@style/TextAppearance.Nonna.Headline3"
-            app:titleTextColor="@color/text_primary" />
+            android:layout_height="72dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            app:title="Mi Cofre de Recuerdos"
+            app:subtitle="Donde viven nuestras memorias"
+            app:subtitleTextAppearance="@style/TextAppearance.Nonna.Body2"
+            app:titleTextAppearance="@style/TextAppearance.Nonna.Headline2" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -39,15 +41,33 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Estadísticas rápidas -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- Bienvenida emotiva -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/surface_light"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:contentPadding="16dp">
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingHorizontal="24dp"
+                android:paddingVertical="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Las memorias no se heredan solas, se construyen"
+                    android:textAppearance="@style/TextAppearance.Nonna.Quote"
+                    android:textAlignment="center" />
+
+            </LinearLayout>
+
+            <!-- Estadísticas rápidas - Rediseñadas -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.Nonna.Card.Highlight"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:contentPadding="24dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -66,14 +86,16 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="0"
-                            android:textAppearance="@style/TextAppearance.Nonna.Headline2"
-                            android:textColor="@color/primary_warm" />
+                            android:textAppearance="@style/TextAppearance.Nonna.Hero"
+                            android:textColor="@color/primary_warm_dark" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
                             android:text="Recuerdos"
-                            android:textAppearance="@style/TextAppearance.Nonna.Caption" />
+                            android:textAppearance="@style/TextAppearance.Nonna.MetaInfo"
+                            android:textStyle="bold" />
 
                     </LinearLayout>
 
@@ -89,14 +111,16 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="0"
-                            android:textAppearance="@style/TextAppearance.Nonna.Headline2"
-                            android:textColor="@color/primary_warm" />
+                            android:textAppearance="@style/TextAppearance.Nonna.Hero"
+                            android:textColor="@color/primary_warm_dark" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
                             android:text="Personas"
-                            android:textAppearance="@style/TextAppearance.Nonna.Caption" />
+                            android:textAppearance="@style/TextAppearance.Nonna.MetaInfo"
+                            android:textStyle="bold" />
 
                     </LinearLayout>
 
@@ -112,14 +136,16 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="0"
-                            android:textAppearance="@style/TextAppearance.Nonna.Headline2"
-                            android:textColor="@color/primary_warm" />
+                            android:textAppearance="@style/TextAppearance.Nonna.Hero"
+                            android:textColor="@color/primary_warm_dark" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
                             android:text="Frases"
-                            android:textAppearance="@style/TextAppearance.Nonna.Caption" />
+                            android:textAppearance="@style/TextAppearance.Nonna.MetaInfo"
+                            android:textStyle="bold" />
 
                     </LinearLayout>
 
@@ -127,112 +153,162 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Filtros -->
+            <!-- Sección de filtros elegante -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:orientation="horizontal">
+                android:layout_marginBottom="24dp"
+                android:orientation="vertical">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipAll"
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:checked="true"
-                    android:text="Todos"
-                    app:chipBackgroundColor="@color/surface_light"
-                    app:chipStrokeColor="@color/primary_warm"
-                    app:chipStrokeWidth="1dp" />
+                    android:layout_marginBottom="12dp"
+                    android:text="Filtrar recuerdos"
+                    android:textAppearance="@style/TextAppearance.Nonna.CardTitle" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipPhotos"
-                    android:layout_width="wrap_content"
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupFilters"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:text="Fotos"
-                    app:chipBackgroundColor="@color/surface_light"
-                    app:chipStrokeColor="@color/border_medium"
-                    app:chipStrokeWidth="1dp" />
+                    app:chipSpacingHorizontal="8dp"
+                    app:chipSpacingVertical="4dp"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipAudio"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:text="Audio"
-                    app:chipBackgroundColor="@color/surface_light"
-                    app:chipStrokeColor="@color/border_medium"
-                    app:chipStrokeWidth="1dp" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipAll"
+                        style="@style/Widget.Nonna.Chip.Selected"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="Todos los recuerdos" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipRecipes"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Recetas"
-                    app:chipBackgroundColor="@color/surface_light"
-                    app:chipStrokeColor="@color/border_medium"
-                    app:chipStrokeWidth="1dp" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipPhotos"
+                        style="@style/Widget.Nonna.Chip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Con fotos" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipAudio"
+                        style="@style/Widget.Nonna.Chip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Con narración" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipRecipes"
+                        style="@style/Widget.Nonna.Chip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Recetas familiares" />
+
+                </com.google.android.material.chip.ChipGroup>
 
             </LinearLayout>
 
-            <!-- Grid de recuerdos -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerViewMemories"
+            <!-- Sección de grid de recuerdos -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                tools:itemCount="6"
-                tools:listitem="@layout/item_memory_card" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="Tus recuerdos familiares"
+                    android:textAppearance="@style/TextAppearance.Nonna.CardTitle" />
+
+                <!-- Grid de recuerdos -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerViewMemories"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:clipToPadding="false"
+                    android:paddingBottom="8dp"
+                    tools:itemCount="6"
+                    tools:listitem="@layout/item_memory_card" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Estado vacío -->
+    <!-- Estado vacío emotivo -->
     <LinearLayout
         android:id="@+id/layoutEmptyState"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="32dp"
+        android:padding="40dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/appBarLayout">
 
-        <ImageView
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-            android:alpha="0.6"
-            android:src="@drawable/ic_launcher_foreground"
-            android:tint="@color/primary_warm" />
+        <!-- Ilustración central -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Nonna.Card"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/secondary_sepia"
+            app:cardCornerRadius="80dp"
+            app:cardElevation="8dp">
 
+            <ImageView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_gravity="center"
+                android:alpha="0.8"
+                android:src="@drawable/ic_add"
+                android:tint="@color/primary_warm_dark" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Mensaje principal -->
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Tu cofre está vacío"
-            android:textAppearance="@style/TextAppearance.Nonna.Headline3"
+            android:layout_marginBottom="12dp"
+            android:text="Tu cofre espera sus primeros recuerdos"
+            android:textAppearance="@style/TextAppearance.Nonna.EmptyState"
             android:textAlignment="center" />
 
+        <!-- Mensaje de apoyo -->
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Comienza agregando tu primer recuerdo familiar"
-            android:textAppearance="@style/TextAppearance.Nonna.Body2"
+            android:layout_marginBottom="8dp"
+            android:text="Cada gran historia comienza con un primer paso"
+            android:textAppearance="@style/TextAppearance.Nonna.Quote"
             android:textAlignment="center" />
 
+        <!-- Descripción -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            android:text="Agrega fotos con narraciones, frases típicas y recetas que conserven la esencia de tu familia"
+            android:textAppearance="@style/TextAppearance.Nonna.Body1"
+            android:textAlignment="center"
+            android:textColor="@color/text_secondary" />
+
+        <!-- Botón principal -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonAddFirstMemory"
+            style="@style/Widget.Nonna.Button.Hero"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Agregar Recuerdo"
-            app:icon="@drawable/ic_launcher_foreground" />
+            android:text="Crear mi primer recuerdo"
+            app:icon="@drawable/ic_add" />
 
     </LinearLayout>
 

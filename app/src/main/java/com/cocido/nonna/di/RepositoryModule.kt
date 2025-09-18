@@ -2,7 +2,6 @@ package com.cocido.nonna.di
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.cocido.nonna.data.repository.MemoryRepositoryImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,14 +20,6 @@ object RepositoryModule {
     @Singleton
     fun provideSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
         return context.getSharedPreferences("nonna_prefs", Context.MODE_PRIVATE)
-    }
-    
-    @Provides
-    @Singleton
-    fun provideMemoryRepository(
-        memoryRepositoryImpl: MemoryRepositoryImpl
-    ): MemoryRepositoryImpl {
-        return memoryRepositoryImpl
     }
 }
 

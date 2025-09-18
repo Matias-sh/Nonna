@@ -3,7 +3,9 @@ package com.cocido.nonna.ui.memories
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.domain.model.Memory
+import com.cocido.nonna.domain.model.MemoryId
 import com.cocido.nonna.domain.model.MemoryType
+import com.cocido.nonna.domain.model.PersonId
 import com.cocido.nonna.domain.model.VaultId
 import com.cocido.nonna.domain.usecase.ListMemoriesByVaultUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel

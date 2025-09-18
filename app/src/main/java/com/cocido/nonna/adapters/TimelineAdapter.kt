@@ -1,6 +1,7 @@
 package com.cocido.nonna.adapters
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -73,9 +74,9 @@ class TimelineAdapter(
                     // Mostrar placeholder según el tipo
                     imageViewMemory.setImageResource(
                         when (memory.type) {
-                            com.cocido.nonna.domain.model.MemoryType.AUDIO_ONLY -> R.drawable.ic_launcher_foreground // TODO: Icono de audio
-                            com.cocido.nonna.domain.model.MemoryType.RECIPE -> R.drawable.ic_launcher_foreground // TODO: Icono de receta
-                            com.cocido.nonna.domain.model.MemoryType.NOTE -> R.drawable.ic_launcher_foreground // TODO: Icono de nota
+                            com.cocido.nonna.domain.model.MemoryType.AUDIO_ONLY -> R.drawable.ic_audio
+                            com.cocido.nonna.domain.model.MemoryType.RECIPE -> R.drawable.ic_recipe
+                            com.cocido.nonna.domain.model.MemoryType.NOTE -> R.drawable.ic_note
                             else -> R.drawable.ic_launcher_foreground
                         }
                     )

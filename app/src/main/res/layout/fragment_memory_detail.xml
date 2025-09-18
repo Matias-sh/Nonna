@@ -82,10 +82,11 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonPlay"
+                        style="@style/Widget.Nonna.Button"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Reproducir"
-                        app:icon="@drawable/ic_launcher_foreground" />
+                        app:icon="@drawable/ic_play_arrow" />
 
                     <TextView
                         android:id="@+id/textViewDuration"

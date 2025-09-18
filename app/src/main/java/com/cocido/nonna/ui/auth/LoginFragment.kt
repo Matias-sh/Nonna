@@ -90,6 +90,9 @@ class LoginFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect { state ->
                 when (state) {
+                    is LoginUiState.Idle -> {
+                        showLoading(false)
+                    }
                     is LoginUiState.Loading -> {
                         showLoading(true)
                     }
