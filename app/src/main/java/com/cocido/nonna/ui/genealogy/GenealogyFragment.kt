@@ -91,6 +91,9 @@ class GenealogyFragment : Fragment() {
                         showLoading(false)
                         showError(state.message)
                     }
+                    is GenealogyUiState.Idle -> {
+                        showLoading(false)
+                    }
                 }
             }
         }

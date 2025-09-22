@@ -27,9 +27,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="@style/TextAppearance.Nonna.PhraseText"
-            android:text="\"¡Ay, mi vida!\""
+            android:text="&quot;¡Ay, mi vida!&quot;"
             android:textAlignment="center"
-            tools:text="\"¡Ay, mi vida!\"" />
+            tools:text="&quot;¡Ay, mi vida!&quot;" />
 
         <!-- Información adicional -->
         <LinearLayout

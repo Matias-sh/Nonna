@@ -51,8 +51,7 @@ class TimelineFragment : Fragment() {
     private fun setupRecyclerView() {
         timelineAdapter = TimelineAdapter { memory ->
             // Navegar al detalle del recuerdo
-            val action = TimelineFragmentDirections.actionTimelineToMemoryDetail(memory.id.value)
-            findNavController().navigate(action)
+            findNavController().navigate("memory_detail/${memory.id.value}")
         }
         
         binding.recyclerViewTimeline.apply {
@@ -114,6 +113,9 @@ class TimelineFragment : Fragment() {
                     is TimelineUiState.Error -> {
                         showLoading(false)
                         showError(state.message)
+                    }
+                    is TimelineUiState.Idle -> {
+                        showLoading(false)
                     }
                 }
             }

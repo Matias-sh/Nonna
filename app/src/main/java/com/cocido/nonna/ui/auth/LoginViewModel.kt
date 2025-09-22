@@ -2,8 +2,7 @@ package com.cocido.nonna.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cocido.nonna.data.remote.api.AuthApiService
-import com.cocido.nonna.data.remote.dto.LoginRequest
+import com.cocido.nonna.domain.usecase.LoginUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,11 +12,10 @@ import javax.inject.Inject
 
 /**
  * ViewModel para el login de usuarios
- * Maneja la lógica de autenticación y estados de la UI
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val authApiService: AuthApiService
+    private val loginUseCase: LoginUseCase
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
@@ -27,37 +25,24 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = LoginUiState.Loading
             
-            try {
-                // Validar campos
-                if (email.isBlank() || password.isBlank()) {
-                    _uiState.value = LoginUiState.Error("Por favor completa todos los campos")
-                    return@launch
+            loginUseCase(email, password)
+                .onSuccess { authResponse ->
+                    _uiState.value = LoginUiState.Success(authResponse)
+                    // Después de un breve delay, navegar al home
+                    kotlinx.coroutines.delay(1000)
+                    _uiState.value = LoginUiState.NavigateToHome
                 }
-                
-                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                    _uiState.value = LoginUiState.Error("Por favor ingresa un email válido")
-                    return@launch
+                .onFailure { exception ->
+                    _uiState.value = LoginUiState.Error(
+                        message = exception.message ?: "Error desconocido al iniciar sesión"
+                    )
                 }
-                
-                // Realizar login
-                val loginRequest = LoginRequest(email = email, password = password)
-                val authResponse = authApiService.login(loginRequest)
-                
-                // TODO: Guardar tokens en SharedPreferences o DataStore
-                // authInterceptor.saveAuthToken(authResponse.accessToken, authResponse.expiresIn)
-                // authInterceptor.saveRefreshToken(authResponse.refreshToken)
-                
-                _uiState.value = LoginUiState.Success
-                
-            } catch (e: Exception) {
-                _uiState.value = LoginUiState.Error(
-                    message = when {
-                        e.message?.contains("401") == true -> "Email o contraseña incorrectos"
-                        e.message?.contains("network") == true -> "Error de conexión. Verifica tu internet"
-                        else -> e.message ?: "Error desconocido al iniciar sesión"
-                    }
-                )
-            }
+        }
+    }
+    
+    fun clearError() {
+        if (_uiState.value is LoginUiState.Error) {
+            _uiState.value = LoginUiState.Idle
         }
     }
 }
@@ -68,7 +53,7 @@ class LoginViewModel @Inject constructor(
 sealed class LoginUiState {
     object Idle : LoginUiState()
     object Loading : LoginUiState()
-    object Success : LoginUiState()
+    data class Success(val authResponse: com.cocido.nonna.data.remote.dto.AuthResponse) : LoginUiState()
     data class Error(val message: String) : LoginUiState()
+    object NavigateToHome : LoginUiState()
 }
-

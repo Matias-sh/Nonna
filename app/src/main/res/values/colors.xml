@@ -6,6 +6,7 @@
     
     <!-- Paleta cálida y nostálgica para Nonna -->
     <!-- Colores primarios -->
+    <color name="primary">#FF8B4513</color>             <!-- Marrón cálido (primary) -->
     <color name="primary_warm">#FF8B4513</color>        <!-- Marrón cálido -->
     <color name="primary_warm_dark">#FF654321</color>    <!-- Marrón oscuro -->
     <color name="primary_warm_light">#FFCD853F</color>   <!-- Marrón claro -->

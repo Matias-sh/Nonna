@@ -1,0 +1,87 @@
+INFO 2025-09-21 21:40:44,180 autoreload 9248 17272 Watching for file changes with StatReloader
+INFO 2025-09-21 21:43:30,490 autoreload 3948 20372 Watching for file changes with StatReloader
+INFO 2025-09-21 21:47:10,758 autoreload 18288 10632 Watching for file changes with StatReloader
+WARNING 2025-09-21 21:47:20,059 log 18288 10332 Not Found: /
+WARNING 2025-09-21 21:47:20,237 log 18288 10332 Not Found: /favicon.ico
+ERROR 2025-09-21 23:11:41,745 exception 18288 19092 Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+Traceback (most recent call last):
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\utils\deprecation.py", line 133, in __call__
+    response = self.process_request(request)
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\middleware\common.py", line 48, in process_request
+    host = request.get_host()
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\http\request.py", line 150, in get_host
+    raise DisallowedHost(msg)
+django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+WARNING 2025-09-21 23:11:41,957 log 18288 19092 Bad Request: /api/auth/login
+ERROR 2025-09-21 23:12:13,551 exception 18288 14736 Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+Traceback (most recent call last):
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\utils\deprecation.py", line 133, in __call__
+    response = self.process_request(request)
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\middleware\common.py", line 48, in process_request
+    host = request.get_host()
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\http\request.py", line 150, in get_host
+    raise DisallowedHost(msg)
+django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+WARNING 2025-09-21 23:12:13,572 log 18288 14736 Bad Request: /api/auth/login
+ERROR 2025-09-21 23:12:56,924 exception 18288 11628 Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+Traceback (most recent call last):
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\utils\deprecation.py", line 133, in __call__
+    response = self.process_request(request)
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\middleware\common.py", line 48, in process_request
+    host = request.get_host()
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\http\request.py", line 150, in get_host
+    raise DisallowedHost(msg)
+django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+WARNING 2025-09-21 23:12:56,941 log 18288 11628 Bad Request: /api/auth/login
+INFO 2025-09-21 23:17:15,236 autoreload 18288 10632 C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\nonna_backend\settings.py changed, reloading.
+INFO 2025-09-21 23:17:16,714 autoreload 19568 15528 Watching for file changes with StatReloader
+INFO 2025-09-21 23:18:57,086 autoreload 19568 15528 C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\nonna_backend\settings.py changed, reloading.
+INFO 2025-09-21 23:18:58,099 autoreload 10072 3832 Watching for file changes with StatReloader
+ERROR 2025-09-21 23:20:55,100 exception 10072 15328 Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+Traceback (most recent call last):
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\utils\deprecation.py", line 133, in __call__
+    response = self.process_request(request)
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\middleware\common.py", line 48, in process_request
+    host = request.get_host()
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\http\request.py", line 150, in get_host
+    raise DisallowedHost(msg)
+django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+WARNING 2025-09-21 23:20:55,136 log 10072 15328 Bad Request: /api/auth/login
+INFO 2025-09-21 23:30:41,327 autoreload 10072 3832 C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\nonna_backend\settings.py changed, reloading.
+INFO 2025-09-21 23:30:42,413 autoreload 6056 5224 Watching for file changes with StatReloader
+INFO 2025-09-21 23:30:53,440 autoreload 6056 5224 C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\nonna_backend\settings.py changed, reloading.
+INFO 2025-09-21 23:30:54,306 autoreload 3920 13476 Watching for file changes with StatReloader
+ERROR 2025-09-21 23:31:48,060 exception 3920 15372 Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+Traceback (most recent call last):
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\utils\deprecation.py", line 133, in __call__
+    response = self.process_request(request)
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\middleware\common.py", line 48, in process_request
+    host = request.get_host()
+  File "C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\venv\Lib\site-packages\django\http\request.py", line 150, in get_host
+    raise DisallowedHost(msg)
+django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+WARNING 2025-09-21 23:31:48,100 log 3920 15372 Bad Request: /api/auth/login/
+INFO 2025-09-21 23:34:53,796 autoreload 1168 16148 Watching for file changes with StatReloader
+ERROR 2025-09-21 23:35:18,127 exception 1168 6496 Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+Traceback (most recent call last):
+  File "C:\Users\MatiB\AppData\Roaming\Python\Python313\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\MatiB\AppData\Roaming\Python\Python313\site-packages\django\utils\deprecation.py", line 133, in __call__
+    response = self.process_request(request)
+  File "C:\Users\MatiB\AppData\Roaming\Python\Python313\site-packages\django\middleware\common.py", line 48, in process_request
+    host = request.get_host()
+  File "C:\Users\MatiB\AppData\Roaming\Python\Python313\site-packages\django\http\request.py", line 150, in get_host
+    raise DisallowedHost(msg)
+django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
+WARNING 2025-09-21 23:35:18,244 log 1168 6496 Bad Request: /api/auth/login/
+INFO 2025-09-21 23:46:10,813 autoreload 4288 19428 Watching for file changes with StatReloader

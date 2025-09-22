@@ -1,43 +1,50 @@
 package com.cocido.nonna.data.remote.api
 
 import com.cocido.nonna.data.remote.dto.PersonDto
-import com.cocido.nonna.data.remote.dto.PersonRequest
 import com.cocido.nonna.data.remote.dto.RelationDto
-import com.cocido.nonna.data.remote.dto.RelationRequest
 import retrofit2.http.*
 
 /**
- * Servicio de API para operaciones con personas y relaciones del árbol genealógico
+ * Servicio de API para personas del árbol genealógico
  */
 interface PersonApiService {
     
-    @GET("vaults/{vaultId}/persons")
-    suspend fun getPersons(@Path("vaultId") vaultId: String): List<PersonDto>
+    @GET("genealogy/persons/")
+    suspend fun getPersons(): List<PersonDto>
     
-    @GET("vaults/{vaultId}/persons/{id}")
-    suspend fun getPerson(@Path("vaultId") vaultId: String, @Path("id") id: String): PersonDto
+    @POST("genealogy/persons/")
+    suspend fun createPerson(@Body person: PersonDto): PersonDto
     
-    @POST("vaults/{vaultId}/persons")
-    suspend fun createPerson(@Path("vaultId") vaultId: String, @Body request: PersonRequest): PersonDto
+    @GET("genealogy/persons/{id}/")
+    suspend fun getPerson(@Path("id") id: String): PersonDto
     
-    @PUT("vaults/{vaultId}/persons/{id}")
-    suspend fun updatePerson(
-        @Path("vaultId") vaultId: String, 
-        @Path("id") id: String, 
-        @Body request: PersonRequest
-    ): PersonDto
+    @PUT("genealogy/persons/{id}/")
+    suspend fun updatePerson(@Path("id") id: String, @Body person: PersonDto): PersonDto
     
-    @DELETE("vaults/{vaultId}/persons/{id}")
-    suspend fun deletePerson(@Path("vaultId") vaultId: String, @Path("id") id: String)
+    @DELETE("genealogy/persons/{id}/")
+    suspend fun deletePerson(@Path("id") id: String)
     
-    @GET("relations")
+    @GET("genealogy/relations/")
     suspend fun getRelations(): List<RelationDto>
     
-    @POST("relations")
-    suspend fun createRelation(@Body request: RelationRequest): RelationDto
+    @POST("genealogy/relations/")
+    suspend fun createRelation(@Body relation: RelationDto): RelationDto
     
-    @DELETE("relations/{id}")
-    suspend fun deleteRelation(@Path("id") id: Long)
+    @GET("genealogy/relations/{id}/")
+    suspend fun getRelation(@Path("id") id: String): RelationDto
+    
+    @PUT("genealogy/relations/{id}/")
+    suspend fun updateRelation(@Path("id") id: String, @Body relation: RelationDto): RelationDto
+    
+    @DELETE("genealogy/relations/{id}/")
+    suspend fun deleteRelation(@Path("id") id: String)
+    
+    @GET("genealogy/vaults/{vaultId}/graph/")
+    suspend fun getGenealogyGraph(@Path("vaultId") vaultId: String): Map<String, Any>
+    
+    @GET("genealogy/vaults/{vaultId}/stats/")
+    suspend fun getGenealogyStats(@Path("vaultId") vaultId: String): Map<String, Any>
+    
+    @GET("genealogy/persons/{personId}/family-tree/")
+    suspend fun getPersonFamilyTree(@Path("personId") personId: String): Map<String, Any>
 }
-
-

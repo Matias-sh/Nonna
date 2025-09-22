@@ -2,7 +2,7 @@ package com.cocido.nonna.sync
 
 import android.content.Context
 import androidx.work.*
-import com.cocido.nonna.workers.SyncWorker
+// import com.cocido.nonna.workers.SyncWorker
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -10,6 +10,7 @@ import javax.inject.Singleton
 /**
  * Manager para manejar la sincronización de datos
  * Programa y ejecuta tareas de sincronización con WorkManager
+ * TODO: Reimplementar cuando SyncWorker esté disponible
  */
 @Singleton
 class SyncManager @Inject constructor(
@@ -25,6 +26,8 @@ class SyncManager @Inject constructor(
      * Programa una sincronización inmediata
      */
     fun scheduleImmediateSync() {
+        // TODO: Reimplementar cuando SyncWorker esté disponible
+        /*
         val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
             .setConstraints(
                 Constraints.Builder()
@@ -39,6 +42,7 @@ class SyncManager @Inject constructor(
             ExistingWorkPolicy.REPLACE,
             syncRequest
         )
+        */
     }
     
     /**
@@ -46,6 +50,8 @@ class SyncManager @Inject constructor(
      * @param intervalMinutes Intervalo en minutos
      */
     fun schedulePeriodicSync(intervalMinutes: Long = 30) {
+        // TODO: Reimplementar cuando SyncWorker esté disponible
+        /*
         val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
             intervalMinutes,
             TimeUnit.MINUTES
@@ -63,6 +69,7 @@ class SyncManager @Inject constructor(
             ExistingWorkPolicy.KEEP,
             syncRequest
         )
+        */
     }
     
     /**

@@ -1,32 +1,38 @@
 package com.cocido.nonna.data.remote.api
 
 import com.cocido.nonna.data.remote.dto.PhraseDto
-import com.cocido.nonna.data.remote.dto.PhraseRequest
+import com.cocido.nonna.data.remote.dto.PhrasePlaybackDto
 import retrofit2.http.*
 
 /**
- * Servicio de API para operaciones con frases típicas familiares
+ * Servicio de API para frases de conversación
  */
 interface PhraseApiService {
     
-    @GET("vaults/{vaultId}/phrases")
-    suspend fun getPhrases(@Path("vaultId") vaultId: String): List<PhraseDto>
+    @GET("conversation/phrases/")
+    suspend fun getPhrases(): List<PhraseDto>
     
-    @GET("vaults/{vaultId}/phrases/{id}")
-    suspend fun getPhrase(@Path("vaultId") vaultId: String, @Path("id") id: String): PhraseDto
+    @POST("conversation/phrases/")
+    suspend fun createPhrase(@Body phrase: PhraseDto): PhraseDto
     
-    @POST("vaults/{vaultId}/phrases")
-    suspend fun createPhrase(@Path("vaultId") vaultId: String, @Body request: PhraseRequest): PhraseDto
+    @GET("conversation/phrases/{id}/")
+    suspend fun getPhrase(@Path("id") id: String): PhraseDto
     
-    @PUT("vaults/{vaultId}/phrases/{id}")
-    suspend fun updatePhrase(
-        @Path("vaultId") vaultId: String, 
-        @Path("id") id: String, 
-        @Body request: PhraseRequest
-    ): PhraseDto
+    @PUT("conversation/phrases/{id}/")
+    suspend fun updatePhrase(@Path("id") id: String, @Body phrase: PhraseDto): PhraseDto
     
-    @DELETE("vaults/{vaultId}/phrases/{id}")
-    suspend fun deletePhrase(@Path("vaultId") vaultId: String, @Path("id") id: String)
+    @DELETE("conversation/phrases/{id}/")
+    suspend fun deletePhrase(@Path("id") id: String)
+    
+    @POST("conversation/phrases/{id}/play/")
+    suspend fun playPhrase(@Path("id") id: String): PhrasePlaybackDto
+    
+    @POST("conversation/phrases/{id}/favorite/")
+    suspend fun toggleFavoritePhrase(@Path("id") id: String): PhraseDto
+    
+    @GET("conversation/vaults/{vaultId}/stats/")
+    suspend fun getPhraseStats(@Path("vaultId") vaultId: String): Map<String, Any>
+    
+    @GET("conversation/vaults/{vaultId}/random/")
+    suspend fun getRandomPhrases(@Path("vaultId") vaultId: String, @Query("count") count: Int = 5): List<PhraseDto>
 }
-
-

@@ -72,6 +72,7 @@ class CreateMemoryFragment : Fragment() {
         
         setupUI()
         observeViewModel()
+        setupFragmentResultListener()
     }
     
     private fun setupUI() {
@@ -82,7 +83,8 @@ class CreateMemoryFragment : Fragment() {
         
         // Botones de foto
         binding.buttonTakePhoto.setOnClickListener {
-            checkCameraPermissionAndTakePhoto()
+            // Navegar al CameraFragment
+            findNavController().navigate(R.id.action_createMemory_to_camera)
         }
         
         binding.buttonChoosePhoto.setOnClickListener {
@@ -106,6 +108,19 @@ class CreateMemoryFragment : Fragment() {
         // Selector de fecha
         binding.editTextDate.setOnClickListener {
             // TODO: Implementar DatePicker
+        }
+    }
+    
+    private fun setupFragmentResultListener() {
+        parentFragmentManager.setFragmentResultListener("camera_result", this) { _, result ->
+            val photoUriString = result.getString("photo_uri")
+            photoUriString?.let { uriString ->
+                val uri = Uri.parse(uriString)
+                selectedPhotoUri = uri
+                viewModel.setPhotoUri(uri)
+                binding.imageViewPhotoPreview.setImageURI(uri)
+                binding.imageViewPhotoPreview.visibility = View.VISIBLE
+            }
         }
     }
     
@@ -199,6 +214,9 @@ class CreateMemoryFragment : Fragment() {
                     }
                     is CreateMemoryUiState.Recording -> {
                         updateRecordingUI(state)
+                    }
+                    is CreateMemoryUiState.Idle -> {
+                        showLoading(false)
                     }
                 }
             }

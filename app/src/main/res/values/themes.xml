@@ -69,7 +69,6 @@
         <!-- Estilos de botones -->
         <item name="materialButtonStyle">@style/Widget.Nonna.Button</item>
         <item name="materialButtonOutlinedStyle">@style/Widget.Nonna.Button.Outlined</item>
-        <item name="materialButtonTextStyle">@style/Widget.Nonna.Button.Text</item>
         
         <!-- Estilos de tarjetas -->
         <item name="materialCardViewStyle">@style/Widget.Nonna.Card</item>

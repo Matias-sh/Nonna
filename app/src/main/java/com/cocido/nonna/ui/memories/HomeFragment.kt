@@ -10,6 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cocido.nonna.R
+import com.cocido.nonna.adapters.MemoriesAdapter
 import com.cocido.nonna.databinding.FragmentHomeBinding
 import com.cocido.nonna.domain.model.MemoryType
 import dagger.hilt.android.AndroidEntryPoint

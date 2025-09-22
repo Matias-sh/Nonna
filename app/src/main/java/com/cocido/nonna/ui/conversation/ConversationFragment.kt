@@ -43,6 +43,9 @@ class ConversationFragment : Fragment() {
         setupRecyclerView()
         observeViewModel()
         
+        // Inicializar TTS
+        viewModel.initializeTts(requireContext())
+        
         // Cargar datos iniciales
         viewModel.loadPhrases()
     }
@@ -82,6 +85,9 @@ class ConversationFragment : Fragment() {
                     }
                     is ConversationUiState.Playing -> {
                         updatePlaybackUI(state)
+                    }
+                    is ConversationUiState.Idle -> {
+                        showLoading(false)
                     }
                 }
             }

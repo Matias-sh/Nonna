@@ -2,6 +2,8 @@ package com.cocido.nonna.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.cocido.nonna.data.repository.AuthRepository
+import com.cocido.nonna.data.repository.AuthRepositoryImpl
 import com.cocido.nonna.data.repository.MemoryRepositoryImpl
 import dagger.Module
 import dagger.Provides
@@ -27,8 +29,16 @@ object RepositoryModule {
     @Singleton
     fun provideMemoryRepository(
         memoryRepositoryImpl: MemoryRepositoryImpl
-    ): MemoryRepositoryImpl {
+    ): com.cocido.nonna.domain.repository.MemoryRepository {
         return memoryRepositoryImpl
+    }
+    
+    @Provides
+    @Singleton
+    fun provideAuthRepository(
+        authRepositoryImpl: AuthRepositoryImpl
+    ): AuthRepository {
+        return authRepositoryImpl
     }
 }
 

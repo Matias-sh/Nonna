@@ -79,6 +79,22 @@
             app:destination="@id/homeFragment"
             app:popUpTo="@id/homeFragment"
             app:popUpToInclusive="false" />
+        <action
+            android:id="@+id/action_createMemory_to_camera"
+            app:destination="@id/cameraFragment" />
+    </fragment>
+
+    <!-- Cámara -->
+    <fragment
+        android:id="@+id/cameraFragment"
+        android:name="com.cocido.nonna.ui.memories.CameraFragment"
+        android:label="Tomar Foto"
+        tools:layout="@layout/fragment_camera">
+        <action
+            android:id="@+id/action_camera_to_create_memory"
+            app:destination="@id/createMemoryFragment"
+            app:popUpTo="@id/createMemoryFragment"
+            app:popUpToInclusive="false" />
     </fragment>
 
     <!-- Línea de tiempo -->
@@ -118,6 +134,24 @@
             app:destination="@id/homeFragment"
             app:popUpTo="@id/homeFragment"
             app:popUpToInclusive="false" />
+    </fragment>
+
+    <!-- Perfil de usuario -->
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.cocido.nonna.ui.profile.ProfileFragment"
+        android:label="Mi Perfil"
+        tools:layout="@layout/fragment_profile">
+        <action
+            android:id="@+id/action_profile_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+        <action
+            android:id="@+id/action_profile_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <!-- Configuración -->

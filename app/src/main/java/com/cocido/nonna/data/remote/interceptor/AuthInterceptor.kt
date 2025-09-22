@@ -58,7 +58,7 @@ class AuthInterceptor @Inject constructor(
         return System.currentTimeMillis() >= expiryTime
     }
     
-    private fun handleTokenRefresh(chain: Interceptor.Chain, originalRequest: Interceptor.Chain.Request): Response {
+    private fun handleTokenRefresh(chain: Interceptor.Chain, originalRequest: okhttp3.Request): Response {
         // TODO: Implementar lógica de refresco de token
         // Por ahora, simplemente proceder sin token
         return chain.proceed(originalRequest)

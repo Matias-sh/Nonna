@@ -2,6 +2,7 @@ package com.cocido.nonna.di
 
 import com.cocido.nonna.data.remote.api.*
 import com.cocido.nonna.data.remote.interceptor.AuthInterceptor
+import com.cocido.nonna.data.remote.interceptor.ErrorHandlingInterceptor
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -36,10 +37,12 @@ object NetworkModule {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
+        val errorHandlingInterceptor = ErrorHandlingInterceptor()
         
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
+            .addInterceptor(errorHandlingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -50,7 +53,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://api.nonna.com/") // TODO: Configurar URL base real
+            .baseUrl("http://10.0.2.2:8000/api/") // Backend local Django
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()

@@ -95,12 +95,19 @@ class LoginFragment : Fragment() {
                     }
                     is LoginUiState.Success -> {
                         showLoading(false)
+                        // Mostrar mensaje de éxito
+                        Toast.makeText(requireContext(), "¡Bienvenido!", Toast.LENGTH_SHORT).show()
+                    }
+                    is LoginUiState.NavigateToHome -> {
                         // Navegar a la pantalla principal
                         findNavController().navigate(R.id.action_login_to_home)
                     }
                     is LoginUiState.Error -> {
                         showLoading(false)
                         showError(state.message)
+                    }
+                    is LoginUiState.Idle -> {
+                        showLoading(false)
                     }
                 }
             }

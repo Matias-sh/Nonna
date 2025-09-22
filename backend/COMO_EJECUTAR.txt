@@ -1,0 +1,40 @@
+🚀 GUÍA PARA EJECUTAR EL BACKEND DE NONNA
+==========================================
+
+📋 ARCHIVOS IMPORTANTES:
+- setup.bat          → Configuración inicial (solo la primera vez)
+- start.bat          → Iniciar servidor (uso diario)
+- restart_server.bat → Reiniciar servidor (si hay problemas)
+
+🔧 PRIMERA VEZ (Configuración inicial):
+1. Abre una terminal en la carpeta "backend"
+2. Ejecuta: setup.bat
+3. Espera a que termine la configuración
+
+🚀 USO DIARIO (Iniciar servidor):
+1. Abre una terminal en la carpeta "backend"
+2. Ejecuta: start.bat
+3. El servidor estará disponible en: http://localhost:8000
+
+🔄 SI HAY PROBLEMAS (Reiniciar servidor):
+1. Abre una terminal en la carpeta "backend"
+2. Ejecuta: restart_server.bat
+
+📱 CONFIGURACIÓN PARA ANDROID:
+- El emulador de Android se conecta a: http://10.0.2.2:8000
+- Ya está configurado automáticamente
+
+👤 CREDENCIALES DE ADMIN:
+- Email: admin@nonna.com
+- Password: admin123
+- Admin panel: http://localhost:8000/admin
+
+🔗 ENDPOINTS PRINCIPALES:
+- API: http://localhost:8000/api/
+- Login: http://localhost:8000/api/auth/login/
+- Admin: http://localhost:8000/admin
+
+⚠️  NOTAS IMPORTANTES:
+- No cierres la terminal mientras el servidor esté corriendo
+- Para detener el servidor: Ctrl+C
+- Si cambias algo en el código, reinicia con restart_server.bat

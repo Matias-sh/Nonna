@@ -17,6 +17,11 @@
         android:title="Árbol" />
     
     <item
+        android:id="@+id/profileFragment"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:title="Perfil" />
+    
+    <item
         android:id="@+id/settingsFragment"
         android:icon="@drawable/ic_settings"
         android:title="Ajustes" />

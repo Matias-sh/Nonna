@@ -125,6 +125,9 @@ class RegisterFragment : Fragment() {
                         showLoading(false)
                         showError(state.message)
                     }
+                    is RegisterUiState.Idle -> {
+                        showLoading(false)
+                    }
                 }
             }
         }
