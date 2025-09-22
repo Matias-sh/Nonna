@@ -1,6 +1,6 @@
 package com.cocido.nonna.domain.usecase
 
-import com.cocido.nonna.data.repository.AuthRepository
+import com.cocido.nonna.domain.repository.AuthRepository
 import javax.inject.Inject
 
 class LogoutUseCase @Inject constructor(

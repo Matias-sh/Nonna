@@ -2,6 +2,7 @@ package com.cocido.nonna.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cocido.nonna.domain.model.User
 import com.cocido.nonna.domain.usecase.RegisterUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,8 +27,8 @@ class RegisterViewModel @Inject constructor(
             _uiState.value = RegisterUiState.Loading
             
             registerUseCase(name, email, password)
-                .onSuccess { authResponse ->
-                    _uiState.value = RegisterUiState.Success(authResponse)
+                .onSuccess { user ->
+                    _uiState.value = RegisterUiState.Success(user)
                 }
                 .onFailure { exception ->
                     _uiState.value = RegisterUiState.Error(
@@ -50,6 +51,6 @@ class RegisterViewModel @Inject constructor(
 sealed class RegisterUiState {
     object Idle : RegisterUiState()
     object Loading : RegisterUiState()
-    data class Success(val authResponse: com.cocido.nonna.data.remote.dto.AuthResponse) : RegisterUiState()
+    data class Success(val user: User) : RegisterUiState()
     data class Error(val message: String) : RegisterUiState()
 }

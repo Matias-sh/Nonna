@@ -76,18 +76,18 @@ class MemoriesAdapter(
                 if (imageUrl != null) {
                     Glide.with(imageViewMemory.context)
                         .load(imageUrl)
-                        .placeholder(R.drawable.ic_launcher_foreground)
-                        .error(R.drawable.ic_launcher_foreground)
+                        .placeholder(R.drawable.ic_photo)
+                        .error(R.drawable.ic_photo)
                         .centerCrop()
                         .into(imageViewMemory)
                 } else {
                     // Mostrar placeholder según el tipo
                     imageViewMemory.setImageResource(
                         when (memory.type) {
-                            MemoryType.AUDIO_ONLY -> R.drawable.ic_launcher_foreground // TODO: Icono de audio
-                            MemoryType.RECIPE -> R.drawable.ic_launcher_foreground // TODO: Icono de receta
-                            MemoryType.NOTE -> R.drawable.ic_launcher_foreground // TODO: Icono de nota
-                            else -> R.drawable.ic_launcher_foreground
+                            MemoryType.AUDIO_ONLY -> R.drawable.ic_audio
+                            MemoryType.RECIPE -> R.drawable.ic_recipe
+                            MemoryType.NOTE -> R.drawable.ic_note
+                            else -> R.drawable.ic_photo
                         }
                     )
                 }

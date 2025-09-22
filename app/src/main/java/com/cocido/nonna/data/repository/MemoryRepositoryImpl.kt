@@ -2,11 +2,12 @@ package com.cocido.nonna.data.repository
 
 import com.cocido.nonna.data.local.dao.MemoryDao
 import com.cocido.nonna.data.local.dao.PhraseDao
-import com.cocido.nonna.data.local.entity.toDomain as entityToDomain
-import com.cocido.nonna.data.local.entity.toEntity as memoryToEntity
+import com.cocido.nonna.data.local.entity.toDomain
+import com.cocido.nonna.data.local.entity.toEntity
 import com.cocido.nonna.data.remote.api.MemoryApiService
 import com.cocido.nonna.data.remote.dto.toDomain as dtoToDomain
-import com.cocido.nonna.data.remote.dto.toEntity as dtoToEntity
+import com.cocido.nonna.data.remote.dto.dtoToEntity
+import com.cocido.nonna.data.remote.dto.toRequest
 import com.cocido.nonna.domain.model.Memory
 import com.cocido.nonna.domain.model.MemoryId
 import com.cocido.nonna.domain.model.Phrase
@@ -38,7 +39,7 @@ class MemoryRepositoryImpl @Inject constructor(
 
                 // Guardar en cache local
                 memories.forEach { memory ->
-                    val entity = memory.memoryToEntity()
+                    val entity = memory.toEntity()
                     memoryDao.insertMemory(entity)
                 }
 
@@ -46,7 +47,7 @@ class MemoryRepositoryImpl @Inject constructor(
             } catch (e: Exception) {
                 // Si falla la API, intentar obtener desde cache local
                 memoryDao.getMemoriesByVault(vaultId.value).collect { entities ->
-                    val memories = entities.map { it.entityToDomain() }
+                    val memories = entities.map { it.toDomain() }
 
                     if (memories.isEmpty()) {
                         emit(createDummyMemories(vaultId))
@@ -59,15 +60,24 @@ class MemoryRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getMemoryById(memoryId: MemoryId): Memory? {
-        return memoryDao.getMemoryById(memoryId.value)?.entityToDomain()
+        return memoryDao.getMemoryById(memoryId.value)?.toDomain()
     }
     
     override suspend fun saveMemory(memory: Memory) {
-        val entity = memory.memoryToEntity()
+        val entity = memory.toEntity()
         memoryDao.insertMemory(entity)
         
-        // TODO: Sincronizar con API en background
-        // syncWithRemote(memory)
+        // Sincronizar con API en background
+        try {
+            val request = memory.toRequest()
+            val response = memoryApiService.createMemory(request)
+            // Actualizar con la respuesta del servidor
+            val updatedEntity = response.dtoToEntity()
+            memoryDao.insertMemory(updatedEntity)
+        } catch (e: Exception) {
+            // TODO: Manejar error de sincronización
+            // Log error or queue for retry
+        }
     }
     
     override suspend fun deleteMemory(memoryId: MemoryId) {

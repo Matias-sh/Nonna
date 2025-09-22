@@ -1,9 +1,8 @@
 package com.cocido.nonna.domain.usecase
 
 import android.util.Log
-import com.cocido.nonna.data.remote.dto.LoginRequest
-import com.cocido.nonna.data.remote.dto.AuthResponse
-import com.cocido.nonna.data.repository.AuthRepository
+import com.cocido.nonna.domain.model.User
+import com.cocido.nonna.domain.repository.AuthRepository
 import javax.inject.Inject
 
 /**
@@ -12,13 +11,12 @@ import javax.inject.Inject
 class LoginUseCase @Inject constructor(
     private val authRepository: AuthRepository
 ) {
-    suspend operator fun invoke(email: String, password: String): Result<AuthResponse> {
+    suspend operator fun invoke(email: String, password: String): Result<User> {
         return try {
             Log.d("LoginUseCase", "Iniciando login para: $email")
-            val request = LoginRequest(email, password)
-            val response = authRepository.login(request)
+            val result = authRepository.login(email, password)
             Log.d("LoginUseCase", "Login exitoso")
-            Result.success(response)
+            result
         } catch (e: Exception) {
             Log.e("LoginUseCase", "Error en login: ${e.message}", e)
             Result.failure(e)

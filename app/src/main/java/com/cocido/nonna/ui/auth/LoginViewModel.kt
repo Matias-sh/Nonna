@@ -2,6 +2,7 @@ package com.cocido.nonna.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cocido.nonna.domain.model.User
 import com.cocido.nonna.domain.usecase.LoginUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,8 +27,8 @@ class LoginViewModel @Inject constructor(
             _uiState.value = LoginUiState.Loading
             
             loginUseCase(email, password)
-                .onSuccess { authResponse ->
-                    _uiState.value = LoginUiState.Success(authResponse)
+                .onSuccess { user ->
+                    _uiState.value = LoginUiState.Success(user)
                     // Después de un breve delay, navegar al home
                     kotlinx.coroutines.delay(1000)
                     _uiState.value = LoginUiState.NavigateToHome
@@ -53,7 +54,7 @@ class LoginViewModel @Inject constructor(
 sealed class LoginUiState {
     object Idle : LoginUiState()
     object Loading : LoginUiState()
-    data class Success(val authResponse: com.cocido.nonna.data.remote.dto.AuthResponse) : LoginUiState()
+    data class Success(val user: User) : LoginUiState()
     data class Error(val message: String) : LoginUiState()
     object NavigateToHome : LoginUiState()
 }

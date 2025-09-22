@@ -8,8 +8,11 @@ import com.cocido.nonna.audio.AudioRecorder
 import com.cocido.nonna.domain.model.Memory
 import com.cocido.nonna.domain.model.MemoryId
 import com.cocido.nonna.domain.model.MemoryType
+import com.cocido.nonna.domain.model.UserId
 import com.cocido.nonna.domain.model.VaultId
 import com.cocido.nonna.domain.usecase.CreateMemoryUseCase
+import com.cocido.nonna.domain.usecase.GetCurrentUserIdUseCase
+import com.cocido.nonna.domain.usecase.GetVaultsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +29,9 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class CreateMemoryViewModel @Inject constructor(
-    private val createMemoryUseCase: CreateMemoryUseCase
+    private val createMemoryUseCase: CreateMemoryUseCase,
+    private val getVaultsUseCase: GetVaultsUseCase,
+    private val getCurrentUserIdUseCase: GetCurrentUserIdUseCase
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<CreateMemoryUiState>(CreateMemoryUiState.Idle)
@@ -95,9 +100,28 @@ class CreateMemoryViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = CreateMemoryUiState.Loading
             
-            try {
-                // TODO: Obtener vaultId del usuario autenticado
-                val currentVaultId = VaultId("vault_1") // Temporal
+                try {
+                    // Obtener vaultId del usuario autenticado
+                    val currentUserId = getCurrentUserIdUseCase() 
+                        ?: throw IllegalStateException("Usuario no autenticado")
+                    val vaultsResult = getVaultsUseCase(currentUserId)
+                    
+                    if (vaultsResult.isFailure) {
+                        _uiState.value = CreateMemoryUiState.Error(
+                            message = "Error al obtener baúles: ${vaultsResult.exceptionOrNull()?.message}"
+                        )
+                        return@launch
+                    }
+                    
+                    val vaults = vaultsResult.getOrNull() ?: emptyList()
+                    if (vaults.isEmpty()) {
+                        _uiState.value = CreateMemoryUiState.Error(
+                            message = "No se encontraron baúles disponibles"
+                        )
+                        return@launch
+                    }
+                    
+                    val currentVaultId = vaults.first().id
                 
                 val memory = Memory(
                     id = MemoryId(UUID.randomUUID().toString()),

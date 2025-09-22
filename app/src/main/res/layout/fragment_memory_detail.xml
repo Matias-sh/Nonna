@@ -20,7 +20,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@color/background_primary"
-            app:navigationIcon="@drawable/ic_launcher_foreground"
+            app:navigationIcon="@drawable/ic_arrow_back"
             app:title="Recuerdo"
             app:titleTextAppearance="@style/TextAppearance.Nonna.Headline3"
             app:titleTextColor="@color/text_primary" />
@@ -85,7 +85,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Reproducir"
-                        app:icon="@drawable/ic_launcher_foreground" />
+                        app:icon="@drawable/ic_play" />
 
                     <TextView
                         android:id="@+id/textViewDuration"
@@ -243,5 +243,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+
+
 
 

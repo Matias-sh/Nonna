@@ -123,10 +123,20 @@ class MemoryDetailFragment : Fragment() {
         if (imageUrl != null) {
             Glide.with(binding.imageViewMemory.context)
                 .load(imageUrl)
-                .placeholder(R.drawable.ic_launcher_foreground)
-                .error(R.drawable.ic_launcher_foreground)
+                .placeholder(R.drawable.ic_photo)
+                .error(R.drawable.ic_photo)
                 .centerCrop()
                 .into(binding.imageViewMemory)
+        } else {
+            // Mostrar placeholder según el tipo
+            binding.imageViewMemory.setImageResource(
+                when (memory.type) {
+                    com.cocido.nonna.domain.model.MemoryType.AUDIO_ONLY -> R.drawable.ic_audio
+                    com.cocido.nonna.domain.model.MemoryType.RECIPE -> R.drawable.ic_recipe
+                    com.cocido.nonna.domain.model.MemoryType.NOTE -> R.drawable.ic_note
+                    else -> R.drawable.ic_photo
+                }
+            )
         }
         
         // Audio
@@ -166,6 +176,9 @@ class MemoryDetailFragment : Fragment() {
     
     private fun updatePlaybackUI(state: MemoryDetailUiState.Playing) {
         binding.buttonPlay.text = if (state.isPlaying) "Pausar" else "Reproducir"
+        binding.buttonPlay.setIconResource(
+            if (state.isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+        )
         binding.textViewDuration.text = "${state.currentTime} / ${state.totalTime}"
         binding.seekBarAudio.progress = state.progress
         binding.seekBarAudio.max = state.maxProgress

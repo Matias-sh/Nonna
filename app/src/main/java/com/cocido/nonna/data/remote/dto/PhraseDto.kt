@@ -84,3 +84,4 @@ data class PhrasePlaybackDto(
     @Json(name = "duration_played")
     val durationPlayed: Double?
 )
+

@@ -8,27 +8,20 @@ import com.cocido.nonna.domain.model.VaultId
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Interfaz del repositorio de recuerdos
- * Define las operaciones disponibles para gestionar recuerdos
+ * Repositorio para operaciones con recuerdos y frases
  */
 interface MemoryRepository {
     
+    // Operaciones con recuerdos
     fun getMemoriesByVault(vaultId: VaultId): Flow<List<Memory>>
-    
     suspend fun getMemoryById(memoryId: MemoryId): Memory?
-    
     suspend fun saveMemory(memory: Memory)
-    
     suspend fun deleteMemory(memoryId: MemoryId)
-    
     suspend fun searchMemories(query: String, vaultId: VaultId): List<Memory>
-    
     suspend fun getAllMemories(): List<Memory>
     
-    // Métodos para frases
+    // Operaciones con frases
     suspend fun getAllPhrases(): List<Phrase>
-    
     suspend fun savePhrase(phrase: Phrase)
-    
     suspend fun deletePhrase(phraseId: PhraseId)
 }

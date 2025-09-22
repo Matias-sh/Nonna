@@ -1,145 +1,62 @@
 package com.cocido.nonna.data.repository
 
-import android.util.Log
-import com.cocido.nonna.data.local.AuthPreferences
-import com.cocido.nonna.data.manager.AuthStateManager
-import com.cocido.nonna.data.remote.api.AuthApiService
-import com.cocido.nonna.data.remote.dto.AuthResponse
-import com.cocido.nonna.data.remote.dto.LoginRequest
-import com.cocido.nonna.data.remote.dto.RegisterRequest
-import com.cocido.nonna.data.remote.dto.RefreshTokenRequest
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.cocido.nonna.domain.model.User
+import com.cocido.nonna.domain.model.UserId
+import com.cocido.nonna.domain.repository.AuthRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Implementación del repositorio de autenticación
+ * Por ahora es temporal hasta implementar la autenticación real
  */
 @Singleton
-class AuthRepositoryImpl @Inject constructor(
-    private val authApiService: AuthApiService,
-    private val authPreferences: AuthPreferences,
-    private val authStateManager: AuthStateManager
-) : AuthRepository {
+class AuthRepositoryImpl @Inject constructor() : AuthRepository {
     
-    private val _isLoggedIn = MutableStateFlow(authPreferences.isLoggedIn())
-    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
+    // Usuario temporal para desarrollo
+    private val tempUser = User(
+        id = UserId("user_1"),
+        email = "usuario@nonna.com",
+        name = "Usuario Demo",
+        profileImageUrl = null,
+        createdAt = System.currentTimeMillis(),
+        updatedAt = System.currentTimeMillis()
+    )
     
-    private var _currentToken: String? = authPreferences.getAccessToken()
-    
-    override suspend fun login(request: LoginRequest): AuthResponse {
-        try {
-            Log.d("AuthRepository", "Intentando login para: ${request.email}")
-            val response = authApiService.login(request)
-            Log.d("AuthRepository", "Login exitoso: ${response.user.name}")
-            
-            // Guardar datos de autenticación
-            authPreferences.saveAuthData(
-                accessToken = response.accessToken,
-                refreshToken = response.refreshToken,
-                userId = response.user.id,
-                email = response.user.email,
-                name = response.user.name,
-                avatar = response.user.avatar
-            )
-            
-            _currentToken = response.accessToken
-            _isLoggedIn.value = true
-            authStateManager.notifyLoggedIn()
-            return response
-        } catch (e: Exception) {
-            Log.e("AuthRepository", "Error en login: ${e.message}", e)
-            throw e
-        }
+    override suspend fun login(email: String, password: String): Result<User> {
+        // TODO: Implementar login real con API
+        return Result.success(tempUser)
     }
     
-    override suspend fun register(request: RegisterRequest): AuthResponse {
-        val response = authApiService.register(request)
-        
-        // Guardar datos de autenticación
-        authPreferences.saveAuthData(
-            accessToken = response.accessToken,
-            refreshToken = response.refreshToken,
-            userId = response.user.id,
-            email = response.user.email,
-            name = response.user.name,
-            avatar = response.user.avatar
-        )
-        
-        _currentToken = response.accessToken
-        _isLoggedIn.value = true
-        authStateManager.notifyLoggedIn()
-        return response
+    override suspend fun register(email: String, password: String, name: String): Result<User> {
+        // TODO: Implementar registro real con API
+        return Result.success(tempUser)
     }
     
-    override suspend fun refreshToken(refreshToken: String): AuthResponse {
-        val request = RefreshTokenRequest(refreshToken)
-        val response = authApiService.refreshToken(request)
-        
-        // Actualizar token guardado
-        authPreferences.saveAuthData(
-            accessToken = response.accessToken,
-            refreshToken = response.refreshToken,
-            userId = response.user.id,
-            email = response.user.email,
-            name = response.user.name,
-            avatar = response.user.avatar
-        )
-        
-        _currentToken = response.accessToken
-        return response
+    override suspend fun logout(): Result<Unit> {
+        // TODO: Implementar logout real
+        return Result.success(Unit)
     }
     
-    override suspend fun logout() {
-        authPreferences.clearAuthData()
-        _currentToken = null
-        _isLoggedIn.value = false
-        authStateManager.notifyLoggedOut()
+    override fun getCurrentUser(): Flow<User?> {
+        // TODO: Implementar obtención del usuario actual
+        return flowOf(tempUser)
     }
     
-    override fun getCurrentToken(): String? = _currentToken
-    
-    override fun isLoggedIn(): Boolean = _isLoggedIn.value
-    
-    // Métodos adicionales para obtener información del usuario
-    fun getCurrentUser(): com.cocido.nonna.data.remote.dto.UserDto? {
-        return if (authPreferences.isLoggedIn()) {
-            com.cocido.nonna.data.remote.dto.UserDto(
-                id = authPreferences.getUserId(),
-                email = authPreferences.getUserEmail() ?: "",
-                username = authPreferences.getUserEmail() ?: "",
-                name = authPreferences.getUserName() ?: "",
-                avatar = authPreferences.getUserAvatar(),
-                phone = "",
-                birthDate = null,
-                isPremium = false,
-                createdAt = "",
-                updatedAt = ""
-            )
-        } else null
+    override suspend fun getCurrentUserId(): UserId? {
+        // TODO: Implementar obtención del ID del usuario actual
+        return tempUser.id
     }
     
-    fun updateUserProfile(name: String, avatar: String? = null) {
-        authPreferences.updateUserProfile(name, avatar)
+    override suspend fun refreshToken(): Result<Unit> {
+        // TODO: Implementar refresh de token
+        return Result.success(Unit)
     }
     
-    suspend fun checkAndRefreshToken(): Boolean {
-        val refreshToken = authPreferences.getRefreshToken()
-        return if (refreshToken != null && authPreferences.isTokenExpired()) {
-            try {
-                refreshToken(refreshToken)
-                true
-            } catch (e: Exception) {
-                Log.e("AuthRepository", "Error refreshing token: ${e.message}")
-                authStateManager.notifyTokenExpired()
-                false
-            }
-        } else {
-            true
-        }
+    override suspend fun isAuthenticated(): Boolean {
+        // TODO: Implementar verificación de autenticación
+        return true
     }
 }
-
-

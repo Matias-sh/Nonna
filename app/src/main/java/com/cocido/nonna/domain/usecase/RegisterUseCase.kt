@@ -1,8 +1,7 @@
 package com.cocido.nonna.domain.usecase
 
-import com.cocido.nonna.data.remote.dto.RegisterRequest
-import com.cocido.nonna.data.remote.dto.AuthResponse
-import com.cocido.nonna.data.repository.AuthRepository
+import com.cocido.nonna.domain.model.User
+import com.cocido.nonna.domain.repository.AuthRepository
 import javax.inject.Inject
 
 /**
@@ -11,11 +10,10 @@ import javax.inject.Inject
 class RegisterUseCase @Inject constructor(
     private val authRepository: AuthRepository
 ) {
-    suspend operator fun invoke(name: String, email: String, password: String): Result<AuthResponse> {
+    suspend operator fun invoke(name: String, email: String, password: String): Result<User> {
         return try {
-            val request = RegisterRequest(email, password, name)
-            val response = authRepository.register(request)
-            Result.success(response)
+            val result = authRepository.register(email, password, name)
+            result
         } catch (e: Exception) {
             Result.failure(e)
         }

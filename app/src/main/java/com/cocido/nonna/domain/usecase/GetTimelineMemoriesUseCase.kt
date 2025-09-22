@@ -1,48 +1,32 @@
 package com.cocido.nonna.domain.usecase
 
 import com.cocido.nonna.domain.model.Memory
-import com.cocido.nonna.data.repository.MemoryRepositoryImpl
+import com.cocido.nonna.domain.repository.MemoryRepository
 import javax.inject.Inject
 
 /**
- * Caso de uso para obtener recuerdos ordenados cronológicamente para la línea de tiempo
+ * Use case para obtener recuerdos de la línea de tiempo
  */
 class GetTimelineMemoriesUseCase @Inject constructor(
-    private val memoryRepository: MemoryRepositoryImpl
+    private val memoryRepository: MemoryRepository
 ) {
-    suspend operator fun invoke(yearFilter: Int? = null): Result<List<Memory>> {
+    suspend operator fun invoke(year: Int? = null): Result<List<Memory>> {
         return try {
             val memories = memoryRepository.getAllMemories()
-            
-            // Filtrar por año si se especifica
-            val filteredMemories = if (yearFilter != null) {
+            val filteredMemories = if (year != null) {
                 memories.filter { memory ->
                     memory.dateTaken?.let { timestamp ->
-                        try {
-                            val year = java.time.Instant.ofEpochMilli(timestamp)
-                                .atZone(java.time.ZoneOffset.UTC)
-                                .toLocalDate()
-                                .year
-                            year == yearFilter
-                        } catch (e: Exception) {
-                            false
-                        }
+                        val calendar = java.util.Calendar.getInstance()
+                        calendar.timeInMillis = timestamp
+                        calendar.get(java.util.Calendar.YEAR) == year
                     } ?: false
                 }
             } else {
                 memories
             }
-            
-            // Ordenar por fecha (más recientes primero)
-            val sortedMemories = filteredMemories.sortedByDescending { memory ->
-                memory.dateTaken ?: 0L
-            }
-            
-            Result.success(sortedMemories)
+            Result.success(filteredMemories)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 }
-
-

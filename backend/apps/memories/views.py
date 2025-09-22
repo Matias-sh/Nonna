@@ -1,6 +1,7 @@
 from rest_framework import generics, status, permissions, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from .models import Memory, MemoryComment, MemoryLike, MemoryShare
@@ -21,6 +22,7 @@ class MemoryListCreateView(generics.ListCreateAPIView):
     search_fields = ['title', 'description', 'tags']
     ordering_fields = ['created_at', 'updated_at', 'date_taken']
     ordering = ['-date_taken', '-created_at']
+    parser_classes = [MultiPartParser, FormParser]
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -39,6 +41,7 @@ class MemoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     Vista para obtener, actualizar y eliminar un recuerdo específico
     """
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
     
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -209,3 +212,49 @@ def memory_stats(request):
         stats['total_comments'] += memory.comments.count()
     
     return Response(stats)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def upload_photo(request):
+    """
+    Vista para subir fotos
+    """
+    if 'photo' not in request.FILES:
+        return Response(
+            {'error': 'No se proporcionó archivo de foto'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    photo = request.FILES['photo']
+    # Aquí se procesaría la foto y se guardaría
+    # Por ahora, devolvemos una URL simulada
+    photo_url = f"/media/memories/photos/{photo.name}"
+    
+    return Response(
+        {'photo_url': photo_url}, 
+        status=status.HTTP_201_CREATED
+    )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def upload_audio(request):
+    """
+    Vista para subir archivos de audio
+    """
+    if 'audio' not in request.FILES:
+        return Response(
+            {'error': 'No se proporcionó archivo de audio'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    audio = request.FILES['audio']
+    # Aquí se procesaría el audio y se guardaría
+    # Por ahora, devolvemos una URL simulada
+    audio_url = f"/media/memories/audio/{audio.name}"
+    
+    return Response(
+        {'audio_url': audio_url}, 
+        status=status.HTTP_201_CREATED
+    )

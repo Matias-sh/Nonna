@@ -11,4 +11,6 @@ urlpatterns = [
     path('shares/<uuid:pk>/', views.MemoryShareDetailView.as_view(), name='memory_share_detail'),
     path('timeline/', views.memory_timeline, name='memory_timeline'),
     path('stats/', views.memory_stats, name='memory_stats'),
+    path('uploads/photo', views.upload_photo, name='upload_photo'),
+    path('uploads/audio', views.upload_audio, name='upload_audio'),
 ]

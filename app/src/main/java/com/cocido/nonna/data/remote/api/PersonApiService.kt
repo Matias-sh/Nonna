@@ -48,3 +48,4 @@ interface PersonApiService {
     @GET("genealogy/persons/{personId}/family-tree/")
     suspend fun getPersonFamilyTree(@Path("personId") personId: String): Map<String, Any>
 }
+

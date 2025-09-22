@@ -2,16 +2,19 @@ package com.cocido.nonna.domain.repository
 
 import com.cocido.nonna.domain.model.Vault
 import com.cocido.nonna.domain.model.VaultId
+import com.cocido.nonna.domain.model.UserId
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Repositorio para operaciones con baúles
+ */
 interface VaultRepository {
-    suspend fun getVaults(): Result<List<Vault>>
-    suspend fun getVaultById(vaultId: VaultId): Result<Vault>
-    suspend fun createVault(name: String, description: String? = null): Result<Vault>
-    suspend fun updateVault(vaultId: VaultId, name: String, description: String? = null): Result<Vault>
+    
+    fun getUserVaults(userId: UserId): Flow<List<Vault>>
+    suspend fun getVaultById(vaultId: VaultId): Vault?
+    suspend fun createVault(vault: Vault): Result<VaultId>
+    suspend fun updateVault(vault: Vault): Result<Unit>
     suspend fun deleteVault(vaultId: VaultId): Result<Unit>
-    suspend fun joinVault(vaultCode: String): Result<Vault>
-    suspend fun inviteMember(vaultId: VaultId, email: String, role: String = "member"): Result<Unit>
-    suspend fun removeMember(vaultId: VaultId, memberId: Int): Result<Unit>
-    suspend fun updateMemberRole(vaultId: VaultId, memberId: Int, role: String): Result<Unit>
+    suspend fun joinVault(vaultId: VaultId, userId: UserId): Result<Unit>
+    suspend fun leaveVault(vaultId: VaultId, userId: UserId): Result<Unit>
 }

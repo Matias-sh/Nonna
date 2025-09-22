@@ -107,7 +107,7 @@ class CreateMemoryFragment : Fragment() {
         
         // Selector de fecha
         binding.editTextDate.setOnClickListener {
-            // TODO: Implementar DatePicker
+            showDatePicker()
         }
     }
     
@@ -235,6 +235,21 @@ class CreateMemoryFragment : Fragment() {
     
     private fun showError(message: String) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+    }
+    
+    private fun showDatePicker() {
+        val calendar = java.util.Calendar.getInstance()
+        val datePickerDialog = android.app.DatePickerDialog(
+            requireContext(),
+            { _, year, month, dayOfMonth ->
+                val selectedDate = String.format("%02d/%02d/%04d", dayOfMonth, month + 1, year)
+                binding.editTextDate.setText(selectedDate)
+            },
+            calendar.get(java.util.Calendar.YEAR),
+            calendar.get(java.util.Calendar.MONTH),
+            calendar.get(java.util.Calendar.DAY_OF_MONTH)
+        )
+        datePickerDialog.show()
     }
     
     override fun onDestroyView() {

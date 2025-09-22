@@ -23,9 +23,12 @@ class JoinVaultViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = JoinVaultUiState.Loading
             
-            joinVaultUseCase(vaultCode)
-                .onSuccess { vault ->
-                    _uiState.value = JoinVaultUiState.Success(vault)
+            val vaultId = com.cocido.nonna.domain.model.VaultId(vaultCode)
+            val userId = com.cocido.nonna.domain.model.UserId("user_1") // TODO: Get from auth
+            
+            joinVaultUseCase(vaultId, userId)
+                .onSuccess { 
+                    _uiState.value = JoinVaultUiState.Success("Te has unido al baúl exitosamente")
                 }
                 .onFailure { exception ->
                     _uiState.value = JoinVaultUiState.Error(
@@ -39,6 +42,6 @@ class JoinVaultViewModel @Inject constructor(
 sealed class JoinVaultUiState {
     object Idle : JoinVaultUiState()
     object Loading : JoinVaultUiState()
-    data class Success(val vault: Vault) : JoinVaultUiState()
+    data class Success(val message: String) : JoinVaultUiState()
     data class Error(val message: String) : JoinVaultUiState()
 }

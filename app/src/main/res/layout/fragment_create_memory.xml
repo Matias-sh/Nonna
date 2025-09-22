@@ -20,7 +20,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@color/background_primary"
-            app:navigationIcon="@drawable/ic_launcher_foreground"
+            app:navigationIcon="@drawable/ic_arrow_back"
             app:title="Crear Recuerdo"
             app:titleTextAppearance="@style/TextAppearance.Nonna.Headline3"
             app:titleTextColor="@color/text_primary" />
@@ -94,7 +94,7 @@
                             android:layout_marginEnd="8dp"
                             android:layout_weight="1"
                             android:text="Tomar Foto"
-                            app:icon="@drawable/ic_launcher_foreground" />
+                            app:icon="@drawable/ic_camera" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/buttonChoosePhoto"
@@ -103,7 +103,7 @@
                             android:layout_marginStart="8dp"
                             android:layout_weight="1"
                             android:text="Elegir de Galería"
-                            app:icon="@drawable/ic_launcher_foreground"
+                            app:icon="@drawable/ic_photo"
                             style="@style/Widget.Nonna.Button.Outlined" />
 
                     </LinearLayout>
@@ -155,7 +155,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Grabar"
-                            app:icon="@drawable/ic_launcher_foreground" />
+                            app:icon="@drawable/ic_mic" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/buttonStop"
@@ -164,7 +164,7 @@
                             android:layout_marginStart="8dp"
                             android:text="Detener"
                             android:visibility="gone"
-                            app:icon="@drawable/ic_launcher_foreground"
+                            app:icon="@drawable/ic_pause"
                             style="@style/Widget.Nonna.Button.Outlined" />
 
                     </LinearLayout>
@@ -308,5 +308,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+
+
 
 

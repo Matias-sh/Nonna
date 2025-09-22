@@ -9,9 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.cocido.nonna.databinding.ActivityMainBinding
-import com.cocido.nonna.domain.usecase.CheckAuthStatusUseCase
-import com.cocido.nonna.data.manager.AuthStateManager
-import com.cocido.nonna.data.manager.AuthStateEvent
+import com.cocido.nonna.domain.repository.AuthRepository
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -23,10 +21,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     
     @Inject
-    lateinit var checkAuthStatusUseCase: CheckAuthStatusUseCase
-
-    @Inject
-    lateinit var authStateManager: AuthStateManager
+    lateinit var authRepository: AuthRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +38,7 @@ class MainActivity : AppCompatActivity() {
     
     private fun checkAuthStatus() {
         lifecycleScope.launch {
-            val isAuthValid = checkAuthStatusUseCase()
+            val isAuthValid = authRepository.isAuthenticated()
             val navHostFragment = supportFragmentManager
                 .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
             val navController = navHostFragment.navController
@@ -105,26 +100,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun observeAuthState() {
-        lifecycleScope.launch {
-            authStateManager.authStateEvents.collect { event ->
-                when (event) {
-                    is AuthStateEvent.TokenExpired,
-                    is AuthStateEvent.LoggedOut -> {
-                        // Token expiró o usuario hizo logout, navegar al login
-                        val navHostFragment = supportFragmentManager
-                            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-                        val navController = navHostFragment.navController
-
-                        if (navController.currentDestination?.id != R.id.loginFragment) {
-                            navController.navigate(R.id.loginFragment)
-                        }
-                    }
-                    is AuthStateEvent.LoggedIn -> {
-                        // Usuario se logueó exitosamente
-                        // El navigation ya se maneja en LoginFragment
-                    }
-                }
-            }
-        }
+        // TODO: Implementar observación de cambios de estado de autenticación
+        // Por ahora se maneja en checkAuthStatus()
     }
 }

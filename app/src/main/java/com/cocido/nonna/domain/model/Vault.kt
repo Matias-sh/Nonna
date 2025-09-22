@@ -1,14 +1,14 @@
 package com.cocido.nonna.domain.model
 
 /**
- * Modelo de dominio para un cofre familiar
- * Representa un espacio colaborativo donde los familiares pueden compartir recuerdos
+ * Modelo de dominio para un baúl de recuerdos
  */
 data class Vault(
     val id: VaultId,
-    val name: String,              // Nombre del cofre familiar
-    val ownerUid: String,          // UID del propietario del cofre
-    val memberUids: List<String>,  // Lista de UIDs de miembros del cofre
-    val createdAt: Long            // Timestamp de creación
+    val name: String,
+    val description: String?,
+    val ownerId: UserId,
+    val memberCount: Int,
+    val createdAt: Long,
+    val updatedAt: Long
 )
-

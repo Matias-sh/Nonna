@@ -106,6 +106,10 @@ dependencies {
     implementation(libs.moshi.kotlin)
     ksp(libs.moshi.codegen)
     
+    // Gson for JSON serialization
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    
     // Camera
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)

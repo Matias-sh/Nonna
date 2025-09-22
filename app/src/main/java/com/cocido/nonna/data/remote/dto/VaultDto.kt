@@ -1,60 +1,59 @@
 package com.cocido.nonna.data.remote.dto
 
-import com.squareup.moshi.Json
+import com.cocido.nonna.domain.model.Vault
+import com.cocido.nonna.domain.model.VaultId
+import com.cocido.nonna.domain.model.UserId
+import com.google.gson.annotations.SerializedName
 
+/**
+ * DTO para baúles desde la API
+ */
 data class VaultDto(
-    @Json(name = "id")
-    val id: String, // UUID string
-    @Json(name = "name")
+    @SerializedName("id")
+    val id: String,
+    
+    @SerializedName("name")
     val name: String,
-    @Json(name = "description")
+    
+    @SerializedName("description")
     val description: String?,
-    @Json(name = "owner")
-    val owner: Int, // User ID
-    @Json(name = "owner_name")
+    
+    @SerializedName("owner")
+    val owner: String,
+    
+    @SerializedName("owner_name")
     val ownerName: String?,
-    @Json(name = "member_count")
-    val memberCount: Int?,
-    @Json(name = "is_public")
-    val isPublic: Boolean?,
-    @Json(name = "members")
-    val members: List<VaultMemberDto>? = null, // Only in detail view
-    @Json(name = "created_at")
+    
+    @SerializedName("member_count")
+    val memberCount: Int,
+    
+    @SerializedName("created_at")
     val createdAt: String,
-    @Json(name = "updated_at")
+    
+    @SerializedName("updated_at")
     val updatedAt: String
 )
 
-data class VaultMemberDto(
-    @Json(name = "id")
-    val id: Int,
-    @Json(name = "user")
-    val user: Int,
-    @Json(name = "user_name")
-    val userName: String?,
-    @Json(name = "user_email")
-    val userEmail: String?,
-    @Json(name = "role")
-    val role: String, // "owner", "admin", "member", "viewer"
-    @Json(name = "joined_at")
-    val joinedAt: String
-)
+/**
+ * Extensión para convertir DTO a modelo de dominio
+ */
+fun VaultDto.toDomain(): Vault {
+    return Vault(
+        id = VaultId(id),
+        name = name,
+        description = description,
+        ownerId = UserId(owner),
+        memberCount = memberCount,
+        createdAt = parseDate(createdAt) ?: System.currentTimeMillis(),
+        updatedAt = parseDate(updatedAt) ?: System.currentTimeMillis()
+    )
+}
 
-data class CreateVaultRequest(
-    @Json(name = "name")
-    val name: String,
-    @Json(name = "description")
-    val description: String?
-)
-
-data class JoinVaultRequest(
-    @Json(name = "vault_code")
-    val vaultCode: String
-)
-
-data class InviteMemberRequest(
-    @Json(name = "email")
-    val email: String,
-    @Json(name = "role")
-    val role: String = "member"
-)
+private fun parseDate(dateString: String): Long? {
+    return try {
+        java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault())
+            .parse(dateString)?.time
+    } catch (e: Exception) {
+        null
+    }
+}

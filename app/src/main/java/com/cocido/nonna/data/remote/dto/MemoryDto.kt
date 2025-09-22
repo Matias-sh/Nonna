@@ -1,50 +1,112 @@
 package com.cocido.nonna.data.remote.dto
 
-import com.squareup.moshi.Json
+import com.cocido.nonna.domain.model.Memory
+import com.cocido.nonna.domain.model.MemoryId
+import com.cocido.nonna.domain.model.MemoryType
+import com.cocido.nonna.domain.model.PersonId
+import com.cocido.nonna.domain.model.VaultId
+import com.google.gson.annotations.SerializedName
 
 /**
- * DTO para recuerdos sensoriales
+ * DTO para recuerdos sensoriales desde la API
  */
 data class MemoryDto(
-    @Json(name = "id")
+    @SerializedName("id")
     val id: String,
-    @Json(name = "title")
+    
+    @SerializedName("title")
     val title: String,
-    @Json(name = "description")
-    val description: String,
-    @Json(name = "type")
+    
+    @SerializedName("description")
+    val description: String?,
+    
+    @SerializedName("type")
     val type: String,
-    @Json(name = "photo")
+    
+    @SerializedName("photo")
     val photo: String?,
-    @Json(name = "audio")
+    
+    @SerializedName("audio")
     val audio: String?,
-    @Json(name = "video")
+    
+    @SerializedName("video")
     val video: String?,
-    @Json(name = "date_taken")
+    
+    @SerializedName("date_taken")
     val dateTaken: String?,
-    @Json(name = "location")
-    val location: String,
-    @Json(name = "tags")
+    
+    @SerializedName("location")
+    val location: String?,
+    
+    @SerializedName("tags")
     val tags: List<String>,
-    @Json(name = "vault")
+    
+    @SerializedName("vault")
     val vault: String,
-    @Json(name = "vault_name")
-    val vaultName: String,
-    @Json(name = "created_by")
+    
+    @SerializedName("vault_name")
+    val vaultName: String?,
+    
+    @SerializedName("created_by")
     val createdBy: String,
-    @Json(name = "created_by_name")
-    val createdByName: String,
-    @Json(name = "likes_count")
+    
+    @SerializedName("created_by_name")
+    val createdByName: String?,
+    
+    @SerializedName("likes_count")
     val likesCount: Int,
-    @Json(name = "comments_count")
+    
+    @SerializedName("comments_count")
     val commentsCount: Int,
-    @Json(name = "is_liked")
+    
+    @SerializedName("is_liked")
     val isLiked: Boolean,
-    @Json(name = "created_at")
+    
+    @SerializedName("created_at")
     val createdAt: String,
-    @Json(name = "updated_at")
+    
+    @SerializedName("updated_at")
     val updatedAt: String
 )
 
+/**
+ * Extensión para convertir DTO a modelo de dominio
+ */
+fun MemoryDto.toDomain(): Memory {
+    return Memory(
+        id = MemoryId(id),
+        vaultId = VaultId(vault),
+        title = title,
+        type = when (type) {
+            "photo" -> MemoryType.PHOTO_ONLY
+            "audio" -> MemoryType.AUDIO_ONLY
+            "video" -> MemoryType.PHOTO_WITH_AUDIO
+            "recipe" -> MemoryType.RECIPE
+            "note" -> MemoryType.NOTE
+            "story" -> MemoryType.NOTE
+            else -> MemoryType.PHOTO_ONLY
+        },
+        photoLocalPath = null,
+        photoRemoteUrl = photo,
+        audioLocalPath = null,
+        audioRemoteUrl = audio,
+        hasTranscript = false,
+        transcript = null,
+        people = emptyList(), // TODO: Implementar cuando esté disponible
+        tags = tags,
+        dateTaken = dateTaken?.let { parseDate(it) },
+        location = location,
+        createdAt = parseDate(createdAt) ?: System.currentTimeMillis(),
+        updatedAt = parseDate(updatedAt) ?: System.currentTimeMillis()
+    )
+}
 
-
+private fun parseDate(dateString: String): Long? {
+    return try {
+        // Formato ISO 8601: 2024-01-15T10:30:00Z
+        java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault())
+            .parse(dateString)?.time
+    } catch (e: Exception) {
+        null
+    }
+}

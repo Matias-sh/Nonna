@@ -101,3 +101,4 @@ sealed class ConversationUiState {
     data class Error(val message: String) : ConversationUiState()
     data class Playing(val phrase: Phrase) : ConversationUiState()
 }
+

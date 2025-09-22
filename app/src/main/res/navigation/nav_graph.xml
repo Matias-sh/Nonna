@@ -87,7 +87,7 @@
     <!-- Cámara -->
     <fragment
         android:id="@+id/cameraFragment"
-        android:name="com.cocido.nonna.ui.memories.CameraFragment"
+        android:name="com.cocido.nonna.ui.camera.CameraFragment"
         android:label="Tomar Foto"
         tools:layout="@layout/fragment_camera">
         <action
@@ -123,50 +123,8 @@
             app:popUpToInclusive="false" />
     </fragment>
 
-    <!-- Modo conversación -->
-    <fragment
-        android:id="@+id/conversationFragment"
-        android:name="com.cocido.nonna.ui.conversation.ConversationFragment"
-        android:label="Conversación"
-        tools:layout="@layout/fragment_conversation">
-        <action
-            android:id="@+id/action_conversation_to_home"
-            app:destination="@id/homeFragment"
-            app:popUpTo="@id/homeFragment"
-            app:popUpToInclusive="false" />
-    </fragment>
 
-    <!-- Perfil de usuario -->
-    <fragment
-        android:id="@+id/profileFragment"
-        android:name="com.cocido.nonna.ui.profile.ProfileFragment"
-        android:label="Mi Perfil"
-        tools:layout="@layout/fragment_profile">
-        <action
-            android:id="@+id/action_profile_to_home"
-            app:destination="@id/homeFragment"
-            app:popUpTo="@id/homeFragment"
-            app:popUpToInclusive="false" />
-        <action
-            android:id="@+id/action_profile_to_login"
-            app:destination="@id/loginFragment"
-            app:popUpTo="@id/loginFragment"
-            app:popUpToInclusive="true" />
-    </fragment>
 
-    <!-- Gestión de Baúles -->
-    <fragment
-        android:id="@+id/vaultManagementFragment"
-        android:name="com.cocido.nonna.ui.vault.VaultManagementFragment"
-        android:label="Mis Baúles"
-        tools:layout="@layout/fragment_vault_management">
-        <action
-            android:id="@+id/action_vaultManagement_to_createVault"
-            app:destination="@id/createVaultFragment" />
-        <action
-            android:id="@+id/action_vaultManagement_to_joinVault"
-            app:destination="@id/joinVaultFragment" />
-    </fragment>
 
     <!-- Crear Baúl -->
     <fragment
@@ -175,9 +133,9 @@
         android:label="Crear Baúl"
         tools:layout="@layout/fragment_create_vault">
         <action
-            android:id="@+id/action_createVault_to_vaultManagement"
-            app:destination="@id/vaultManagementFragment"
-            app:popUpTo="@id/vaultManagementFragment"
+            android:id="@+id/action_createVault_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/homeFragment"
             app:popUpToInclusive="false" />
     </fragment>
 
@@ -188,9 +146,9 @@
         android:label="Unirse a Baúl"
         tools:layout="@layout/fragment_join_vault">
         <action
-            android:id="@+id/action_joinVault_to_vaultManagement"
-            app:destination="@id/vaultManagementFragment"
-            app:popUpTo="@id/vaultManagementFragment"
+            android:id="@+id/action_joinVault_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/homeFragment"
             app:popUpToInclusive="false" />
     </fragment>
 

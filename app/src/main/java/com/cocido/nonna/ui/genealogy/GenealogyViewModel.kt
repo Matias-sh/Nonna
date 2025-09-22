@@ -48,3 +48,4 @@ sealed class GenealogyUiState {
     data class Success(val persons: List<Person>, val relations: List<Relation>) : GenealogyUiState()
     data class Error(val message: String) : GenealogyUiState()
 }
+

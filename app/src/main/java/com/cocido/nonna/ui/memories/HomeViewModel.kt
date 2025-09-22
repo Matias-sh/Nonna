@@ -6,7 +6,10 @@ import com.cocido.nonna.domain.model.Memory
 import com.cocido.nonna.domain.model.MemoryId
 import com.cocido.nonna.domain.model.MemoryType
 import com.cocido.nonna.domain.model.PersonId
+import com.cocido.nonna.domain.model.UserId
 import com.cocido.nonna.domain.model.VaultId
+import com.cocido.nonna.domain.usecase.GetCurrentUserIdUseCase
+import com.cocido.nonna.domain.usecase.GetPhrasesUseCase
 import com.cocido.nonna.domain.usecase.ListMemoriesByVaultUseCase
 import com.cocido.nonna.domain.usecase.GetVaultsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,7 +27,9 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val listMemoriesByVaultUseCase: ListMemoriesByVaultUseCase,
-    private val getVaultsUseCase: GetVaultsUseCase
+    private val getVaultsUseCase: GetVaultsUseCase,
+    private val getCurrentUserIdUseCase: GetCurrentUserIdUseCase,
+    private val getPhrasesUseCase: GetPhrasesUseCase
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -38,8 +43,12 @@ class HomeViewModel @Inject constructor(
             _uiState.value = HomeUiState.Loading
             
             try {
+                // Obtener userId del usuario autenticado
+                val currentUserId = getCurrentUserIdUseCase() 
+                    ?: throw IllegalStateException("Usuario no autenticado")
+                
                 // Obtener el primer baúl del usuario
-                val vaultsResult = getVaultsUseCase()
+                val vaultsResult = getVaultsUseCase(currentUserId)
                 if (vaultsResult.isFailure) {
                     _uiState.value = HomeUiState.Error(
                         message = "Error al cargar los baúles: ${vaultsResult.exceptionOrNull()?.message}"
@@ -117,11 +126,16 @@ class HomeViewModel @Inject constructor(
                         allMemories = memories
 
                         // Obtener información del vault
-                        val vaultsResult = getVaultsUseCase()
+                        val currentUserId = getCurrentUserIdUseCase() 
+                            ?: throw IllegalStateException("Usuario no autenticado")
+                        val vaultsResult = getVaultsUseCase(currentUserId)
                         val vault = vaultsResult.getOrNull()?.find { it.id == vaultId }
 
                         val peopleCount = memories.flatMap { it.people }.distinct().size
-                        val phrasesCount = 12 // Temporal
+                        
+                        // Obtener conteo real de frases
+                        val phrasesResult = getPhrasesUseCase()
+                        val phrasesCount = phrasesResult.getOrNull()?.size ?: 0
 
                         val filteredMemories = applyFilter(allMemories, currentFilter)
 

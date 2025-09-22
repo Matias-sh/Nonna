@@ -1,12 +1,17 @@
 package com.cocido.nonna.domain.usecase
 
-import com.cocido.nonna.data.repository.AuthRepository
+import com.cocido.nonna.domain.model.User
+import com.cocido.nonna.domain.repository.AuthRepository
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
+/**
+ * Use case para obtener el usuario actual
+ */
 class GetCurrentUserUseCase @Inject constructor(
     private val authRepository: AuthRepository
 ) {
-    suspend operator fun invoke(): com.cocido.nonna.data.remote.dto.UserDto? {
-        return (authRepository as com.cocido.nonna.data.repository.AuthRepositoryImpl).getCurrentUser()
+    operator fun invoke(): Flow<User?> {
+        return authRepository.getCurrentUser()
     }
 }

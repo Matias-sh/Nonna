@@ -23,7 +23,9 @@ class VaultManagementViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = VaultManagementUiState.Loading
             
-            getVaultsUseCase()
+            val userId = com.cocido.nonna.domain.model.UserId("user_1") // TODO: Get from auth
+            
+            getVaultsUseCase(userId)
                 .onSuccess { vaults ->
                     _uiState.value = VaultManagementUiState.Success(vaults)
                 }

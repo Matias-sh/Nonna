@@ -36,3 +36,4 @@ interface PhraseApiService {
     @GET("conversation/vaults/{vaultId}/random/")
     suspend fun getRandomPhrases(@Path("vaultId") vaultId: String, @Query("count") count: Int = 5): List<PhraseDto>
 }
+

@@ -26,3 +26,5 @@ data class RelationDto(
     @Json(name = "updated_at")
     val updatedAt: String
 )
+
+

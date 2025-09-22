@@ -1,7 +1,7 @@
 package com.cocido.nonna.domain.model
 
 /**
- * Value object para identificar frases únicamente
+ * Identificador único para una frase
  */
 @JvmInline
 value class PhraseId(val value: String)

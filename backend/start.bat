@@ -5,8 +5,8 @@ REM Activar entorno virtual
 echo 🔧 Activando entorno virtual...
 call venv\Scripts\activate.bat
 
-REM Instalar dependencias
-echo 📥 Instalando dependencias...
+REM Verificar e instalar dependencias si es necesario
+echo 📥 Verificando dependencias...
 pip install -r requirements.txt
 
 REM Iniciar servidor

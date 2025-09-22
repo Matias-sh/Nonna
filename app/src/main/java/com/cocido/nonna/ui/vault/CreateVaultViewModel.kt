@@ -23,8 +23,18 @@ class CreateVaultViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = CreateVaultUiState.Loading
             
-            createVaultUseCase(name, description)
-                .onSuccess { vault ->
+            val vault = com.cocido.nonna.domain.model.Vault(
+                id = com.cocido.nonna.domain.model.VaultId(java.util.UUID.randomUUID().toString()),
+                name = name,
+                description = description,
+                ownerId = com.cocido.nonna.domain.model.UserId("user_1"), // TODO: Get from auth
+                memberCount = 1,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+            
+            createVaultUseCase(vault)
+                .onSuccess { vaultId ->
                     _uiState.value = CreateVaultUiState.Success(vault)
                 }
                 .onFailure { exception ->

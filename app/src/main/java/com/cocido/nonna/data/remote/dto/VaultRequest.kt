@@ -1,15 +1,25 @@
 package com.cocido.nonna.data.remote.dto
 
-import com.squareup.moshi.Json
+import com.cocido.nonna.domain.model.Vault
+import com.google.gson.annotations.SerializedName
 
 /**
- * DTO para requests de cofres familiares
+ * DTO para crear/actualizar baúles
  */
 data class VaultRequest(
-    @Json(name = "name")
+    @SerializedName("name")
     val name: String,
-    @Json(name = "member_uids")
-    val memberUids: List<String> = emptyList()
+    
+    @SerializedName("description")
+    val description: String? = null
 )
 
-
+/**
+ * Extensión para convertir modelo de dominio a request
+ */
+fun Vault.toRequest(): VaultRequest {
+    return VaultRequest(
+        name = name,
+        description = description
+    )
+}

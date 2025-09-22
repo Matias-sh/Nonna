@@ -1,14 +1,14 @@
 package com.cocido.nonna.domain.usecase
 
 import com.cocido.nonna.domain.model.Phrase
-import com.cocido.nonna.data.repository.MemoryRepositoryImpl
+import com.cocido.nonna.domain.repository.MemoryRepository
 import javax.inject.Inject
 
 /**
- * Caso de uso para obtener todas las frases
+ * Use case para obtener todas las frases
  */
 class GetPhrasesUseCase @Inject constructor(
-    private val memoryRepository: MemoryRepositoryImpl
+    private val memoryRepository: MemoryRepository
 ) {
     suspend operator fun invoke(): Result<List<Phrase>> {
         return try {
@@ -19,5 +19,3 @@ class GetPhrasesUseCase @Inject constructor(
         }
     }
 }
-
-

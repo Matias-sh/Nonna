@@ -107,3 +107,4 @@ data class RelationCreateRequest(
     @Json(name = "notes")
     val notes: String = ""
 )
+

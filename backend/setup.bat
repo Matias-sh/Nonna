@@ -9,6 +9,10 @@ REM Activar entorno virtual
 echo 🔧 Activando entorno virtual...
 call venv\Scripts\activate.bat
 
+REM Actualizar pip y setuptools
+echo 🔄 Actualizando pip y setuptools...
+python -m pip install --upgrade pip setuptools wheel
+
 REM Instalar dependencias
 echo 📥 Instalando dependencias...
 pip install -r requirements.txt

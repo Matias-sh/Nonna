@@ -98,3 +98,23 @@ INFO 2025-09-22 00:23:59,236 autoreload 10448 5032 C:\Users\MatiB\AndroidStudioP
 INFO 2025-09-22 00:24:00,119 autoreload 5796 19568 Watching for file changes with StatReloader
 INFO 2025-09-22 00:24:07,954 autoreload 5796 19568 C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\apps\accounts\urls.py changed, reloading.
 INFO 2025-09-22 00:24:08,831 autoreload 23064 22760 Watching for file changes with StatReloader
+INFO 2025-09-22 15:15:58,091 autoreload 292 15760 Watching for file changes with StatReloader
+INFO 2025-09-22 15:16:27,503 autoreload 21608 10440 Watching for file changes with StatReloader
+INFO 2025-09-22 15:20:23,401 autoreload 11596 19728 Watching for file changes with StatReloader
+INFO 2025-09-22 15:23:47,948 autoreload 9120 5880 Watching for file changes with StatReloader
+WARNING 2025-09-22 15:23:59,494 log 9120 13564 Not Found: /favicon.ico
+WARNING 2025-09-22 15:24:06,752 log 9120 27188 Unauthorized: /api/auth/vaults/
+INFO 2025-09-22 15:33:11,874 autoreload 9120 5880 C:\Users\EsePapuMisterioso\AndroidStudioProjects\Nonna\backend\apps\memories\views.py changed, reloading.
+INFO 2025-09-22 15:33:12,444 autoreload 14580 10956 Watching for file changes with StatReloader
+INFO 2025-09-22 15:33:24,231 autoreload 14580 10956 C:\Users\EsePapuMisterioso\AndroidStudioProjects\Nonna\backend\apps\memories\urls.py changed, reloading.
+INFO 2025-09-22 15:33:24,694 autoreload 27048 5056 Watching for file changes with StatReloader
+INFO 2025-09-22 15:34:23,229 autoreload 27048 5056 C:\Users\EsePapuMisterioso\AndroidStudioProjects\Nonna\backend\apps\memories\views.py changed, reloading.
+INFO 2025-09-22 15:34:23,765 autoreload 4068 13408 Watching for file changes with StatReloader
+WARNING 2025-09-22 16:20:54,041 log 4068 18060 Not Found: /api/vaults/
+WARNING 2025-09-22 16:26:42,638 log 4068 10100 Not Found: /api/vaults/
+WARNING 2025-09-22 16:31:38,336 log 4068 11964 Not Found: /api/vaults/
+WARNING 2025-09-22 16:32:18,711 log 4068 11964 Not Found: /api/vaults/
+INFO 2025-09-22 16:33:08,680 autoreload 4068 13408 C:\Users\EsePapuMisterioso\AndroidStudioProjects\Nonna\backend\nonna_backend\urls.py changed, reloading.
+INFO 2025-09-22 16:33:09,354 autoreload 24888 23052 Watching for file changes with StatReloader
+INFO 2025-09-22 16:33:40,882 autoreload 24888 23052 C:\Users\EsePapuMisterioso\AndroidStudioProjects\Nonna\backend\nonna_backend\urls.py changed, reloading.
+INFO 2025-09-22 16:33:41,359 autoreload 5964 4384 Watching for file changes with StatReloader

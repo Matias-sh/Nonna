@@ -6,6 +6,9 @@ import com.cocido.nonna.domain.repository.MemoryRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
+/**
+ * Use case para listar recuerdos por baúl
+ */
 class ListMemoriesByVaultUseCase @Inject constructor(
     private val memoryRepository: MemoryRepository
 ) {
