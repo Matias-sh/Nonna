@@ -2,6 +2,7 @@ package com.cocido.nonna.data.repository
 
 import android.util.Log
 import com.cocido.nonna.data.local.AuthPreferences
+import com.cocido.nonna.data.manager.AuthStateManager
 import com.cocido.nonna.data.remote.api.AuthApiService
 import com.cocido.nonna.data.remote.dto.AuthResponse
 import com.cocido.nonna.data.remote.dto.LoginRequest
@@ -19,7 +20,8 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val authApiService: AuthApiService,
-    private val authPreferences: AuthPreferences
+    private val authPreferences: AuthPreferences,
+    private val authStateManager: AuthStateManager
 ) : AuthRepository {
     
     private val _isLoggedIn = MutableStateFlow(authPreferences.isLoggedIn())
@@ -45,6 +47,7 @@ class AuthRepositoryImpl @Inject constructor(
             
             _currentToken = response.accessToken
             _isLoggedIn.value = true
+            authStateManager.notifyLoggedIn()
             return response
         } catch (e: Exception) {
             Log.e("AuthRepository", "Error en login: ${e.message}", e)
@@ -67,6 +70,7 @@ class AuthRepositoryImpl @Inject constructor(
         
         _currentToken = response.accessToken
         _isLoggedIn.value = true
+        authStateManager.notifyLoggedIn()
         return response
     }
     
@@ -92,6 +96,7 @@ class AuthRepositoryImpl @Inject constructor(
         authPreferences.clearAuthData()
         _currentToken = null
         _isLoggedIn.value = false
+        authStateManager.notifyLoggedOut()
     }
     
     override fun getCurrentToken(): String? = _currentToken
@@ -128,7 +133,7 @@ class AuthRepositoryImpl @Inject constructor(
                 true
             } catch (e: Exception) {
                 Log.e("AuthRepository", "Error refreshing token: ${e.message}")
-                logout()
+                authStateManager.notifyTokenExpired()
                 false
             }
         } else {

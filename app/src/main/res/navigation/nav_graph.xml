@@ -154,6 +154,46 @@
             app:popUpToInclusive="true" />
     </fragment>
 
+    <!-- Gestión de Baúles -->
+    <fragment
+        android:id="@+id/vaultManagementFragment"
+        android:name="com.cocido.nonna.ui.vault.VaultManagementFragment"
+        android:label="Mis Baúles"
+        tools:layout="@layout/fragment_vault_management">
+        <action
+            android:id="@+id/action_vaultManagement_to_createVault"
+            app:destination="@id/createVaultFragment" />
+        <action
+            android:id="@+id/action_vaultManagement_to_joinVault"
+            app:destination="@id/joinVaultFragment" />
+    </fragment>
+
+    <!-- Crear Baúl -->
+    <fragment
+        android:id="@+id/createVaultFragment"
+        android:name="com.cocido.nonna.ui.vault.CreateVaultFragment"
+        android:label="Crear Baúl"
+        tools:layout="@layout/fragment_create_vault">
+        <action
+            android:id="@+id/action_createVault_to_vaultManagement"
+            app:destination="@id/vaultManagementFragment"
+            app:popUpTo="@id/vaultManagementFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
+    <!-- Unirse a Baúl -->
+    <fragment
+        android:id="@+id/joinVaultFragment"
+        android:name="com.cocido.nonna.ui.vault.JoinVaultFragment"
+        android:label="Unirse a Baúl"
+        tools:layout="@layout/fragment_join_vault">
+        <action
+            android:id="@+id/action_joinVault_to_vaultManagement"
+            app:destination="@id/vaultManagementFragment"
+            app:popUpTo="@id/vaultManagementFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
     <!-- Configuración -->
     <fragment
         android:id="@+id/settingsFragment"

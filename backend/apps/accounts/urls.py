@@ -9,6 +9,7 @@ urlpatterns = [
     path('profile/', views.UserProfileView.as_view(), name='user_profile'),
     path('update/', views.UserUpdateView.as_view(), name='user_update'),
     path('vaults/', views.VaultListCreateView.as_view(), name='vault_list_create'),
+    path('vaults/join/', views.join_vault, name='join_vault'),
     path('vaults/<uuid:vault_id>/', views.VaultDetailView.as_view(), name='vault_detail'),
     path('vaults/<uuid:vault_id>/members/', views.VaultMemberListCreateView.as_view(), name='vault_member_list_create'),
     path('vaults/<uuid:vault_id>/members/<int:pk>/', views.VaultMemberDetailView.as_view(), name='vault_member_detail'),

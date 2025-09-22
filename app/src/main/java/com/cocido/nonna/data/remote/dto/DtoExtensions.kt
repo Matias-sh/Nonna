@@ -16,7 +16,7 @@ fun MemoryDto.toDomain(): Memory {
         id = MemoryId(id),
         vaultId = VaultId(vault),
         title = title,
-        type = MemoryType.valueOf(type),
+        type = mapStringToMemoryType(type),
         photoLocalPath = null, // Los DTOs no incluyen rutas locales
         photoRemoteUrl = photo,
         audioLocalPath = null, // Los DTOs no incluyen rutas locales
@@ -124,13 +124,35 @@ fun Memory.toRequest(): MemoryRequest {
     return MemoryRequest(
         title = title,
         description = "",
-        type = type.name,
-        dateTaken = dateTaken?.let { 
+        type = mapMemoryTypeToString(type),
+        dateTaken = dateTaken?.let {
             java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).toLocalDate().toString()
         },
         location = location ?: "",
         tags = tags,
         vault = vaultId.value
     )
+}
+
+private fun mapStringToMemoryType(typeString: String): MemoryType {
+    return when (typeString.lowercase()) {
+        "photo" -> MemoryType.PHOTO_ONLY
+        "audio" -> MemoryType.AUDIO_ONLY
+        "video" -> MemoryType.PHOTO_ONLY // Map video to photo_only since VIDEO_ONLY doesn't exist
+        "photo_with_audio" -> MemoryType.PHOTO_WITH_AUDIO
+        "recipe" -> MemoryType.RECIPE
+        "note" -> MemoryType.NOTE
+        else -> MemoryType.PHOTO_ONLY
+    }
+}
+
+private fun mapMemoryTypeToString(type: MemoryType): String {
+    return when (type) {
+        MemoryType.PHOTO_ONLY -> "photo"
+        MemoryType.AUDIO_ONLY -> "audio"
+        MemoryType.PHOTO_WITH_AUDIO -> "photo_with_audio"
+        MemoryType.RECIPE -> "recipe"
+        MemoryType.NOTE -> "note"
+    }
 }
 

@@ -1,9 +1,7 @@
 package com.cocido.nonna.ui.memories
 
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -40,14 +38,37 @@ class HomeFragment : Fragment() {
     
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
+        setupToolbar()
         setupRecyclerView()
         setupFilters()
         setupClickListeners()
         observeViewModel()
-        
+
         // Cargar datos iniciales
         viewModel.loadMemories()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.home_menu, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_manage_vaults -> {
+                findNavController().navigate(R.id.vaultManagementFragment)
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun setupToolbar() {
+        setHasOptionsMenu(true)
+        binding.toolbar.setOnMenuItemClickListener { menuItem ->
+            onOptionsItemSelected(menuItem)
+        }
     }
     
     private fun setupRecyclerView() {

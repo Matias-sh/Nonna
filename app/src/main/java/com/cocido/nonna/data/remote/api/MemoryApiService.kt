@@ -15,34 +15,40 @@ interface MemoryApiService {
     
     @GET("memories/")
     suspend fun getMemories(): List<MemoryDto>
-    
+
+    @GET("memories/")
+    suspend fun getMemories(
+        @Query("vault") vault: String? = null,
+        @Query("type") type: String? = null
+    ): List<MemoryDto>
+
     @GET("memories/{id}/")
     suspend fun getMemory(@Path("id") id: String): MemoryDto
-    
+
     @POST("memories/")
     suspend fun createMemory(@Body request: MemoryRequest): MemoryDto
-    
+
     @PUT("memories/{id}/")
     suspend fun updateMemory(@Path("id") id: String, @Body request: MemoryRequest): MemoryDto
-    
+
     @DELETE("memories/{id}/")
     suspend fun deleteMemory(@Path("id") id: String)
-    
+
     @GET("memories/timeline/")
     suspend fun getTimeline(@Query("year") year: Int? = null): List<MemoryDto>
-    
+
     @GET("memories/stats/")
     suspend fun getMemoryStats(): Map<String, Any>
-    
+
     @GET("memories/{id}/comments/")
     suspend fun getMemoryComments(@Path("id") id: String): List<MemoryCommentDto>
-    
+
     @POST("memories/{id}/comments/")
     suspend fun createMemoryComment(@Path("id") id: String, @Body comment: MemoryCommentDto): MemoryCommentDto
-    
+
     @POST("memories/{id}/like/")
     suspend fun likeMemory(@Path("id") id: String): ResponseBody
-    
+
     @DELETE("memories/{id}/like/")
     suspend fun unlikeMemory(@Path("id") id: String): ResponseBody
     

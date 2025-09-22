@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+from django.db import models
 from .models import Vault, VaultMember
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserSerializer,
@@ -140,10 +141,10 @@ def refresh_token(request):
     refresh_token = request.data.get('refresh_token')
     if not refresh_token:
         return Response(
-            {'error': 'refresh_token es requerido'}, 
+            {'error': 'refresh_token es requerido'},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     try:
         refresh = RefreshToken(refresh_token)
         return Response({
@@ -151,6 +152,47 @@ def refresh_token(request):
         }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(
-            {'error': 'Token inválido'}, 
+            {'error': 'Token inválido'},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def join_vault(request):
+    """
+    Vista para unirse a un vault usando un código
+    """
+    vault_code = request.data.get('vault_code')
+    if not vault_code:
+        return Response(
+            {'error': 'vault_code es requerido'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        # Por simplicidad, usamos el ID del vault como código
+        # En producción sería mejor tener un campo separado para el código
+        vault = Vault.objects.get(id=vault_code)
+    except Vault.DoesNotExist:
+        return Response(
+            {'error': 'Código de vault inválido'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Verificar si el usuario ya es miembro
+    if VaultMember.objects.filter(vault=vault, user=request.user).exists():
+        return Response(
+            {'error': 'Ya eres miembro de este vault'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Crear membresía
+    VaultMember.objects.create(
+        vault=vault,
+        user=request.user,
+        role='member'
+    )
+
+    serializer = VaultDetailSerializer(vault, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_201_CREATED)

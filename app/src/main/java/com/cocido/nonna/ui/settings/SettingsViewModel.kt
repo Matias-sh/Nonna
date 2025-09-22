@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cocido.nonna.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +18,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val sharedPreferences: SharedPreferences
+    private val sharedPreferences: SharedPreferences,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Loading)
@@ -66,12 +68,17 @@ class SettingsViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             try {
-                // TODO: Implementar logout real
-                // authRepository.logout()
-                // clearUserData()
-                
+                // Ejecutar logout del repositorio de autenticación
+                authRepository.logout()
+
+                // Limpiar configuraciones locales específicas del usuario
+                sharedPreferences.edit()
+                    .remove("dark_mode")
+                    .remove("nostalgic_room")
+                    .apply()
+
                 _uiState.value = SettingsUiState.LogoutSuccess
-                
+
             } catch (e: Exception) {
                 _uiState.value = SettingsUiState.Error(
                     message = "Error al cerrar sesión: ${e.message}"

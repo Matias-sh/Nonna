@@ -23,14 +23,4 @@ class CreateMemoryUseCase @Inject constructor(
     }
 }
 
-/**
- * Use case para listar recuerdos por cofre
- */
-class ListMemoriesByVaultUseCase @Inject constructor(
-    private val memoryRepository: MemoryRepositoryImpl
-) {
-    operator fun invoke(vaultId: VaultId): Flow<List<Memory>> {
-        return memoryRepository.getMemoriesByVault(vaultId)
-    }
-}
 

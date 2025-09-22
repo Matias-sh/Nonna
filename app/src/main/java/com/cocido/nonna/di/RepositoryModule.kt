@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.cocido.nonna.data.repository.AuthRepository
 import com.cocido.nonna.data.repository.AuthRepositoryImpl
 import com.cocido.nonna.data.repository.MemoryRepositoryImpl
+import com.cocido.nonna.data.repository.VaultRepositoryImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -39,6 +40,14 @@ object RepositoryModule {
         authRepositoryImpl: AuthRepositoryImpl
     ): AuthRepository {
         return authRepositoryImpl
+    }
+    
+    @Provides
+    @Singleton
+    fun provideVaultRepository(
+        vaultRepositoryImpl: VaultRepositoryImpl
+    ): com.cocido.nonna.domain.repository.VaultRepository {
+        return vaultRepositoryImpl
     }
 }
 

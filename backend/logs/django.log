@@ -85,3 +85,16 @@ Traceback (most recent call last):
 django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: '10.0.2.2:8000'. You may need to add '10.0.2.2' to ALLOWED_HOSTS.
 WARNING 2025-09-21 23:35:18,244 log 1168 6496 Bad Request: /api/auth/login/
 INFO 2025-09-21 23:46:10,813 autoreload 4288 19428 Watching for file changes with StatReloader
+WARNING 2025-09-21 23:57:01,093 log 4288 9496 Bad Request: /api/auth/login/
+WARNING 2025-09-22 00:10:40,375 log 4288 13792 Not Found: /api/vaults/
+WARNING 2025-09-22 00:10:46,915 log 4288 13792 Not Found: /api/vaults/
+WARNING 2025-09-22 00:10:50,458 log 4288 13792 Not Found: /api/vaults/
+WARNING 2025-09-22 00:10:54,969 log 4288 13792 Not Found: /api/vaults/
+WARNING 2025-09-22 00:11:22,073 log 4288 13792 Not Found: /api/vaults/
+WARNING 2025-09-22 00:11:25,174 log 4288 13792 Not Found: /api/vaults/
+INFO 2025-09-22 00:23:47,041 autoreload 4288 19428 C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\apps\accounts\views.py changed, reloading.
+INFO 2025-09-22 00:23:48,187 autoreload 10448 5032 Watching for file changes with StatReloader
+INFO 2025-09-22 00:23:59,236 autoreload 10448 5032 C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\apps\accounts\views.py changed, reloading.
+INFO 2025-09-22 00:24:00,119 autoreload 5796 19568 Watching for file changes with StatReloader
+INFO 2025-09-22 00:24:07,954 autoreload 5796 19568 C:\Users\MatiB\AndroidStudioProjects\Nonna\backend\apps\accounts\urls.py changed, reloading.
+INFO 2025-09-22 00:24:08,831 autoreload 23064 22760 Watching for file changes with StatReloader

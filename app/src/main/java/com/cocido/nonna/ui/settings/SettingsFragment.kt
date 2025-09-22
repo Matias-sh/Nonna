@@ -92,7 +92,7 @@ class SettingsFragment : Fragment() {
                         showError(state.message)
                     }
                     is SettingsUiState.LogoutSuccess -> {
-                        // Navegar a pantalla de login
+                        // Navegar a pantalla de login y limpiar stack
                         findNavController().navigate(R.id.loginFragment)
                     }
                 }
