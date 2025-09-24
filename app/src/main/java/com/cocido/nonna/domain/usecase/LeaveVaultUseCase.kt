@@ -15,3 +15,4 @@ class LeaveVaultUseCase @Inject constructor(
         return vaultRepository.leaveVault(vaultId, userId)
     }
 }
+

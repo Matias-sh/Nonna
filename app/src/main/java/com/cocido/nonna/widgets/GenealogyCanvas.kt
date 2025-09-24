@@ -143,12 +143,76 @@ class GenealogyCanvas @JvmOverloads constructor(
     }
     
     private fun getPersonPosition(person: Person): PointF {
-        // TODO: Implementar algoritmo de posicionamiento del árbol
-        // Por ahora, posiciones fijas para demo
-        val index = persons.indexOf(person)
-        val x = 200f + (index % 3) * 200f
-        val y = 200f + (index / 3) * 150f
+        // Algoritmo básico de posicionamiento jerárquico
+        val relations = this.relations.filter { 
+            it.from == person.id || it.to == person.id 
+        }
+        
+        // Si es una persona sin relaciones, posicionar en el centro
+        if (relations.isEmpty()) {
+            return PointF(width / 2f, height / 2f)
+        }
+        
+        // Encontrar la generación de la persona
+        val generation = calculateGeneration(person.id)
+        
+        // Calcular posición basada en la generación y orden dentro de la generación
+        val sameGenerationPersons = persons.filter { 
+            calculateGeneration(it.id) == generation 
+        }.sortedBy { it.fullName }
+        
+        val indexInGeneration = sameGenerationPersons.indexOf(person)
+        val totalInGeneration = sameGenerationPersons.size
+        
+        // Posicionar horizontalmente
+        val x = if (totalInGeneration == 1) {
+            width / 2f
+        } else {
+            val spacing = width / (totalInGeneration + 1f)
+            spacing * (indexInGeneration + 1)
+        }
+        
+        // Posicionar verticalmente basado en la generación
+        val y = 100f + generation * 150f
+        
         return PointF(x, y)
+    }
+    
+    private fun calculateGeneration(personId: com.cocido.nonna.domain.model.PersonId): Int {
+        // Encontrar la generación de una persona basándose en las relaciones parent-child
+        val visited = mutableSetOf<com.cocido.nonna.domain.model.PersonId>()
+        val queue = mutableListOf<Pair<com.cocido.nonna.domain.model.PersonId, Int>>()
+        
+        // Empezar con la persona actual
+        queue.add(Pair(personId, 0))
+        
+        while (queue.isNotEmpty()) {
+            val (currentId, generation) = queue.removeAt(0)
+            
+            if (currentId in visited) continue
+            visited.add(currentId)
+            
+            // Si llegamos a la persona que buscamos, devolver su generación
+            if (currentId == personId && generation > 0) {
+                return generation
+            }
+            
+            // Buscar padres (relaciones donde la persona actual es el hijo)
+            val parentRelations = relations.filter { 
+                it.to == currentId && it.type == com.cocido.nonna.domain.model.RelationType.PARENT 
+            }
+            
+            for (relation in parentRelations) {
+                queue.add(Pair(relation.from, generation + 1))
+            }
+            
+            // Si no hay padres, esta es la generación más alta (0)
+            if (parentRelations.isEmpty() && currentId == personId) {
+                return 0
+            }
+        }
+        
+        return 0 // Default
     }
     
     private fun getPersonAt(x: Float, y: Float): Person? {

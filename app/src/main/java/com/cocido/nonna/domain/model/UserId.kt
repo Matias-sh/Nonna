@@ -5,3 +5,4 @@ package com.cocido.nonna.domain.model
  */
 @JvmInline
 value class UserId(val value: String)
+

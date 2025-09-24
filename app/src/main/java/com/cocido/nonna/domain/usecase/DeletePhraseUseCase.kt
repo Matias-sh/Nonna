@@ -19,3 +19,4 @@ class DeletePhraseUseCase @Inject constructor(
         }
     }
 }
+

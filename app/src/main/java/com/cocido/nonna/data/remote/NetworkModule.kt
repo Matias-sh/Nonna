@@ -1,6 +1,8 @@
 package com.cocido.nonna.data.remote
 
+import com.cocido.nonna.data.remote.api.AuthApiService
 import com.cocido.nonna.data.remote.api.MemoryApiService
+import com.cocido.nonna.data.remote.api.PersonApiService
 import com.cocido.nonna.data.remote.api.VaultApiService
 import com.cocido.nonna.data.remote.interceptor.AuthInterceptor
 import dagger.Module
@@ -61,5 +63,17 @@ object NetworkModule {
     @Singleton
     fun provideVaultApiService(retrofit: Retrofit): VaultApiService {
         return retrofit.create(VaultApiService::class.java)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
+        return retrofit.create(AuthApiService::class.java)
+    }
+    
+    @Provides
+    @Singleton
+    fun providePersonApiService(retrofit: Retrofit): PersonApiService {
+        return retrofit.create(PersonApiService::class.java)
     }
 }

@@ -29,17 +29,24 @@ class VaultSyncManager @Inject constructor(
      */
     suspend fun syncVaultsFromRemote(userId: UserId): Result<List<Vault>> {
         return try {
-            val vaultsDto = vaultApiService.getUserVaults(userId.value)
-            val vaults = vaultsDto.map { it.vaultDtoToDomain() }
+            Logger.d("Syncing vaults from remote for user: ${userId.value}")
+            val vaultsResponse = vaultApiService.getUserVaults(userId.value)
+            Logger.d("Received vaults response: count=${vaultsResponse.count}, results=${vaultsResponse.results.size}")
+            
+            val vaults = vaultsResponse.results.map { it.vaultDtoToDomain() }
+            Logger.d("Converted ${vaults.size} vaults to domain models")
             
             // Guardar en cache local
             vaults.forEach { vault ->
                 val entity = vault.vaultToEntity()
                 vaultDao.insertVault(entity)
+                Logger.d("Saved vault to local cache: ${vault.name} (${vault.id.value})")
             }
             
+            Logger.d("Successfully synced ${vaults.size} vaults from remote")
             Result.success(vaults)
         } catch (e: Exception) {
+            Logger.e("Failed to sync vaults from remote", throwable = e)
             Result.failure(e)
         }
     }

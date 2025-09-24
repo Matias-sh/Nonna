@@ -1,5 +1,6 @@
 package com.cocido.nonna.ui.memories
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.domain.model.Memory
@@ -40,16 +41,21 @@ class HomeViewModel @Inject constructor(
     
     fun loadMemories() {
         viewModelScope.launch {
+            Log.d("HomeViewModel", "Iniciando carga de recuerdos")
             _uiState.value = HomeUiState.Loading
             
             try {
                 // Obtener userId del usuario autenticado
+                Log.d("HomeViewModel", "Obteniendo ID del usuario actual")
                 val currentUserId = getCurrentUserIdUseCase() 
                     ?: throw IllegalStateException("Usuario no autenticado")
+                Log.d("HomeViewModel", "Usuario autenticado: $currentUserId")
                 
                 // Obtener el primer baúl del usuario
+                Log.d("HomeViewModel", "Obteniendo baúles del usuario")
                 val vaultsResult = getVaultsUseCase(currentUserId)
                 if (vaultsResult.isFailure) {
+                    Log.e("HomeViewModel", "Error al obtener baúles: ${vaultsResult.exceptionOrNull()?.message}")
                     _uiState.value = HomeUiState.Error(
                         message = "Error al cargar los baúles: ${vaultsResult.exceptionOrNull()?.message}"
                     )
@@ -57,7 +63,10 @@ class HomeViewModel @Inject constructor(
                 }
                 
                 val vaults = vaultsResult.getOrNull() ?: emptyList()
+                Log.d("HomeViewModel", "Baúles obtenidos: ${vaults.size}")
+                
                 if (vaults.isEmpty()) {
+                    Log.d("HomeViewModel", "No hay baúles, mostrando estado vacío")
                     _uiState.value = HomeUiState.Success(
                         memories = emptyList(),
                         peopleCount = 0,
@@ -67,23 +76,34 @@ class HomeViewModel @Inject constructor(
                     return@launch
                 }
                 
+                Log.d("HomeViewModel", "Usando baúl: ${vaults.first().name} (ID: ${vaults.first().id.value})")
+                
                 // Usar el primer baúl disponible
                 val currentVaultId = vaults.first().id
                 
+                Log.d("HomeViewModel", "Cargando recuerdos del baúl: ${currentVaultId.value}")
                 listMemoriesByVaultUseCase(currentVaultId)
                     .catch { e ->
+                        Log.e("HomeViewModel", "Error al cargar recuerdos: ${e.message}", e)
                         _uiState.value = HomeUiState.Error(
                             message = e.message ?: "Error al cargar los recuerdos"
                         )
                     }
                     .collect { memories ->
+                        Log.d("HomeViewModel", "Recuerdos cargados: ${memories.size}")
                         allMemories = memories
                         
-                        // TODO: Implementar conteo real de personas y frases
+                        // Contar personas únicas en todos los recuerdos
                         val peopleCount = memories.flatMap { it.people }.distinct().size
-                        val phrasesCount = 12 // Temporal
+                        Log.d("HomeViewModel", "Personas únicas encontradas: $peopleCount")
+                        
+                        // TODO: Implementar conteo real de frases desde el repositorio de conversación
+                        // Por ahora, calculamos basándose en los recuerdos que tienen audio
+                        val phrasesCount = memories.count { it.audioRemoteUrl != null }
+                        Log.d("HomeViewModel", "Frases con audio: $phrasesCount")
                         
                         val filteredMemories = applyFilter(allMemories, currentFilter)
+                        Log.d("HomeViewModel", "Recuerdos filtrados: ${filteredMemories.size}")
 
                         _uiState.value = HomeUiState.Success(
                             memories = filteredMemories,
@@ -91,9 +111,11 @@ class HomeViewModel @Inject constructor(
                             phrasesCount = phrasesCount,
                             currentVault = vaults.first()
                         )
+                        Log.d("HomeViewModel", "Estado actualizado exitosamente")
                     }
 
             } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error al cargar recuerdos: ${e.message}", e)
                 _uiState.value = HomeUiState.Error(
                     message = e.message ?: "Error al cargar los recuerdos"
                 )

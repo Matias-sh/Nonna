@@ -1,6 +1,7 @@
 package com.cocido.nonna.ui.memories
 
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -131,16 +132,20 @@ class HomeFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect { state ->
+                Log.d("HomeFragment", "UI State changed: ${state.javaClass.simpleName}")
                 when (state) {
                     is HomeUiState.Loading -> {
+                        Log.d("HomeFragment", "Showing loading state")
                         showLoading(true)
                         showEmptyState(false)
                     }
                     is HomeUiState.Success -> {
+                        Log.d("HomeFragment", "Showing success state: ${state.memories.size} memories, ${state.peopleCount} people, ${state.phrasesCount} phrases")
                         showLoading(false)
                         updateUI(state)
                     }
                     is HomeUiState.Error -> {
+                        Log.e("HomeFragment", "Showing error state: ${state.message}")
                         showLoading(false)
                         showError(state.message)
                     }

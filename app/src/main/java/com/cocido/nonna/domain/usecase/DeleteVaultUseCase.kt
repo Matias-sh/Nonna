@@ -14,3 +14,4 @@ class DeleteVaultUseCase @Inject constructor(
         return vaultRepository.deleteVault(vaultId)
     }
 }
+

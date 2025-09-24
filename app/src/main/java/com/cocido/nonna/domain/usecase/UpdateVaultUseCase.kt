@@ -14,3 +14,4 @@ class UpdateVaultUseCase @Inject constructor(
         return vaultRepository.updateVault(vault)
     }
 }
+

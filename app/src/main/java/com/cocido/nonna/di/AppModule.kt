@@ -3,17 +3,22 @@ package com.cocido.nonna.di
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.room.Room
-import com.cocido.nonna.data.local.NonnaDatabase
+import com.cocido.nonna.data.local.AuthPreferences
+import com.cocido.nonna.data.local.database.NonnaDatabase
 import com.cocido.nonna.data.local.dao.MemoryDao
+import com.cocido.nonna.data.local.dao.PersonDao
 import com.cocido.nonna.data.local.dao.PhraseDao
+import com.cocido.nonna.data.local.dao.RelationDao
 import com.cocido.nonna.data.local.dao.VaultDao
 import com.cocido.nonna.core.network.NetworkManager
 import com.cocido.nonna.core.security.SecurityManager
 import com.cocido.nonna.data.repository.AuthRepositoryImpl
+import com.cocido.nonna.data.repository.GenealogyRepositoryImpl
 import com.cocido.nonna.data.repository.MemoryRepositoryImpl
 import com.cocido.nonna.data.repository.VaultRepositoryImpl
 import com.cocido.nonna.data.repository.sync.VaultSyncManager
 import com.cocido.nonna.domain.repository.AuthRepository
+import com.cocido.nonna.domain.repository.GenealogyRepository
 import com.cocido.nonna.domain.repository.MemoryRepository
 import com.cocido.nonna.domain.repository.VaultRepository
 import dagger.Module
@@ -41,6 +46,12 @@ object AppModule {
     }
     
     @Provides
+    @Singleton
+    fun provideAuthPreferences(@ApplicationContext context: Context): AuthPreferences {
+        return AuthPreferences(context)
+    }
+    
+    @Provides
     fun provideMemoryDao(database: NonnaDatabase): MemoryDao {
         return database.memoryDao()
     }
@@ -53,6 +64,16 @@ object AppModule {
     @Provides
     fun provideVaultDao(database: NonnaDatabase): VaultDao {
         return database.vaultDao()
+    }
+    
+    @Provides
+    fun providePersonDao(database: NonnaDatabase): PersonDao {
+        return database.personDao()
+    }
+    
+    @Provides
+    fun provideRelationDao(database: NonnaDatabase): RelationDao {
+        return database.relationDao()
     }
     
     @Provides
@@ -80,6 +101,14 @@ object AppModule {
         authRepositoryImpl: AuthRepositoryImpl
     ): AuthRepository {
         return authRepositoryImpl
+    }
+    
+    @Provides
+    @Singleton
+    fun provideGenealogyRepository(
+        genealogyRepositoryImpl: GenealogyRepositoryImpl
+    ): GenealogyRepository {
+        return genealogyRepositoryImpl
     }
     
     @Provides

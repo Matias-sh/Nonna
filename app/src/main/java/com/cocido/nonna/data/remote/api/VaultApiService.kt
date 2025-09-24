@@ -1,6 +1,7 @@
 package com.cocido.nonna.data.remote.api
 
 import com.cocido.nonna.data.remote.dto.VaultDto
+import com.cocido.nonna.data.remote.dto.VaultListResponse
 import com.cocido.nonna.data.remote.dto.VaultRequest
 import retrofit2.http.*
 
@@ -10,10 +11,10 @@ import retrofit2.http.*
 interface VaultApiService {
     
     @GET("vaults/")
-    suspend fun getUserVaults(): List<VaultDto>
+    suspend fun getUserVaults(): VaultListResponse
     
     @GET("vaults/")
-    suspend fun getUserVaults(@Query("user_id") userId: String): List<VaultDto>
+    suspend fun getUserVaults(@Query("user_id") userId: String): VaultListResponse
     
     @GET("vaults/{id}/")
     suspend fun getVault(@Path("id") id: String): VaultDto

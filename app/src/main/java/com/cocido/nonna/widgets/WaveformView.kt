@@ -131,13 +131,13 @@ class WaveformView @JvmOverloads constructor(
     }
     
     /**
-     * Genera datos de forma de onda simulados para testing
+     * Genera datos de forma de onda basados en audio real
      */
-    fun generateTestData() {
-        val testData = IntArray(50) { 
-            (sin(it * 0.2) * 50 + 50).toInt().coerceIn(0, 100)
+    fun generateFromAudioData(audioData: FloatArray) {
+        val waveformData = IntArray(audioData.size) { index ->
+            (audioData[index] * 100).toInt().coerceIn(0, 100)
         }
-        updateWaveform(testData)
+        updateWaveform(waveformData)
     }
 }
 

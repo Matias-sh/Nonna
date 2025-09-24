@@ -69,7 +69,9 @@ class NetworkManager @Inject constructor(
         return try {
             val network = connectivityManager.activeNetwork ?: return false
             val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            val isConnected = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            Logger.d("Network connectivity check: $isConnected")
+            isConnected
         } catch (e: Exception) {
             Logger.e("Error checking network connectivity", throwable = e)
             false
@@ -115,3 +117,4 @@ enum class ConnectionType {
     UNKNOWN,
     NONE
 }
+

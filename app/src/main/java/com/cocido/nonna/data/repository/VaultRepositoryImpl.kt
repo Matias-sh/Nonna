@@ -12,7 +12,8 @@ import com.cocido.nonna.domain.model.VaultId
 import com.cocido.nonna.domain.model.UserId
 import com.cocido.nonna.domain.repository.VaultRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,45 +30,56 @@ class VaultRepositoryImpl @Inject constructor(
 ) : VaultRepository {
     
     override fun getUserVaults(userId: UserId): Flow<List<Vault>> {
-        return flow {
-            try {
-                Logger.d("Getting user vaults for userId: ${userId.value}")
-                
-                // Verificar conectividad de red
-                val isConnected = networkManager.isCurrentlyConnected()
-                
+        return try {
+            Logger.d("Getting user vaults for userId: ${userId.value}")
+            
+            // Verificar conectividad de red
+            val isConnected = networkManager.isCurrentlyConnected()
+            
                 if (isConnected) {
+                    Logger.d("Network connected, attempting to sync vaults from remote")
                     // Intentar sincronizar desde la API
                     val syncResult = vaultSyncManager.syncVaultsFromRemote(userId)
                     if (syncResult.isSuccess) {
                         val vaults = syncResult.getOrNull() ?: emptyList()
                         Logger.d("Successfully synced ${vaults.size} vaults from remote")
-                        emit(vaults)
-                        return@flow
+                        if (vaults.isEmpty()) {
+                            Logger.d("No remote vaults found, creating default vault")
+                            flowOf(createDefaultVault(userId))
+                        } else {
+                            flowOf(vaults)
+                        }
                     } else {
                         Logger.w("Failed to sync vaults from remote: ${syncResult.exceptionOrNull()?.message}")
+                        // Fallback a cache local
+                        vaultDao.getUserVaults(userId.value).map { entities ->
+                            val vaults = entities.map { it.vaultEntityToDomain() }
+                            if (vaults.isEmpty()) {
+                                Logger.d("No local vaults found, creating default vault")
+                                createDefaultVault(userId)
+                            } else {
+                                Logger.d("Found ${vaults.size} vaults in local cache")
+                                vaults
+                            }
+                        }
                     }
                 } else {
                     Logger.w("No network connection, using local cache")
-                }
-                
-                // Fallback a cache local
-                vaultDao.getUserVaults(userId.value).collect { entities ->
-                    val vaults = entities.map { it.vaultEntityToDomain() }
-                    
-                    if (vaults.isEmpty()) {
-                        Logger.d("No local vaults found, creating default vault")
-                        emit(createDefaultVault(userId))
-                    } else {
-                        Logger.d("Found ${vaults.size} vaults in local cache")
-                        emit(vaults)
+                    // Fallback a cache local
+                    vaultDao.getUserVaults(userId.value).map { entities ->
+                        val vaults = entities.map { it.vaultEntityToDomain() }
+                        if (vaults.isEmpty()) {
+                            Logger.d("No local vaults found, creating default vault")
+                            createDefaultVault(userId)
+                        } else {
+                            Logger.d("Found ${vaults.size} vaults in local cache")
+                            vaults
+                        }
                     }
                 }
-                
-            } catch (e: Exception) {
-                Logger.e("Error getting user vaults", throwable = e)
-                emit(createDefaultVault(userId))
-            }
+        } catch (e: Exception) {
+            Logger.e("Error getting user vaults", throwable = e)
+            flowOf(createDefaultVault(userId))
         }
     }
     
@@ -215,16 +227,20 @@ class VaultRepositoryImpl @Inject constructor(
     }
     
     private fun createDefaultVault(userId: UserId): List<Vault> {
-        return listOf(
-            Vault(
-                id = VaultId("default_vault_${userId.value}"),
-                name = "Mi Baúl Familiar",
-                description = "Baúl principal de recuerdos familiares",
-                ownerId = userId,
-                memberCount = 1,
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis()
-            )
+        val defaultVaultId = java.util.UUID.randomUUID().toString()
+        Logger.d("Creating default vault with ID: $defaultVaultId for user: ${userId.value}")
+        
+        val defaultVault = Vault(
+            id = VaultId(defaultVaultId),
+            name = "Mi Baúl Familiar",
+            description = "Baúl principal de recuerdos familiares",
+            ownerId = userId,
+            memberCount = 1,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis()
         )
+        
+        Logger.d("Default vault created: ${defaultVault.name} (${defaultVault.id.value})")
+        return listOf(defaultVault)
     }
 }

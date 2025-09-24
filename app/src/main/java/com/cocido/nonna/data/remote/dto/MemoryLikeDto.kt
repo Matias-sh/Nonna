@@ -15,3 +15,4 @@ data class MemoryLikeDto(
     @SerializedName("created_at")
     val createdAt: String
 )
+

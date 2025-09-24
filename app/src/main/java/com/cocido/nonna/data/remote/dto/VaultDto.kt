@@ -6,6 +6,23 @@ import com.cocido.nonna.domain.model.UserId
 import com.google.gson.annotations.SerializedName
 
 /**
+ * DTO para respuesta paginada de vaults
+ */
+data class VaultListResponse(
+    @SerializedName("count")
+    val count: Int,
+    
+    @SerializedName("next")
+    val next: String?,
+    
+    @SerializedName("previous")
+    val previous: String?,
+    
+    @SerializedName("results")
+    val results: List<VaultDto>
+)
+
+/**
  * DTO para baúles desde la API
  */
 data class VaultDto(

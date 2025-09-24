@@ -1,61 +1,61 @@
 package com.cocido.nonna.data.remote.dto
 
-import com.squareup.moshi.Json
+import com.google.gson.annotations.SerializedName
 
 /**
  * DTOs para autenticación
  */
 
 data class LoginRequest(
-    @Json(name = "email")
+    @SerializedName("email")
     val email: String,
-    @Json(name = "password")
+    @SerializedName("password")
     val password: String
 )
 
 data class RegisterRequest(
-    @Json(name = "email")
+    @SerializedName("email")
     val email: String,
-    @Json(name = "password")
+    @SerializedName("password")
     val password: String,
-    @Json(name = "name")
+    @SerializedName("name")
     val name: String
 )
 
 data class AuthResponse(
-    @Json(name = "access_token")
+    @SerializedName("access_token")
     val accessToken: String,
-    @Json(name = "refresh_token")
+    @SerializedName("refresh_token")
     val refreshToken: String,
-    @Json(name = "user")
+    @SerializedName("user")
     val user: UserDto
 )
 
 data class UserDto(
-    @Json(name = "id")
+    @SerializedName("id")
     val id: Int,
-    @Json(name = "email")
+    @SerializedName("email")
     val email: String,
-    @Json(name = "username")
+    @SerializedName("username")
     val username: String,
-    @Json(name = "name")
+    @SerializedName("name")
     val name: String,
-    @Json(name = "avatar")
+    @SerializedName("avatar")
     val avatar: String?,
-    @Json(name = "phone")
+    @SerializedName("phone")
     val phone: String,
-    @Json(name = "birth_date")
+    @SerializedName("birth_date")
     val birthDate: String?,
-    @Json(name = "is_premium")
+    @SerializedName("is_premium")
     val isPremium: Boolean,
-    @Json(name = "created_at")
+    @SerializedName("created_at")
     val createdAt: String,
-    @Json(name = "updated_at")
+    @SerializedName("updated_at")
     val updatedAt: String
 )
 
 data class RefreshTokenRequest(
-    @Json(name = "refresh_token")
+    @SerializedName("refresh_token")
     val refreshToken: String
 )
 

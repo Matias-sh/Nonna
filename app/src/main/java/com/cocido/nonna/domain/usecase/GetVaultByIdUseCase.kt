@@ -15,3 +15,4 @@ class GetVaultByIdUseCase @Inject constructor(
         return vaultRepository.getVaultById(vaultId)
     }
 }
+

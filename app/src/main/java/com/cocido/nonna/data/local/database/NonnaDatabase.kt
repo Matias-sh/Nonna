@@ -23,7 +23,7 @@ import com.cocido.nonna.data.local.entity.*
         VaultEntity::class,
         PhraseEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(
@@ -58,6 +58,7 @@ abstract class NonnaDatabase : RoomDatabase() {
         }
     }
 }
+
 
 
 

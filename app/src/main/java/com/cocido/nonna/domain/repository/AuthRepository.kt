@@ -17,3 +17,4 @@ interface AuthRepository {
     suspend fun refreshToken(): Result<Unit>
     suspend fun isAuthenticated(): Boolean
 }
+

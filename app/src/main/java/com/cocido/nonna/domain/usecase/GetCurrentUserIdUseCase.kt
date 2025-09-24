@@ -14,3 +14,4 @@ class GetCurrentUserIdUseCase @Inject constructor(
         return authRepository.getCurrentUserId()
     }
 }
+
