@@ -2,11 +2,13 @@ package com.cocido.nonna.ui.memories
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -18,6 +20,7 @@ import com.cocido.nonna.R
 import com.cocido.nonna.databinding.FragmentCreateMemoryBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlin.math.min
 
 /**
  * Fragment para crear nuevos recuerdos sensoriales
@@ -41,8 +44,7 @@ class CreateMemoryFragment : Fragment() {
         if (success) {
             selectedPhotoUri?.let { uri ->
                 viewModel.setPhotoUri(uri)
-                binding.imageViewPhotoPreview.setImageURI(uri)
-                binding.imageViewPhotoPreview.visibility = View.VISIBLE
+                loadImageSafely(uri, binding.imageViewPhotoPreview)
             }
         }
     }
@@ -53,8 +55,7 @@ class CreateMemoryFragment : Fragment() {
         uri?.let {
             selectedPhotoUri = it
             viewModel.setPhotoUri(it)
-            binding.imageViewPhotoPreview.setImageURI(it)
-            binding.imageViewPhotoPreview.visibility = View.VISIBLE
+            loadImageSafely(it, binding.imageViewPhotoPreview)
         }
     }
     
@@ -118,8 +119,7 @@ class CreateMemoryFragment : Fragment() {
                 val uri = Uri.parse(uriString)
                 selectedPhotoUri = uri
                 viewModel.setPhotoUri(uri)
-                binding.imageViewPhotoPreview.setImageURI(uri)
-                binding.imageViewPhotoPreview.visibility = View.VISIBLE
+                loadImageSafely(uri, binding.imageViewPhotoPreview)
             }
         }
     }
@@ -237,6 +237,44 @@ class CreateMemoryFragment : Fragment() {
         Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
     }
     
+    /**
+     * Carga una imagen de manera eficiente, redimensionándola si es necesario
+     * para evitar OutOfMemoryError con imágenes grandes
+     */
+    private fun loadImageSafely(uri: Uri, imageView: ImageView, maxDimension: Int = 2048) {
+        try {
+            val contentResolver = requireContext().contentResolver
+
+            // Primero obtener las dimensiones sin cargar la imagen completa
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                BitmapFactory.decodeStream(inputStream, null, options)
+            }
+
+            // Calcular el factor de escala
+            val scaleFactor = min(
+                options.outWidth / maxDimension,
+                options.outHeight / maxDimension
+            )
+
+            // Cargar la imagen redimensionada
+            val loadOptions = BitmapFactory.Options().apply {
+                inSampleSize = if (scaleFactor > 1) scaleFactor else 1
+            }
+
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                val bitmap = BitmapFactory.decodeStream(inputStream, null, loadOptions)
+                imageView.setImageBitmap(bitmap)
+                imageView.visibility = View.VISIBLE
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(requireContext(), "Error al cargar la imagen", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun showDatePicker() {
         val calendar = java.util.Calendar.getInstance()
         val datePickerDialog = android.app.DatePickerDialog(

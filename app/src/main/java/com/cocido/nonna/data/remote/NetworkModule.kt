@@ -23,7 +23,8 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
     
-    private const val BASE_URL = "http://10.0.2.2:8000/api/" // Para emulador Android
+    // private const val BASE_URL = "http://10.0.2.2:8000/api/" // Para emulador Android
+    private const val BASE_URL = "http://10.254.208.122:8000/api/" // Para dispositivo físico en WiFi (IP de la PC)
     
     @Provides
     @Singleton

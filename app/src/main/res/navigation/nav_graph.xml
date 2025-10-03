@@ -50,6 +50,9 @@
         <action
             android:id="@+id/action_home_to_settings"
             app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_home_to_vaultManagement"
+            app:destination="@id/vaultManagementFragment" />
     </fragment>
 
     <!-- Detalle de recuerdo -->
@@ -126,6 +129,23 @@
 
 
 
+    <!-- Gestión de Baúles -->
+    <fragment
+        android:id="@+id/vaultManagementFragment"
+        android:name="com.cocido.nonna.ui.vault.VaultManagementFragment"
+        android:label="Baúles de Recuerdos"
+        tools:layout="@layout/fragment_vault_management">
+        <action
+            android:id="@+id/action_vaultManagement_to_memoryDetail"
+            app:destination="@id/memoryDetailFragment" />
+        <action
+            android:id="@+id/action_vaultManagement_to_createMemory"
+            app:destination="@id/createMemoryFragment" />
+        <action
+            android:id="@+id/action_vaultManagement_to_createVault"
+            app:destination="@id/createVaultFragment" />
+    </fragment>
+
     <!-- Crear Baúl -->
     <fragment
         android:id="@+id/createVaultFragment"
@@ -136,6 +156,11 @@
             android:id="@+id/action_createVault_to_home"
             app:destination="@id/homeFragment"
             app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+        <action
+            android:id="@+id/action_createVault_to_vaultManagement"
+            app:destination="@id/vaultManagementFragment"
+            app:popUpTo="@id/vaultManagementFragment"
             app:popUpToInclusive="false" />
     </fragment>
 

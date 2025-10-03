@@ -1,128 +1,170 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_primary">
 
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
+    <!-- Toolbar -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/primary"
+        app:title="Baúles de Recuerdos"
+        app:titleTextColor="@color/white"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationIconTint="@color/white"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <androidx.core.widget.NestedScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:fillViewport="true">
+    <!-- Selector de Baúles (Horizontal Scroll) -->
+    <HorizontalScrollView
+        android:id="@+id/vault_selector_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:background="@color/background_secondary"
+        android:paddingVertical="12dp"
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <!-- Header -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginBottom="24dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Mis Baúles"
-                        android:textSize="28sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:layout_marginBottom="8dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Gestiona tus cofres familiares de recuerdos"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_secondary" />
-
-                </LinearLayout>
-
-                <!-- Lista de baúles -->
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recycler_view_vaults"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false" />
-
-                <!-- Estado vacío -->
-                <LinearLayout
-                    android:id="@+id/layout_empty_state"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="32dp"
-                    android:visibility="gone">
-
-                    <ImageView
-                        android:layout_width="120dp"
-                        android:layout_height="120dp"
-                        android:src="@drawable/ic_launcher_foreground"
-                        android:alpha="0.3"
-                        android:layout_marginBottom="16dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="No tienes baúles aún"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:layout_marginBottom="8dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Crea tu primer baúl familiar o únete a uno existente"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_secondary"
-                        android:gravity="center" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-        </androidx.core.widget.NestedScrollView>
-
-        <!-- FABs -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_create_vault"
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_vaults"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="16dp"
-            android:src="@drawable/ic_add"
-            app:fabSize="normal"
-            app:tint="@color/white"
-            app:backgroundTint="@color/primary" />
+            android:paddingHorizontal="16dp"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            app:chipSpacing="8dp" />
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_join_vault"
+    </HorizontalScrollView>
+
+    <!-- Lista de Recuerdos -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view_memories"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:padding="16dp"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toBottomOf="@id/vault_selector_container"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:listitem="@layout/item_memory_card" />
+
+    <!-- Estado vacío -->
+    <LinearLayout
+        android:id="@+id/layout_empty_state"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/vault_selector_container"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_marginEnd="88dp"
-            android:src="@drawable/ic_settings"
-            app:fabSize="normal"
-            app:tint="@color/white"
-            app:backgroundTint="@color/secondary_gold" />
+            android:text="📦"
+            android:textSize="72sp"
+            android:layout_marginBottom="16dp" />
 
-        <!-- Progress Bar -->
-        <ProgressBar
-            android:id="@+id/progress_bar"
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:visibility="gone" />
+            android:text="No hay recuerdos aún"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="8dp" />
 
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Este baúl está esperando sus primeros recuerdos especiales"
+            android:textSize="16sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"
+            android:layout_marginBottom="24dp" />
 
-</FrameLayout>
+        <Button
+            android:id="@+id/button_add_first_memory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Crear Primer Recuerdo"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/primary" />
+
+    </LinearLayout>
+
+    <!-- Estado sin baúles -->
+    <LinearLayout
+        android:id="@+id/layout_no_vaults"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/vault_selector_container"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🎁"
+            android:textSize="72sp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No tienes baúles"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Crea tu primer baúl familiar para empezar a guardar recuerdos"
+            android:textSize="16sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"
+            android:layout_marginBottom="24dp" />
+
+        <Button
+            android:id="@+id/button_create_vault"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Crear Baúl"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/primary" />
+
+    </LinearLayout>
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- FAB para crear recuerdo -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_memory"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_add"
+        app:tint="@color/white"
+        app:backgroundTint="@color/primary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

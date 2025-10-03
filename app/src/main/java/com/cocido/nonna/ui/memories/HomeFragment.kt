@@ -58,7 +58,7 @@ class HomeFragment : Fragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_manage_vaults -> {
-                findNavController().navigate(R.id.vaultManagementFragment)
+                findNavController().navigate(R.id.action_home_to_vaultManagement)
                 true
             }
             else -> super.onOptionsItemSelected(item)

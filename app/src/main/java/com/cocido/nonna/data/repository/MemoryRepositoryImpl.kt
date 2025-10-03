@@ -33,7 +33,7 @@ class MemoryRepositoryImpl @Inject constructor(
     override fun getMemoriesByVault(vaultId: VaultId): Flow<List<Memory>> {
         return kotlinx.coroutines.flow.flow {
             try {
-                // Intentar obtener desde la API primero
+                // Obtener desde la API
                 val memoriesDto = memoryApiService.getMemories(vault = vaultId.value)
                 val memories = memoriesDto.map { it.dtoToDomain() }
 
@@ -48,12 +48,7 @@ class MemoryRepositoryImpl @Inject constructor(
                 // Si falla la API, intentar obtener desde cache local
                 memoryDao.getMemoriesByVault(vaultId.value).collect { entities ->
                     val memories = entities.map { it.toDomain() }
-
-                    if (memories.isEmpty()) {
-                        emit(createDummyMemories(vaultId))
-                    } else {
-                        emit(memories)
-                    }
+                    emit(memories)
                 }
             }
         }
@@ -123,63 +118,5 @@ class MemoryRepositoryImpl @Inject constructor(
         return emptyList() // TODO: Implementar cuando esté disponible
     }
 
-    private fun createDummyMemories(vaultId: VaultId): List<Memory> {
-        return listOf(
-            Memory(
-                id = MemoryId("memory_1"),
-                vaultId = vaultId,
-                title = "Abuela cocinando",
-                type = com.cocido.nonna.domain.model.MemoryType.PHOTO_WITH_AUDIO,
-                photoLocalPath = null,
-                photoRemoteUrl = "https://picsum.photos/400/300?random=1",
-                audioLocalPath = null,
-                audioRemoteUrl = null,
-                hasTranscript = false,
-                transcript = null,
-                people = listOf(com.cocido.nonna.domain.model.PersonId("person_1")),
-                tags = listOf("cocina", "familia", "abuela"),
-                dateTaken = System.currentTimeMillis() - 86400000L * 30, // 30 días atrás
-                location = "Casa de la abuela",
-                createdAt = System.currentTimeMillis() - 86400000L * 30,
-                updatedAt = System.currentTimeMillis() - 86400000L * 30
-            ),
-            Memory(
-                id = MemoryId("memory_2"),
-                vaultId = vaultId,
-                title = "Receta del pastel de manzana",
-                type = com.cocido.nonna.domain.model.MemoryType.RECIPE,
-                photoLocalPath = null,
-                photoRemoteUrl = "https://picsum.photos/400/300?random=2",
-                audioLocalPath = null,
-                audioRemoteUrl = null,
-                hasTranscript = true,
-                transcript = "Ingredientes: 3 manzanas, 2 tazas de harina, 1 taza de azúcar...",
-                people = listOf(com.cocido.nonna.domain.model.PersonId("person_1"), com.cocido.nonna.domain.model.PersonId("person_2")),
-                tags = listOf("receta", "postre", "manzana"),
-                dateTaken = System.currentTimeMillis() - 86400000L * 15, // 15 días atrás
-                location = "Cocina familiar",
-                createdAt = System.currentTimeMillis() - 86400000L * 15,
-                updatedAt = System.currentTimeMillis() - 86400000L * 15
-            ),
-            Memory(
-                id = MemoryId("memory_3"),
-                vaultId = vaultId,
-                title = "Historia de la boda",
-                type = com.cocido.nonna.domain.model.MemoryType.AUDIO_ONLY,
-                photoLocalPath = null,
-                photoRemoteUrl = null,
-                audioLocalPath = null,
-                audioRemoteUrl = null,
-                hasTranscript = false,
-                transcript = null,
-                people = listOf(com.cocido.nonna.domain.model.PersonId("person_1")),
-                tags = listOf("historia", "boda", "familia"),
-                dateTaken = System.currentTimeMillis() - 86400000L * 60, // 60 días atrás
-                location = "Salón familiar",
-                createdAt = System.currentTimeMillis() - 86400000L * 60,
-                updatedAt = System.currentTimeMillis() - 86400000L * 60
-            )
-        )
-    }
 }
 

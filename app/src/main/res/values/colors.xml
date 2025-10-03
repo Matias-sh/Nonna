@@ -47,9 +47,13 @@
     <color name="border_light">#FFE0E0E0</color>         <!-- Borde claro -->
     <color name="border_medium">#FFBDBDBD</color>        <!-- Borde medio -->
     <color name="border_dark">#FF757575</color>          <!-- Borde oscuro -->
-    
+    <color name="stroke_light">#FFE0E0E0</color>         <!-- Borde de trazo claro -->
+
     <!-- Colores de sombra -->
     <color name="shadow_light">#1A000000</color>         <!-- Sombra ligera -->
     <color name="shadow_medium">#33000000</color>        <!-- Sombra media -->
     <color name="shadow_dark">#4D000000</color>          <!-- Sombra oscura -->
+
+    <!-- Colores adicionales -->
+    <color name="accent">#FFDAA520</color>               <!-- Acento (dorado) -->
 </resources>

@@ -1,5 +1,6 @@
 package com.cocido.nonna.data.repository.sync
 
+import com.cocido.nonna.core.logging.Logger
 import com.cocido.nonna.data.local.dao.VaultDao
 import com.cocido.nonna.data.local.entity.toDomain as vaultEntityToDomain
 import com.cocido.nonna.data.local.entity.toEntity as vaultToEntity
