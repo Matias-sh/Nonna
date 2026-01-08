@@ -1,14 +1,20 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.navigation.safe.args)
 }
 
 android {
     namespace = "com.cocido.nonna"
     compileSdk = 35
+    
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 
     defaultConfig {
         applicationId = "com.cocido.nonna"
@@ -59,8 +65,9 @@ android {
     }
     
     buildFeatures {
-        viewBinding = true
+        viewBinding = false
         dataBinding = false
+        compose = true
     }
 }
 
@@ -74,11 +81,25 @@ dependencies {
     // Material Design
     implementation(libs.material)
     
+    // Compose
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.material.icons)
+    implementation(libs.compose.activity)
+    implementation(libs.compose.navigation)
+    implementation(libs.compose.hilt.navigation)
+    implementation(libs.coil.compose)
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.7.6")
+    debugImplementation(libs.compose.ui.tooling)
+    
     // Layout
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.motionlayout)
     
-    // Navigation
+    // Navigation (keep for existing fragments)
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
     
