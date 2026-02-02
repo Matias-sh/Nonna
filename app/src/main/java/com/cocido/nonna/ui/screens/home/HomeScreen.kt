@@ -29,11 +29,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.cocido.nonna.data.mock.mockCofres
-import com.cocido.nonna.data.mock.mockCurrentUser
+import coil.compose.AsyncImage
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.NonnaButton
@@ -51,16 +56,32 @@ fun HomeScreen(
     onTabSelected: (NonnaTab) -> Unit,
     onCreateCofre: () -> Unit,
     onAddMemory: () -> Unit,
-    onContinueCofre: (String) -> Unit
+    onContinueCofre: (String) -> Unit,
+    viewModel: com.cocido.nonna.ui.viewmodel.HomeViewModel = hiltViewModel()
 ) {
-    val hasData = mockCofres.isNotEmpty()
-    val lastCofre = mockCofres.firstOrNull()
-    
+    val cofres by viewModel.cofres.collectAsState()
+    val user by viewModel.user.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+
+    LaunchedEffect(Unit) { viewModel.load() }
+
+    val hasData = cofres.isNotEmpty()
+    val lastCofre = cofres.firstOrNull()
+    val userName = user?.displayName()?.split(" ")?.firstOrNull() ?: ""
+
     AppShell(
         currentTab = NonnaTab.Inicio,
         onTabSelected = onTabSelected
     ) {
-        if (!hasData) {
+        if (isLoading && cofres.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.CircularProgressIndicator()
+            }
+        } else if (!hasData) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -83,7 +104,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(NonnaDimens.spacing24))
                 
                 // Greeting
-                GreetingSection(userName = mockCurrentUser.name.split(" ").first())
+                GreetingSection(userName = userName)
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
@@ -92,6 +113,7 @@ fun HomeScreen(
                     ContinueSection(
                         cofreName = lastCofre.name,
                         cofreRelation = lastCofre.relation,
+                        coverImageUrl = lastCofre.coverImageUrl?.takeIf { it.isNotBlank() && it != "string" },
                         onClick = { onContinueCofre(lastCofre.id) }
                     )
                     
@@ -153,6 +175,7 @@ private fun GreetingSection(userName: String) {
 private fun ContinueSection(
     cofreName: String,
     cofreRelation: String,
+    coverImageUrl: String? = null,
     onClick: () -> Unit
 ) {
     Column {
@@ -181,23 +204,32 @@ private fun ContinueSection(
                 Box(
                     modifier = Modifier
                         .size(80.dp)
+                        .clip(NonnaCorners.Medium)
                         .background(
                             brush = Brush.linearGradient(
                                 colors = listOf(
                                     PrimaryGradientStart.copy(alpha = 0.2f),
                                     PrimaryGradientEnd.copy(alpha = 0.2f)
                                 )
-                            ),
-                            shape = NonnaCorners.Medium
+                            )
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Inventory2,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                    )
+                    if (coverImageUrl != null) {
+                        AsyncImage(
+                            model = coverImageUrl,
+                            contentDescription = cofreName,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Outlined.Inventory2,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                        )
+                    }
                 }
                 
                 Spacer(modifier = Modifier.width(16.dp))

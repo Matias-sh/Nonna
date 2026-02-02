@@ -30,7 +30,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.cocido.nonna.data.mock.mockCofres
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.ui.components.CofreCard
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.PageHeader
@@ -41,8 +44,13 @@ import com.cocido.nonna.ui.theme.NonnaCorners
 fun SelectCofreScreen(
     onBack: () -> Unit,
     onCofreSelected: (String) -> Unit,
-    onCreateCofre: () -> Unit
+    onCreateCofre: () -> Unit,
+    viewModel: com.cocido.nonna.ui.viewmodel.CofresListViewModel = hiltViewModel()
 ) {
+    val cofres by viewModel.cofres.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    LaunchedEffect(Unit) { viewModel.load() }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -55,7 +63,16 @@ fun SelectCofreScreen(
             onBack = onBack
         )
         
-        if (mockCofres.isEmpty()) {
+        if (isLoading && cofres.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(NonnaDimens.screenPaddingHorizontal),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.CircularProgressIndicator()
+            }
+        } else if (cofres.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -76,6 +93,12 @@ fun SelectCofreScreen(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(NonnaDimens.screenPaddingHorizontal),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                items(cofres) { cofre ->
+                    CofreCard(
+                        cofre = cofre,
+                        onClick = { onCofreSelected(cofre.id) }
+                    )
+                }
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
                     
@@ -97,13 +120,6 @@ fun SelectCofreScreen(
                     }
                     
                     Spacer(modifier = Modifier.height(8.dp))
-                }
-                
-                items(mockCofres) { cofre ->
-                    CofreCard(
-                        cofre = cofre,
-                        onClick = { onCofreSelected(cofre.id) }
-                    )
                 }
                 
                 item {

@@ -37,7 +37,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.cocido.nonna.data.mock.mockFamilyMembers
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
@@ -59,7 +58,8 @@ fun AddPersonScreen(
     var createCofre by remember { mutableStateOf(false) }
     var showRelationDropdown by remember { mutableStateOf(false) }
     
-    val existingMembers = mockFamilyMembers.map { it.name }
+    // Nombres existentes en el árbol; cuando exista API arbol-familiar/search se cargarán desde ahí
+    val existingMembers = emptyList<String>()
     
     NonnaDetailScaffold {
         Column(

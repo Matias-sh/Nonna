@@ -12,7 +12,8 @@ android {
     
     packaging {
         jniLibs {
-            useLegacyPackaging = true
+            // false = .so sin comprimir, permite alineación 16 KB requerida por Google Play (nov 2025+)
+            useLegacyPackaging = false
         }
     }
 
@@ -106,6 +107,10 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    
+    // Lifecycle / ViewModel
+    implementation(libs.androidx.lifecycle.runtime)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     
     // Room
     implementation(libs.androidx.room.runtime)

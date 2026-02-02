@@ -16,6 +16,7 @@ import com.cocido.nonna.ui.screens.auth.AuthScreen
 import com.cocido.nonna.ui.screens.cofres.CofreDetailScreen
 import com.cocido.nonna.ui.screens.cofres.CofresListScreen
 import com.cocido.nonna.ui.screens.cofres.CreateCofreScreen
+import com.cocido.nonna.ui.screens.cofres.EditCofreScreen
 import com.cocido.nonna.ui.screens.home.HomeScreen
 import com.cocido.nonna.ui.screens.memory.AddMemoryScreen
 import com.cocido.nonna.ui.screens.memory.MemoryDetailScreen
@@ -50,6 +51,9 @@ sealed class Screen(val route: String) {
     
     // Creation screens
     data object CreateCofre : Screen("create-cofre")
+    data object EditCofre : Screen("cofre/{cofreId}/edit") {
+        fun createRoute(cofreId: String) = "cofre/$cofreId/edit"
+    }
     data object AddMemory : Screen("add-memory?cofreId={cofreId}") {
         fun createRoute(cofreId: String? = null) = if (cofreId != null) {
             "add-memory?cofreId=$cofreId"
@@ -64,13 +68,15 @@ sealed class Screen(val route: String) {
 @Composable
 fun NonnaNavHost(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Welcome.route
+    isLoggedIn: Boolean = false,
+    onLogout: () -> Unit = {},
+    startDestination: String? = null
 ) {
-    var isLoggedIn by remember { mutableStateOf(false) }
-    
+    val effectiveStartDestination = startDestination ?: if (isLoggedIn) Screen.Home.route else Screen.Welcome.route
+
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = effectiveStartDestination
     ) {
         // Welcome Screen
         composable(Screen.Welcome.route) {
@@ -96,8 +102,8 @@ fun NonnaNavHost(
                 mode = if (mode == "login") AuthMode.Login else AuthMode.Signup,
                 onBack = { navController.popBackStack() },
                 onAuth = { _, _ ->
-                    isLoggedIn = true
-                    navController.navigate(Screen.Onboarding.route) {
+                    // Entrar a la app (Home) y limpiar pila para no volver a Welcome/Auth
+                    navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
                 }
@@ -198,10 +204,8 @@ fun NonnaNavHost(
                     }
                 },
                 onLogout = {
-                    isLoggedIn = false
-                    navController.navigate(Screen.Welcome.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
+                    onLogout()
+                    // key(authState) en MainActivity recrea el NavHost con startDestination=Welcome
                 }
             )
         }
@@ -222,7 +226,25 @@ fun NonnaNavHost(
                 },
                 onMemoryClick = { memoryId ->
                     navController.navigate(Screen.MemoryDetail.createRoute(memoryId))
+                },
+                onEditCofre = { id ->
+                    navController.navigate(Screen.EditCofre.createRoute(id))
                 }
+            )
+        }
+
+        // Edit Cofre Screen
+        composable(
+            route = Screen.EditCofre.route,
+            arguments = listOf(
+                navArgument("cofreId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val cofreId = backStackEntry.arguments?.getString("cofreId") ?: ""
+            EditCofreScreen(
+                cofreId = cofreId,
+                onBack = { navController.popBackStack() },
+                onUpdated = { }
             )
         }
         
@@ -283,7 +305,7 @@ fun NonnaNavHost(
                 onBack = { navController.popBackStack() },
                 onEdit = { /* TODO */ },
                 onShare = { /* TODO */ },
-                onDelete = { /* TODO */ }
+                onDelete = { navController.popBackStack() }
             )
         }
     }

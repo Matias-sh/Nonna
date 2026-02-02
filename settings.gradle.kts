@@ -21,22 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Nonna"
 
-// Core modules
-include(":core:ui")
-include(":core:common")
-include(":core:domain")
-include(":core:data")
-
-// Feature modules
-include(":feature:onboarding")
-include(":feature:auth")
-include(":feature:memories")
-include(":feature:timeline")
-include(":feature:conversation")
-include(":feature:genealogy")
-include(":feature:room3d")
-include(":feature:sharing")
-include(":feature:settings")
-
-// App module
 include(":app")

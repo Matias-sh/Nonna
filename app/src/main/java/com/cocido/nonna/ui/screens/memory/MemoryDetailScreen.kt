@@ -43,9 +43,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.cocido.nonna.data.mock.mockMemories
+import coil.compose.AsyncImage
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
@@ -58,11 +63,60 @@ fun MemoryDetailScreen(
     onBack: () -> Unit,
     onEdit: () -> Unit = {},
     onShare: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    viewModel: com.cocido.nonna.ui.viewmodel.MemoryDetailViewModel = hiltViewModel()
 ) {
-    val memory = mockMemories.find { it.id == memoryId } ?: mockMemories.first()
+    val memory by viewModel.memory.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
     
+    LaunchedEffect(Unit) { viewModel.load() }
+    
+    when {
+        isLoading && memory == null -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.CircularProgressIndicator()
+            }
+        }
+        memory == null -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Recuerdo no encontrado",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        else -> MemoryDetailContent(
+            memory = memory!!,
+            onBack = onBack,
+            onEdit = onEdit,
+            onShare = onShare,
+            onDelete = {
+                viewModel.delete(onSuccess = onDelete)
+            },
+            showMenu = showMenu,
+            onShowMenuChange = { showMenu = it }
+        )
+    }
+}
+
+@Composable
+private fun MemoryDetailContent(
+    memory: com.cocido.nonna.ui.components.MemoryUiModel,
+    onBack: () -> Unit,
+    onEdit: () -> Unit,
+    onShare: () -> Unit,
+    onDelete: () -> Unit,
+    showMenu: Boolean,
+    onShowMenuChange: (Boolean) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -94,7 +148,7 @@ fun MemoryDetailScreen(
             )
             
             Box {
-                IconButton(onClick = { showMenu = true }) {
+                IconButton(onClick = { onShowMenuChange(true) }) {
                     Icon(
                         imageVector = Icons.Outlined.MoreVert,
                         contentDescription = "Más opciones",
@@ -104,12 +158,12 @@ fun MemoryDetailScreen(
                 
                 DropdownMenu(
                     expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
+                    onDismissRequest = { onShowMenuChange(false) }
                 ) {
                     DropdownMenuItem(
                         text = { Text("Editar") },
                         onClick = {
-                            showMenu = false
+                            onShowMenuChange(false)
                             onEdit()
                         },
                         leadingIcon = {
@@ -119,7 +173,7 @@ fun MemoryDetailScreen(
                     DropdownMenuItem(
                         text = { Text("Compartir") },
                         onClick = {
-                            showMenu = false
+                            onShowMenuChange(false)
                             onShare()
                         },
                         leadingIcon = {
@@ -151,18 +205,26 @@ fun MemoryDetailScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    val icon = when (memory.type) {
-                        MemoryType.Photo -> Icons.Outlined.Image
-                        MemoryType.Audio -> Icons.Outlined.AudioFile
-                        MemoryType.Text -> Icons.Outlined.Description
+                    if (memory.type == MemoryType.Photo && memory.thumbnailUrl != null) {
+                        AsyncImage(
+                            model = memory.thumbnailUrl,
+                            contentDescription = memory.title,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        val icon = when (memory.type) {
+                            MemoryType.Photo -> Icons.Outlined.Image
+                            MemoryType.Audio -> Icons.Outlined.AudioFile
+                            MemoryType.Text -> Icons.Outlined.Description
+                        }
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
                     }
-                    
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
                     
                     // Duration badge for audio
                     if (memory.type == MemoryType.Audio && memory.duration != null) {

@@ -216,7 +216,7 @@ val mockFamilyTree = listOf(
     )
 )
 
-// Relation options for creating cofre
+// Relation options for creating cofre (display text)
 val relationOptions = listOf(
     "Abuela",
     "Abuelo",
@@ -228,3 +228,18 @@ val relationOptions = listOf(
     "Padre",
     "Otro familiar"
 )
+
+/** Mapeo display → valor API para parentesco (backend espera ABUELA, ABUELO, etc.). */
+val relationDisplayToApi: Map<String, String> = mapOf(
+    "Abuela" to "ABUELA",
+    "Abuelo" to "ABUELO",
+    "Bisabuela" to "BISABUELA",
+    "Bisabuelo" to "BISABUELO",
+    "Tía" to "TIA",
+    "Tío" to "TIO",
+    "Madre" to "MADRE",
+    "Padre" to "PADRE",
+    "Otro familiar" to "OTRO"
+)
+
+fun relationToApi(display: String): String = relationDisplayToApi[display] ?: display.uppercase().replace(" ", "_")

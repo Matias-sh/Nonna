@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -40,6 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -51,10 +53,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.cocido.nonna.data.mock.mockCofres
-import com.cocido.nonna.data.mock.mockFamilyMembers
-import com.cocido.nonna.data.mock.mockMemories
+import coil.compose.AsyncImage
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.FilterChipsRow
 import com.cocido.nonna.ui.components.HeaderAction
@@ -70,20 +75,55 @@ import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.PrimaryGradientEnd
 import com.cocido.nonna.ui.theme.PrimaryGradientStart
+import com.cocido.nonna.ui.components.InviteFamilyModal
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 @Composable
 fun CofreDetailScreen(
     cofreId: String,
     onBack: () -> Unit,
     onAddMemory: () -> Unit,
-    onMemoryClick: (String) -> Unit
+    onMemoryClick: (String) -> Unit,
+    onEditCofre: (String) -> Unit = {},
+    viewModel: com.cocido.nonna.ui.viewmodel.CofreDetailViewModel = hiltViewModel()
 ) {
-    val cofre = mockCofres.find { it.id == cofreId } ?: mockCofres.first()
+    val cofreState by viewModel.cofre.collectAsState()
+    val currentUser by viewModel.currentUser.collectAsState()
+    val memoriesState by viewModel.memories.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val cofre = cofreState
+    var showInviteModal by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) { viewModel.load() }
+
+    LaunchedEffect(Unit) {
+        viewModel.deleteSuccess.collectLatest { onBack() }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.inviteSuccess.collectLatest {
+            scope.launch { snackbarHostState.showSnackbar("Invitación enviada") }
+        }
+    }
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { msg ->
+            scope.launch { snackbarHostState.showSnackbar(msg) }
+            viewModel.clearError()
+        }
+    }
+
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var memoryFilter by remember { mutableStateOf(MemoryFilters.todos.id) }
     var viewMode by remember { mutableStateOf(MemoryCardViewMode.Grid) }
     
-    val filteredMemories = mockMemories.filter { memory ->
+    val filteredMemories = memoriesState.filter { memory ->
         when (memoryFilter) {
             MemoryFilters.fotos.id -> memory.type == MemoryType.Photo
             MemoryFilters.audios.id -> memory.type == MemoryType.Audio
@@ -92,6 +132,7 @@ fun CofreDetailScreen(
         }
     }
     
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -99,8 +140,8 @@ fun CofreDetailScreen(
             .navigationBarsPadding()
     ) {
         PageHeader(
-            title = cofre.name,
-            subtitle = cofre.relation,
+            title = cofre?.name ?: "",
+            subtitle = cofre?.relation ?: "",
             onBack = onBack,
             action = HeaderAction(
                 label = "Agregar",
@@ -109,7 +150,30 @@ fun CofreDetailScreen(
             )
         )
         
+        when {
+            isLoading && cofre == null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator()
+                }
+            }
+            cofre == null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.material3.Text(
+                        "Cofre no encontrado",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            else -> {
         // Cover image
+        val coverUrl = cofre.coverImageUrl?.takeIf { it.isNotBlank() && it != "string" }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -124,12 +188,21 @@ fun CofreDetailScreen(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Favorite,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-            )
+            if (coverUrl != null) {
+                AsyncImage(
+                    model = coverUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Outlined.Favorite,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                )
+            }
             
             // Gradient overlay
             Box(
@@ -213,7 +286,8 @@ fun CofreDetailScreen(
         // Tab content
         when (selectedTabIndex) {
             0 -> RecuerdosTab(
-                memories = filteredMemories,
+                allMemories = memoriesState,
+                filteredMemories = filteredMemories,
                 memoryFilter = memoryFilter,
                 onFilterChange = { memoryFilter = it },
                 viewMode = viewMode,
@@ -222,12 +296,52 @@ fun CofreDetailScreen(
                 onAddMemory = onAddMemory
             )
             1 -> FamiliaTab(
-                onInvite = { /* TODO */ }
+                members = buildFamiliaMembers(cofre, currentUser),
+                onInvite = { showInviteModal = true }
             )
             2 -> DetallesTab(
-                cofre = cofre
+                cofre = cofre,
+                onEdit = { onEditCofre(viewModel.cofreId) },
+                onDelete = { showDeleteConfirm = true }
             )
         }
+        }
+    }
+    }
+
+    if (showInviteModal && cofre != null) {
+        InviteFamilyModal(
+            cofreName = cofre.name,
+            onDismiss = { showInviteModal = false },
+            onInvite = { data ->
+                viewModel.invitar(listOf(data.email))
+                showInviteModal = false
+            }
+        )
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Eliminar cofre") },
+            text = { Text("¿Estás seguro? Se eliminará el cofre y su información. Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    viewModel.deleteCofre()
+                }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }
 }
 
@@ -255,7 +369,8 @@ private fun StatItem(
 
 @Composable
 private fun RecuerdosTab(
-    memories: List<com.cocido.nonna.ui.components.MemoryUiModel>,
+    allMemories: List<com.cocido.nonna.ui.components.MemoryUiModel>,
+    filteredMemories: List<com.cocido.nonna.ui.components.MemoryUiModel>,
     memoryFilter: String,
     onFilterChange: (String) -> Unit,
     viewMode: MemoryCardViewMode,
@@ -268,7 +383,7 @@ private fun RecuerdosTab(
             .fillMaxSize()
             .padding(NonnaDimens.screenPaddingHorizontal)
     ) {
-        if (mockMemories.isEmpty()) {
+        if (allMemories.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -284,7 +399,6 @@ private fun RecuerdosTab(
         } else {
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Filters and view mode
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -349,7 +463,7 @@ private fun RecuerdosTab(
             Spacer(modifier = Modifier.height(16.dp))
             
             // Memories
-            if (memories.isEmpty()) {
+            if (filteredMemories.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -367,7 +481,7 @@ private fun RecuerdosTab(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(memories) { memory ->
+                    items(filteredMemories) { memory ->
                         MemoryCard(
                             memory = memory,
                             onClick = { onMemoryClick(memory.id) },
@@ -380,7 +494,7 @@ private fun RecuerdosTab(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(memories) { memory ->
+                    items(filteredMemories) { memory ->
                         MemoryCard(
                             memory = memory,
                             onClick = { onMemoryClick(memory.id) },
@@ -393,8 +507,31 @@ private fun RecuerdosTab(
     }
 }
 
+/** Miembro del cofre para la UI; datos reales (API o sesión). */
+private data class CofreMemberDisplay(
+    val name: String,
+    val email: String,
+    val role: com.cocido.nonna.ui.components.CofreRole
+)
+
+private fun buildFamiliaMembers(
+    cofre: com.cocido.nonna.ui.components.CofreUiModel?,
+    currentUser: com.cocido.nonna.data.remote.dto.UserDto?
+): List<CofreMemberDisplay> {
+    if (cofre == null || currentUser == null) return emptyList()
+    if (!cofre.isOwner) return emptyList()
+    return listOf(
+        CofreMemberDisplay(
+            name = currentUser.displayNameOrUsername(),
+            email = currentUser.email,
+            role = com.cocido.nonna.ui.components.CofreRole.Creador
+        )
+    )
+}
+
 @Composable
 private fun FamiliaTab(
+    members: List<CofreMemberDisplay>,
     onInvite: () -> Unit
 ) {
     Column(
@@ -430,60 +567,85 @@ private fun FamiliaTab(
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(mockFamilyMembers) { member ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = NonnaCorners.Card,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+        if (members.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(NonnaDimens.cardPadding),
-                        verticalAlignment = Alignment.CenterVertically
+                    Text(
+                        text = "Aún no hay miembros en este cofre",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Usá Invitar para sumar familiares. Ellos podrán ver y colaborar.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(members) { member ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = NonnaCorners.Card,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
                     ) {
-                        Box(
+                        Row(
                             modifier = Modifier
-                                .size(48.dp)
-                                .background(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(
-                                            PrimaryGradientStart.copy(alpha = 0.2f),
-                                            PrimaryGradientEnd.copy(alpha = 0.2f)
-                                        )
-                                    ),
-                                    shape = NonnaCorners.Full
-                                ),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .padding(NonnaDimens.cardPadding),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = member.name.first().toString(),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                PrimaryGradientStart.copy(alpha = 0.2f),
+                                                PrimaryGradientEnd.copy(alpha = 0.2f)
+                                            )
+                                        ),
+                                        shape = NonnaCorners.Full
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = member.name.firstOrNull()?.toString() ?: "?",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.width(12.dp))
+                            
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = member.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = member.email,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            
+                            PermissionBadge(role = member.role)
                         }
-                        
-                        Spacer(modifier = Modifier.width(12.dp))
-                        
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = member.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = member.email,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        
-                        PermissionBadge(role = member.role)
                     }
                 }
             }
@@ -493,7 +655,9 @@ private fun FamiliaTab(
 
 @Composable
 private fun DetallesTab(
-    cofre: com.cocido.nonna.ui.components.CofreUiModel
+    cofre: com.cocido.nonna.ui.components.CofreUiModel,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -552,7 +716,7 @@ private fun DetallesTab(
                     
                     NonnaButton(
                         text = "Editar información del cofre",
-                        onClick = { /* TODO */ },
+                        onClick = onEdit,
                         style = NonnaButtonStyle.Ghost,
                         fullWidth = true
                     )
@@ -566,7 +730,7 @@ private fun DetallesTab(
                     
                     NonnaButton(
                         text = "Eliminar cofre",
-                        onClick = { /* TODO */ },
+                        onClick = onDelete,
                         style = NonnaButtonStyle.Destructive,
                         fullWidth = true
                     )

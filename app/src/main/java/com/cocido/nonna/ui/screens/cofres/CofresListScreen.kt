@@ -30,7 +30,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cocido.nonna.data.mock.mockCofres
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.cocido.nonna.ui.viewmodel.CofresListViewModel
 import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.CofreCard
 import com.cocido.nonna.ui.components.CofreFilters
@@ -47,12 +51,17 @@ import androidx.compose.ui.tooling.preview.Preview
 fun CofresListScreen(
     onTabSelected: (NonnaTab) -> Unit,
     onCofreClick: (String) -> Unit,
-    onCreateCofre: () -> Unit
+    onCreateCofre: () -> Unit,
+    viewModel: CofresListViewModel = hiltViewModel()
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var activeFilter by remember { mutableStateOf(CofreFilters.todos.id) }
-    
-    val filteredCofres = mockCofres.filter { cofre ->
+    val cofres by viewModel.cofres.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    LaunchedEffect(Unit) { viewModel.load() }
+
+    val filteredCofres = cofres.filter { cofre ->
         // Apply search
         val matchesSearch = cofre.name.contains(searchQuery, ignoreCase = true) ||
                 cofre.relation.contains(searchQuery, ignoreCase = true)
@@ -73,7 +82,7 @@ fun CofresListScreen(
     ) {
         Scaffold(
             floatingActionButton = {
-                if (mockCofres.isNotEmpty()) {
+                if (cofres.isNotEmpty()) {
                     FloatingActionButton(
                         onClick = onCreateCofre,
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -93,13 +102,21 @@ fun CofresListScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Header
                 SimpleHeader(
                     title = "Cofres",
                     subtitle = "Tus espacios de memoria familiar"
                 )
                 
-                if (mockCofres.isEmpty()) {
+                if (isLoading && cofres.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(NonnaDimens.screenPaddingHorizontal),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        androidx.compose.material3.CircularProgressIndicator()
+                    }
+                } else if (cofres.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -115,7 +132,6 @@ fun CofresListScreen(
                         )
                     }
                 } else {
-                    // Search
                     NonnaTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },

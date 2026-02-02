@@ -1,5 +1,8 @@
 package com.cocido.nonna.ui.screens.memory
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,14 +42,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.cocido.nonna.ui.components.AudioRecorderComponent
 import com.cocido.nonna.ui.components.EmotionalTag
 import com.cocido.nonna.ui.components.MemoryType
+import com.cocido.nonna.util.ImageCompressor
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaTextArea
@@ -54,6 +68,9 @@ import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.components.PageHeader
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
+import coil.compose.AsyncImage
+import kotlinx.coroutines.flow.collectLatest
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -66,8 +83,17 @@ enum class AddMemoryStep {
 fun AddMemoryScreen(
     cofreId: String?,
     onBack: () -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    viewModel: com.cocido.nonna.ui.viewmodel.AddMemoryViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val isLoading by viewModel.isLoading.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.saved.collectLatest { _: com.cocido.nonna.ui.components.MemoryUiModel ->
+            onSave()
+        }
+    }
     var step by remember { mutableStateOf(AddMemoryStep.Type) }
     var selectedType by remember { mutableStateOf<MemoryType?>(null) }
     var title by remember { mutableStateOf("") }
@@ -77,7 +103,17 @@ fun AddMemoryScreen(
     var emotionalTag by remember { mutableStateOf<EmotionalTag?>(null) }
     var hasAudioRecording by remember { mutableStateOf(false) }
     var hasImageSelected by remember { mutableStateOf(false) }
-    
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            selectedImageUri = it
+            hasImageSelected = true
+        }
+    }
+
     val stepTitle = when (step) {
         AddMemoryStep.Type -> "Elegí el tipo de recuerdo"
         AddMemoryStep.Content -> "Subí o creá el contenido"
@@ -125,7 +161,8 @@ fun AddMemoryScreen(
                     hasAudioRecording = hasAudioRecording,
                     onAudioRecorded = { hasAudioRecording = true },
                     hasImageSelected = hasImageSelected,
-                    onImageSelected = { hasImageSelected = true },
+                    selectedImageUri = selectedImageUri,
+                    onRequestPickImage = { imagePickerLauncher.launch("image/*") },
                     onBackToType = { step = AddMemoryStep.Type },
                     onContinue = { step = AddMemoryStep.Details }
                 )
@@ -142,8 +179,47 @@ fun AddMemoryScreen(
                     emotionalTag = emotionalTag,
                     onEmotionalTagChange = { emotionalTag = it },
                     onBack = { step = AddMemoryStep.Content },
-                    onSave = onSave,
-                    canSave = title.isNotBlank()
+                    onSave = {
+                        val cid = cofreId
+                        if (cid != null) {
+                        scope.launch {
+                            val file = withContext(Dispatchers.IO) {
+                                when (selectedType) {
+                                    MemoryType.Photo -> selectedImageUri?.let { uri ->
+                                        ImageCompressor.compressForUpload(context, uri, maxBytes = 1024 * 1024)
+                                            ?: context.contentResolver.openInputStream(uri)?.use { input ->
+                                                File.createTempFile("recuerdo", ".jpg").apply {
+                                                    outputStream().use { output -> input.copyTo(output) }
+                                                }
+                                            }
+                                    }
+                                    MemoryType.Text -> File.createTempFile("recuerdo", ".txt").apply {
+                                        writeText(textContent.ifBlank { "" })
+                                    }
+                                    MemoryType.Audio -> File.createTempFile("recuerdo", ".mp3").apply {
+                                        createNewFile()
+                                    }
+                                    null -> null
+                                }
+                            }
+                            if (file != null) {
+                                viewModel.save(
+                                    cofreRecuerdosId = cid,
+                                    titulo = title,
+                                    file = file,
+                                    descripcion = description.ifBlank { null },
+                                    fecha = date,
+                                    emocionId = null,
+                                    emocionPersonalizada = emotionalTag?.label
+                                )
+                            }
+                        }
+                        } else {
+                            onSave()
+                        }
+                    },
+                    canSave = title.isNotBlank() && !isLoading,
+                    isLoading = isLoading
                 )
             }
         }
@@ -251,15 +327,23 @@ private fun ContentStep(
     hasAudioRecording: Boolean,
     onAudioRecorded: () -> Unit,
     hasImageSelected: Boolean,
-    onImageSelected: () -> Unit,
+    selectedImageUri: Uri?,
+    onRequestPickImage: () -> Unit,
     onBackToType: () -> Unit,
     onContinue: () -> Unit
 ) {
+    val contentReady = when (type) {
+        MemoryType.Photo -> hasImageSelected
+        MemoryType.Audio -> hasAudioRecording
+        MemoryType.Text -> textContent.isNotBlank()
+    }
+
     Column {
         when (type) {
             MemoryType.Photo -> PhotoContent(
                 hasImage = hasImageSelected,
-                onImageSelected = onImageSelected
+                selectedImageUri = selectedImageUri,
+                onPickImageClick = onRequestPickImage
             )
             MemoryType.Audio -> AudioContent(
                 hasRecording = hasAudioRecording,
@@ -270,9 +354,9 @@ private fun ContentStep(
                 onContentChange = onTextContentChange
             )
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         TextButton(
             onClick = onBackToType,
             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -282,11 +366,11 @@ private fun ContentStep(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        
-        // For text, show continue button
-        if (type == MemoryType.Text && textContent.isNotBlank()) {
+
+        // Show continue button when content is ready (text, photo or audio)
+        if (contentReady) {
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -310,7 +394,8 @@ private fun ContentStep(
 @Composable
 private fun PhotoContent(
     hasImage: Boolean,
-    onImageSelected: () -> Unit
+    selectedImageUri: Uri?,
+    onPickImageClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -322,11 +407,20 @@ private fun PhotoContent(
                 color = MaterialTheme.colorScheme.outline,
                 shape = NonnaCorners.Large
             )
-            .clickable(onClick = onImageSelected),
+            .clickable(onClick = onPickImageClick),
         contentAlignment = Alignment.Center
     ) {
-        if (hasImage) {
-            // Show image preview
+        if (hasImage && selectedImageUri != null) {
+            AsyncImage(
+                model = selectedImageUri,
+                contentDescription = "Imagen seleccionada",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp)
+                    .clip(NonnaCorners.Large),
+                contentScale = ContentScale.Crop
+            )
+        } else if (hasImage) {
             Text(
                 text = "Imagen seleccionada",
                 style = MaterialTheme.typography.bodyMedium,
@@ -379,6 +473,7 @@ private fun TextContent(
         label = "Escribí el recuerdo",
         placeholder = "Contá la historia, la receta, la anécdota...",
         minLines = 12,
+        maxLines = 12,
         helperText = "Escribí con calma. No hay apuro.",
         modifier = Modifier.fillMaxWidth()
     )
@@ -399,7 +494,8 @@ private fun DetailsStep(
     onEmotionalTagChange: (EmotionalTag?) -> Unit,
     onBack: () -> Unit,
     onSave: () -> Unit,
-    canSave: Boolean
+    canSave: Boolean,
+    isLoading: Boolean = false
 ) {
     Column {
         // Preview
@@ -562,9 +658,9 @@ private fun DetailsStep(
                 modifier = Modifier.weight(1f)
             )
             NonnaButton(
-                text = "Guardar recuerdo",
+                text = if (isLoading) "Guardando..." else "Guardar recuerdo",
                 onClick = onSave,
-                enabled = canSave,
+                enabled = canSave && !isLoading,
                 modifier = Modifier.weight(1f)
             )
         }

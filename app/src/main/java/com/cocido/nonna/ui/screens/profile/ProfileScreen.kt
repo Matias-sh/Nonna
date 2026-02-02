@@ -38,8 +38,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.data.mock.UserPlan
-import com.cocido.nonna.data.mock.mockCurrentUser
 import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
@@ -55,8 +58,19 @@ import androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun ProfileScreen(
     onTabSelected: (NonnaTab) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    viewModel: com.cocido.nonna.ui.viewmodel.ProfileViewModel = hiltViewModel()
 ) {
+    val user by viewModel.user.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    LaunchedEffect(Unit) { viewModel.load() }
+
+    val displayUser = user
+    val userName = displayUser?.displayNameOrUsername() ?: ""
+    val userEmail = displayUser?.email ?: ""
+    val avatarUrl = displayUser?.avatarUrl ?: displayUser?.avatar_url
+    val joinedDate = displayUser?.createdAt ?: displayUser?.created_at ?: ""
+
     AppShell(
         currentTab = NonnaTab.Perfil,
         onTabSelected = onTabSelected
@@ -103,8 +117,8 @@ fun ProfileScreen(
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (mockCurrentUser.avatarUrl != null) {
-                                // Avatar image
+                            if (avatarUrl != null) {
+                                // Avatar image - coil AsyncImage si se quiere mostrar
                             } else {
                                 Icon(
                                     imageVector = Icons.Outlined.Person,
@@ -117,48 +131,23 @@ fun ProfileScreen(
                         
                         Spacer(modifier = Modifier.width(16.dp))
                         
-                        // Info
+                        // Info: nombre de usuario (o nombre completo) y email
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = mockCurrentUser.name,
+                                text = userName,
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            Text(
-                                text = mockCurrentUser.email,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                Column {
-                                    Text(
-                                        text = "Cofres:",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = mockCurrentUser.cofresCount.toString(),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                Column {
-                                    Text(
-                                        text = "Recuerdos:",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = mockCurrentUser.memoriesCount.toString(),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
+                            if (userEmail.isNotBlank()) {
+                                Text(
+                                    text = userEmail,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (isLoading) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.size(24.dp))
                             }
                         }
                         
@@ -196,7 +185,7 @@ fun ProfileScreen(
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = if (mockCurrentUser.plan == UserPlan.Free) "Gratis" else "Premium",
+                                    text = "Gratis",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -204,26 +193,18 @@ fun ProfileScreen(
                             
                             Surface(
                                 shape = NonnaCorners.Full,
-                                color = if (mockCurrentUser.plan == UserPlan.Premium) {
-                                    MaterialTheme.colorScheme.primaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceVariant
-                                }
+                                color = MaterialTheme.colorScheme.surfaceVariant
                             ) {
                                 Text(
-                                    text = if (mockCurrentUser.plan == UserPlan.Free) "Gratis" else "Premium",
+                                    text = "Gratis",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = if (mockCurrentUser.plan == UserPlan.Premium) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                 )
                             }
                         }
                         
-                        if (mockCurrentUser.plan == UserPlan.Free) {
+                        if (true) {
                             Spacer(modifier = Modifier.height(16.dp))
                             
                             Box(
@@ -341,7 +322,7 @@ fun ProfileScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Miembro desde ${mockCurrentUser.joinedDate}",
+                        text = if (joinedDate.isNotBlank()) "Miembro desde $joinedDate" else "",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
