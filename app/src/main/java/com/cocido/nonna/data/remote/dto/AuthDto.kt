@@ -27,6 +27,7 @@ data class UsuarioDto(
     @SerializedName("id") val id: Int? = null,
     @SerializedName("nombreUsuario") val nombreUsuario: String? = null,
     @SerializedName("email") val email: String? = null,
+    /** Estado del usuario devuelto por el backend; no se envía en signup. */
     @SerializedName("activo") val activo: Boolean? = null,
     @SerializedName("ultimoAcceso") val ultimoAcceso: String? = null,
     @SerializedName("fotoPerfil") val fotoPerfil: String? = null,

@@ -62,8 +62,7 @@ class AuthRepository @Inject constructor(
                 apellido = apellidoVal.toRequestBody("text/plain".toMediaTypeOrNull()),
                 nombreUsuario = usuarioVal.toRequestBody("text/plain".toMediaTypeOrNull()),
                 contrasena = password.toRequestBody("text/plain".toMediaTypeOrNull()),
-                email = email.toRequestBody("text/plain".toMediaTypeOrNull()),
-                activo = "true".toRequestBody("text/plain".toMediaTypeOrNull())
+                email = email.toRequestBody("text/plain".toMediaTypeOrNull())
             )
             if (response.isSuccessful) {
                 val body = response.body()

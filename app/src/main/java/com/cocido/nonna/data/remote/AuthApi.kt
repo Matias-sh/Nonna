@@ -17,7 +17,19 @@ interface AuthApi {
     @POST("auth/login")
     suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
 
-    /** Backend espera multipart/form-data: nombre, apellido, nombreUsuario, contrasena, email, activo; opcional fotoPerfil. */
+    /**
+     * Registro de usuario.
+     *
+     * Backend actual espera multipart/form-data con:
+     * - nombre
+     * - apellido
+     * - nombreUsuario
+     * - contrasena
+     * - email
+     *
+     * El campo `activo` es solo de respuesta (estado del usuario) y
+     * ya no debe enviarse en el signup.
+     */
     @Multipart
     @POST("auth/signup")
     suspend fun signup(
@@ -25,8 +37,7 @@ interface AuthApi {
         @Part("apellido") apellido: RequestBody,
         @Part("nombreUsuario") nombreUsuario: RequestBody,
         @Part("contrasena") contrasena: RequestBody,
-        @Part("email") email: RequestBody,
-        @Part("activo") activo: RequestBody
+        @Part("email") email: RequestBody
     ): Response<AuthResponse>
 
     @GET("auth/me")
