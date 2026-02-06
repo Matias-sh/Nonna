@@ -34,11 +34,11 @@ class AuthRepository @Inject constructor(
                     ApiResult.Error("No se recibió token del servidor")
                 }
             } else {
-                ApiResult.Error(parseErrorBody(response.errorBody()?.string()) ?: "Error al iniciar sesión", response.code())
+                ApiResult.Error(NetworkErrorParser.parse(response.errorBody()?.string()) ?: "Error al iniciar sesión", response.code())
             }
         } catch (e: HttpException) {
             if (e.code() == 401) ApiResult.Error("Email o contraseña incorrectos")
-            else ApiResult.Error(parseErrorBody(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            else ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
@@ -76,10 +76,10 @@ class AuthRepository @Inject constructor(
                     ApiResult.Error("No se recibió token del servidor")
                 }
             } else {
-                ApiResult.Error(parseErrorBody(response.errorBody()?.string()) ?: "Error al registrarse", response.code())
+                ApiResult.Error(NetworkErrorParser.parse(response.errorBody()?.string()) ?: "Error al registrarse", response.code())
             }
         } catch (e: HttpException) {
-            ApiResult.Error(parseErrorBody(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
@@ -93,14 +93,14 @@ class AuthRepository @Inject constructor(
                     ?: ApiResult.Error("Usuario no encontrado")
             } else {
                 if (response.code() == 401) tokenManager.clear()
-                ApiResult.Error(parseErrorBody(response.errorBody()?.string()) ?: "Error", response.code())
+                ApiResult.Error(NetworkErrorParser.parse(response.errorBody()?.string()) ?: "Error", response.code())
             }
         } catch (e: HttpException) {
             if (e.code() == 401) {
                 tokenManager.clear()
                 ApiResult.Error("Sesión expirada")
             } else {
-                ApiResult.Error(parseErrorBody(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+                ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
             }
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
@@ -109,17 +109,5 @@ class AuthRepository @Inject constructor(
 
     suspend fun logout() {
         tokenManager.clear()
-    }
-
-    private fun parseErrorBody(body: String?): String? {
-        if (body.isNullOrBlank()) return null
-        return try {
-            val json = com.google.gson.Gson().fromJson(body, com.google.gson.JsonObject::class.java) ?: return body.take(200)
-            json.getAsJsonObject("errorDetails")?.get("message")?.takeIf { it.isJsonPrimitive }?.getAsString()
-                ?: json.get("message")?.takeIf { it.isJsonPrimitive }?.getAsString()
-                ?: body.take(200)
-        } catch (_: Exception) {
-            body.take(200)
-        }
     }
 }

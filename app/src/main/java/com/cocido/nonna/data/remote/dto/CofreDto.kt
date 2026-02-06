@@ -15,6 +15,7 @@ data class CofreDto(
     @SerializedName("imagenUrl") val imagenUrl: String? = null,
     @SerializedName("imagenPortada") val imagenPortada: String? = null,
     @SerializedName("coverImageUrl") val coverImageUrl: String? = null,
+    @SerializedName("urlPortada") val urlPortada: String? = null,
     @SerializedName("photoCount") val photoCount: Int? = null,
     @SerializedName("audioCount") val audioCount: Int? = null,
     @SerializedName("textCount") val textCount: Int? = null,
@@ -34,7 +35,7 @@ data class CofreDto(
     }
     fun displayName(): String = nombre ?: name ?: ""
     fun displayRelation(): String = parentesco ?: relation ?: ""
-    fun coverUrl(): String? = imagenPortada ?: imagenUrl ?: coverImageUrl
+    fun coverUrl(): String? = imagenPortada ?: imagenUrl ?: coverImageUrl ?: urlPortada
     fun isOwnerValue(): Boolean = isOwner ?: esPropietario ?: true
 }
 

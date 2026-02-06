@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
 import coil.compose.AsyncImage
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -509,8 +510,10 @@ private fun RecuerdosTab(
 
 /** Miembro del cofre para la UI; datos reales (API o sesión). */
 private data class CofreMemberDisplay(
-    val name: String,
+    val fullName: String,
+    val username: String?,
     val email: String,
+    val avatarUrl: String?,
     val role: com.cocido.nonna.ui.components.CofreRole
 )
 
@@ -520,10 +523,15 @@ private fun buildFamiliaMembers(
 ): List<CofreMemberDisplay> {
     if (cofre == null || currentUser == null) return emptyList()
     if (!cofre.isOwner) return emptyList()
+    val fullName = currentUser.displayName()
+    val username = currentUser.nombreUsuario
+    val avatar = currentUser.fotoPerfil ?: currentUser.avatarUrl ?: currentUser.avatar_url
     return listOf(
         CofreMemberDisplay(
-            name = currentUser.displayNameOrUsername(),
+            fullName = fullName,
+            username = username,
             email = currentUser.email,
+            avatarUrl = avatar,
             role = com.cocido.nonna.ui.components.CofreRole.Creador
         )
     )
@@ -622,21 +630,40 @@ private fun FamiliaTab(
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = member.name.firstOrNull()?.toString() ?: "?",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
+                                val avatarModel = member.avatarUrl
+                                if (avatarModel != null) {
+                                    AsyncImage(
+                                        model = avatarModel,
+                                        contentDescription = member.fullName,
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clip(NonnaCorners.Full),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Text(
+                                        text = member.fullName.firstOrNull()?.toString() ?: "?",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                             
                             Spacer(modifier = Modifier.width(12.dp))
                             
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = member.name,
+                                    text = member.fullName,
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
+                                if (!member.username.isNullOrBlank()) {
+                                    Text(
+                                        text = "@${member.username}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                                 Text(
                                     text = member.email,
                                     style = MaterialTheme.typography.bodySmall,

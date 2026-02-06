@@ -23,6 +23,7 @@ import com.cocido.nonna.ui.screens.memory.MemoryDetailScreen
 import com.cocido.nonna.ui.screens.memory.SelectCofreScreen
 import com.cocido.nonna.ui.screens.onboarding.OnboardingScreen
 import com.cocido.nonna.ui.screens.profile.ProfileScreen
+import com.cocido.nonna.ui.screens.profile.ProfileSettingsScreen
 import com.cocido.nonna.ui.screens.tree.AddPersonScreen
 import com.cocido.nonna.ui.screens.tree.FamilyTreeScreen
 import com.cocido.nonna.ui.screens.welcome.WelcomeScreen
@@ -40,6 +41,7 @@ sealed class Screen(val route: String) {
     data object Cofres : Screen("cofres")
     data object FamilyTree : Screen("tree")
     data object Profile : Screen("profile")
+    data object ProfileSettings : Screen("profile/settings")
     
     // Detail screens
     data object CofreDetail : Screen("cofre/{cofreId}") {
@@ -203,10 +205,18 @@ fun NonnaNavHost(
                         NonnaTab.Perfil -> { /* Already here */ }
                     }
                 },
+                onOpenSettings = { navController.navigate(Screen.ProfileSettings.route) },
                 onLogout = {
                     onLogout()
                     // key(authState) en MainActivity recrea el NavHost con startDestination=Welcome
                 }
+            )
+        }
+
+        // Profile Settings Screen
+        composable(Screen.ProfileSettings.route) {
+            ProfileSettingsScreen(
+                onBack = { navController.popBackStack() }
             )
         }
         

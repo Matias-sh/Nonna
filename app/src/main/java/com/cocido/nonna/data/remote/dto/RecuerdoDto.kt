@@ -1,9 +1,10 @@
 package com.cocido.nonna.data.remote.dto
 
+import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 
 data class RecuerdoDto(
-    @SerializedName("id") val id: String,
+    @SerializedName("id") private val idRaw: JsonElement? = null,
     @SerializedName("titulo") val titulo: String? = null,
     @SerializedName("title") val title: String? = null,
     @SerializedName("descripcion") val descripcion: String? = null,
@@ -24,6 +25,15 @@ data class RecuerdoDto(
     @SerializedName("cofreRecuerdosId") val cofreRecuerdosId: String? = null,
     @SerializedName("createdAt") val createdAt: String? = null
 ) {
+    /** id como string (backend puede devolver número). */
+    fun idValue(): String = when {
+        idRaw == null -> ""
+        idRaw.isJsonPrimitive -> {
+            val p = idRaw.asJsonPrimitive
+            if (p.isNumber) p.asInt.toString() else p.asString
+        }
+        else -> ""
+    }
     fun displayTitle(): String = titulo ?: title ?: ""
     fun displayDescription(): String? = descripcion ?: description
     fun displayDate(): String = fecha ?: date ?: ""

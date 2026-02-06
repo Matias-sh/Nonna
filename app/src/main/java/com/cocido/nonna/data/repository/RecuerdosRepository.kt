@@ -187,7 +187,7 @@ private fun RecuerdoDto.toUiModel(): MemoryUiModel {
         emocionPersonalizada = emocionPersonalizada
     )
     return MemoryUiModel(
-        id = id,
+        id = idValue(),
         type = memoryType,
         title = displayTitle(),
         description = displayDescription(),

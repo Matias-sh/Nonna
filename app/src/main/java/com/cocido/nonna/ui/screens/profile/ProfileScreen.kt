@@ -34,14 +34,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.cocido.nonna.data.mock.UserPlan
 import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.NonnaButton
@@ -58,6 +61,7 @@ import androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun ProfileScreen(
     onTabSelected: (NonnaTab) -> Unit,
+    onOpenSettings: () -> Unit,
     onLogout: () -> Unit,
     viewModel: com.cocido.nonna.ui.viewmodel.ProfileViewModel = hiltViewModel()
 ) {
@@ -66,9 +70,10 @@ fun ProfileScreen(
     LaunchedEffect(Unit) { viewModel.load() }
 
     val displayUser = user
-    val userName = displayUser?.displayNameOrUsername() ?: ""
+    // En perfil mostramos el nombre \"humano\" (persona/nombre) más que el username técnico.
+    val userName = displayUser?.displayName() ?: ""
     val userEmail = displayUser?.email ?: ""
-    val avatarUrl = displayUser?.avatarUrl ?: displayUser?.avatar_url
+    val avatarUrl = displayUser?.avatarUrl ?: displayUser?.avatar_url ?: displayUser?.fotoPerfil
     val joinedDate = displayUser?.createdAt ?: displayUser?.created_at ?: ""
 
     AppShell(
@@ -118,7 +123,14 @@ fun ProfileScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             if (avatarUrl != null) {
-                                // Avatar image - coil AsyncImage si se quiere mostrar
+                                AsyncImage(
+                                    model = avatarUrl,
+                                    contentDescription = "Foto de perfil",
+                                    modifier = Modifier
+                                        .size(80.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
                             } else {
                                 Icon(
                                     imageVector = Icons.Outlined.Person,
@@ -151,7 +163,7 @@ fun ProfileScreen(
                             }
                         }
                         
-                        IconButton(onClick = { /* TODO: Settings */ }) {
+                        IconButton(onClick = onOpenSettings) {
                             Icon(
                                 imageVector = Icons.Outlined.Settings,
                                 contentDescription = "Configuración"
@@ -277,7 +289,7 @@ fun ProfileScreen(
                 OptionCard(
                     icon = Icons.Outlined.Settings,
                     title = "Configuración",
-                    onClick = { /* TODO */ }
+                    onClick = onOpenSettings
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -443,6 +455,7 @@ private fun ProfileScreenPreview() {
     NonnaTheme {
         ProfileScreen(
             onTabSelected = {},
+            onOpenSettings = {},
             onLogout = {}
         )
     }
