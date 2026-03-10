@@ -15,12 +15,17 @@ class AuthInterceptor @Inject constructor(
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val token = runBlocking { tokenManager.token.first() }
-        val request = chain.request().newBuilder()
+        val original = chain.request()
+        val requestBuilder = original.newBuilder()
+
         if (!token.isNullOrBlank()) {
-            request.addHeader("Authorization", "Bearer $token")
+            requestBuilder.addHeader("Authorization", "Bearer $token")
         }
-        request.addHeader("Accept", "application/json")
-        request.addHeader("Content-Type", "application/json")
-        return chain.proceed(request.build())
+
+        // Dejamos que Retrofit/OkHttp definan el Content-Type correcto según el cuerpo.
+        // Solo forzamos Accept para indicar que esperamos JSON en la respuesta.
+        requestBuilder.addHeader("Accept", "application/json")
+
+        return chain.proceed(requestBuilder.build())
     }
 }

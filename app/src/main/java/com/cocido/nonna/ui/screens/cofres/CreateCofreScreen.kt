@@ -99,7 +99,7 @@ fun CreateCofreScreen(
         }
     }
 
-    val canSubmit = name.isNotBlank() && !isLoading
+    val canSubmit = name.isNotBlank() && description.isNotBlank() && !isLoading
     
     NonnaDetailScaffold {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -265,7 +265,7 @@ fun CreateCofreScreen(
             NonnaTextArea(
                 value = description,
                 onValueChange = { description = it },
-                label = "Una frase que la/lo describe (opcional)",
+                label = "Una frase que la/lo describe *",
                 placeholder = "Ej: La mejor cocinera del mundo, Siempre con una sonrisa...",
                 minLines = 4,
                 modifier = Modifier.fillMaxWidth()
@@ -380,7 +380,7 @@ fun CreateCofreScreen(
                         viewModel.create(
                             name = name,
                             relation = relation,
-                            description = description.ifBlank { null },
+                            description = description.trim(),
                             coverImageUri = coverImageUri,
                             inviteEmails = inviteEmails
                         )

@@ -43,11 +43,39 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-            when (val result = authRepository.getMe()) {
-                is ApiResult.Success -> _user.value = result.data
-                is ApiResult.Error -> _errorMessage.value = result.message
-                else -> { }
+            // 1) Datos básicos desde /auth/me (siempre se usa para saber si hay sesión)
+            val basicUser = when (val result = authRepository.getMe()) {
+                is ApiResult.Success -> {
+                    result.data
+                }
+                is ApiResult.Error -> {
+                    _errorMessage.value = result.message
+                    _isLoading.value = false
+                    return@launch
+                }
+                else -> {
+                    _isLoading.value = false
+                    return@launch
+                }
             }
+
+            // 2) Intentar enriquecer con /usuario/{id}, que suele traer campos como fotoPerfil / urlFotoPerfil
+            val detailedUser = try {
+                val response = usuarioApi.getById(basicUser.id)
+                if (response.isSuccessful) {
+                    response.body()
+                } else {
+                    // Si falla, nos quedamos con basicUser pero guardamos el mensaje para depurar si hace falta
+                    _errorMessage.value = NetworkErrorParser.parse(response.errorBody()?.string())
+                        ?: _errorMessage.value
+                    null
+                }
+            } catch (e: Exception) {
+                // No rompemos la pantalla de perfil por un fallo puntual de este endpoint
+                null
+            }
+
+            _user.value = detailedUser ?: basicUser
             _isLoading.value = false
         }
     }
