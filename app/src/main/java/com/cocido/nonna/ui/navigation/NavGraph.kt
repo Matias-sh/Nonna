@@ -27,6 +27,9 @@ import com.cocido.nonna.ui.screens.profile.ProfileSettingsScreen
 import com.cocido.nonna.ui.screens.tree.AddPersonScreen
 import com.cocido.nonna.ui.screens.tree.FamilyTreeScreen
 import com.cocido.nonna.ui.screens.welcome.WelcomeScreen
+import com.cocido.nonna.ui.viewmodel.FamilyTreeViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 sealed class Screen(val route: String) {
     // Auth flow
@@ -162,6 +165,9 @@ fun NonnaNavHost(
         
         // Family Tree Screen
         composable(Screen.FamilyTree.route) {
+            val viewModel: FamilyTreeViewModel = hiltViewModel()
+            val uiState = viewModel.state.collectAsStateWithLifecycle().value
+
             FamilyTreeScreen(
                 onTabSelected = { tab ->
                     when (tab) {
@@ -176,21 +182,41 @@ fun NonnaNavHost(
                         navController.navigate(Screen.CofreDetail.createRoute(cofreId))
                     }
                 },
-                onAddNode = { navController.navigate(Screen.AddPerson.route) }
+                onAddNode = { navController.navigate(Screen.AddPerson.route) },
+                nodes = uiState.nodes,
+                isLoading = uiState.isLoading
             )
         }
         
         // Add Person Screen
         composable(Screen.AddPerson.route) {
+            // Compartimos el mismo ViewModel del árbol familiar para que
+            // tenga acceso al estado actual y pueda refrescar luego.
+            val parentEntry = remember(navController) {
+                navController.getBackStackEntry(Screen.FamilyTree.route)
+            }
+            val familyTreeViewModel: FamilyTreeViewModel = hiltViewModel(parentEntry)
+            val existingMembers = familyTreeViewModel.getAllPersonNames()
+
             AddPersonScreen(
                 onBack = { navController.popBackStack() },
                 onAddPerson = { name, relation, birthDate, deathDate, notes, createCofre ->
-                    // TODO: Save person to database
-                    navController.popBackStack()
-                    if (createCofre) {
-                        navController.navigate(Screen.CreateCofre.route)
+                    familyTreeViewModel.addPerson(
+                        fullName = name,
+                        selectedRelationName = relation,
+                        birthDate = birthDate,
+                        deathDate = deathDate,
+                        notes = notes,
+                        createCofre = createCofre
+                    ) { success, _ ->
+                        if (success) {
+                            // Volvemos al árbol; el backend ya se encarga de crear el cofre
+                            // cuando createCofre = true.
+                            navController.popBackStack()
+                        }
                     }
-                }
+                },
+                existingMembers = existingMembers
             )
         }
         

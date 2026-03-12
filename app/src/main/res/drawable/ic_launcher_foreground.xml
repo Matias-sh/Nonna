@@ -31,7 +31,7 @@
             android:pathData="M12,30 L48,12 L66,30 L30,48 Z"/>
         
         <!-- Cara derecha (paralelogramo) -->
-        <path
+    <path
             android:fillColor="#00000000"
             android:strokeColor="#FFFFFF"
             android:strokeWidth="4"

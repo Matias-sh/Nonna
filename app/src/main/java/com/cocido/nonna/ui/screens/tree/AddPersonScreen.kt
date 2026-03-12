@@ -48,7 +48,8 @@ import com.cocido.nonna.ui.theme.NonnaTheme
 @Composable
 fun AddPersonScreen(
     onBack: () -> Unit,
-    onAddPerson: (name: String, relation: String?, birthDate: String?, deathDate: String?, notes: String?, createCofre: Boolean) -> Unit
+    onAddPerson: (name: String, relation: String?, birthDate: String?, deathDate: String?, notes: String?, createCofre: Boolean) -> Unit,
+    existingMembers: List<String> = emptyList()
 ) {
     var fullName by remember { mutableStateOf("") }
     var selectedRelation by remember { mutableStateOf<String?>(null) }
@@ -57,9 +58,6 @@ fun AddPersonScreen(
     var notes by remember { mutableStateOf("") }
     var createCofre by remember { mutableStateOf(false) }
     var showRelationDropdown by remember { mutableStateOf(false) }
-    
-    // Nombres existentes en el árbol; cuando exista API arbol-familiar/search se cargarán desde ahí
-    val existingMembers = emptyList<String>()
     
     NonnaDetailScaffold {
         Column(

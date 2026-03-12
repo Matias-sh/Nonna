@@ -45,7 +45,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.cocido.nonna.data.mock.TreeNode
-import com.cocido.nonna.data.mock.mockFamilyTree
 import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.NonnaTab
@@ -59,7 +58,9 @@ import com.cocido.nonna.ui.theme.PrimaryGradientStart
 fun FamilyTreeScreen(
     onTabSelected: (NonnaTab) -> Unit,
     onNodeClick: (nodeId: String, cofreId: String?) -> Unit,
-    onAddNode: () -> Unit
+    onAddNode: () -> Unit,
+    nodes: List<TreeNode>,
+    isLoading: Boolean
 ) {
     var zoom by remember { mutableFloatStateOf(1f) }
     
@@ -67,7 +68,32 @@ fun FamilyTreeScreen(
         currentTab = NonnaTab.Arbol,
         onTabSelected = onTabSelected
     ) {
-        if (mockFamilyTree.isEmpty()) {
+        if (isLoading) {
+            // Mientras cargamos, mostramos el empty con CTA (mejor que una pantalla en blanco)
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                SimpleHeader(
+                    title = "Árbol Familiar",
+                    subtitle = "Conectá a tu familia y sus historias"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(NonnaDimens.screenPaddingHorizontal),
+                    contentAlignment = Alignment.Center
+                ) {
+                    EmptyStateWithButton(
+                        icon = Icons.Outlined.AccountTree,
+                        title = "Cargando tu árbol...",
+                        description = "Aguantá un segundo mientras traemos a tu familia",
+                        buttonText = "Crear primer cofre",
+                        onButtonClick = onAddNode
+                    )
+                }
+            }
+        } else if (nodes.isEmpty()) {
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -169,7 +195,7 @@ fun FamilyTreeScreen(
                                         transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
                                     }
                             ) {
-                                mockFamilyTree.forEach { rootNode ->
+                                nodes.forEach { rootNode ->
                                     TreeNodeView(
                                         node = rootNode,
                                         onNodeClick = onNodeClick
