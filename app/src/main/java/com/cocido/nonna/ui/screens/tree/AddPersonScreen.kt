@@ -37,6 +37,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cocido.nonna.data.remote.dto.UnionArbolDto
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
@@ -48,16 +49,33 @@ import com.cocido.nonna.ui.theme.NonnaTheme
 @Composable
 fun AddPersonScreen(
     onBack: () -> Unit,
-    onAddPerson: (name: String, relation: String?, birthDate: String?, deathDate: String?, notes: String?, createCofre: Boolean) -> Unit,
-    existingMembers: List<String> = emptyList()
+    onAddPerson: (
+        name: String,
+        relation: String?,
+        parentReference: String?,
+        birthDate: String?,
+        deathDate: String?,
+        notes: String?,
+        createCofre: Boolean,
+        unionPadresId: Int?,
+        parentescoConmigo: String?
+    ) -> Unit,
+    existingMembers: List<String> = emptyList(),
+    uniones: List<UnionArbolDto> = emptyList()
 ) {
     var fullName by remember { mutableStateOf("") }
     var selectedRelation by remember { mutableStateOf<String?>(null) }
+    var selectedParentReference by remember { mutableStateOf<String?>(null) }
+    var selectedParentescoConmigo by remember { mutableStateOf<String?>(null) }
+    var showParentescoDropdown by remember { mutableStateOf(false) }
+    var selectedUnionPadresId by remember { mutableStateOf<Int?>(null) }
+    var showUnionDropdown by remember { mutableStateOf(false) }
     var birthDate by remember { mutableStateOf("") }
     var deathDate by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     var createCofre by remember { mutableStateOf(false) }
     var showRelationDropdown by remember { mutableStateOf(false) }
+    var showParentReferenceDropdown by remember { mutableStateOf(false) }
     
     NonnaDetailScaffold {
         Column(
@@ -121,10 +139,225 @@ fun AddPersonScreen(
             )
             
             Spacer(modifier = Modifier.height(24.dp))
-            
-            // Relación con familiar existente
+
+            // Parentesco conmigo (enum backend)
             Text(
-                text = "¿Cómo se conecta al árbol?",
+                text = "Parentesco conmigo",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Box {
+                Surface(
+                    onClick = { showParentescoDropdown = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = NonnaCorners.Medium,
+                    color = MaterialTheme.colorScheme.surface,
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = selectedParentescoConmigo ?: "Seleccionar (opcional)",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (selectedParentescoConmigo != null) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                        Icon(
+                            imageVector = Icons.Outlined.ExpandMore,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = showParentescoDropdown,
+                    onDismissRequest = { showParentescoDropdown = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Sin especificar") },
+                        onClick = {
+                            selectedParentescoConmigo = null
+                            showParentescoDropdown = false
+                        }
+                    )
+                    parentescoConmigoOptions.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                selectedParentescoConmigo = option
+                                showParentescoDropdown = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Unión de padres explícita (hijos de esa unión)
+            Text(
+                text = "Unión de padres",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Box {
+                Surface(
+                    onClick = { showUnionDropdown = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = NonnaCorners.Medium,
+                    color = MaterialTheme.colorScheme.surface,
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val selectedUnionLabel = selectedUnionPadresId?.let { selectedId ->
+                            uniones.firstOrNull { it.id == selectedId }?.let { formatUnionLabel(it) }
+                        }
+                        Text(
+                            text = selectedUnionLabel ?: "Seleccionar unión (opcional)",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (selectedUnionLabel != null) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                        Icon(
+                            imageVector = Icons.Outlined.ExpandMore,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = showUnionDropdown,
+                    onDismissRequest = { showUnionDropdown = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Sin unión de padres") },
+                        onClick = {
+                            selectedUnionPadresId = null
+                            showUnionDropdown = false
+                        }
+                    )
+                    uniones.forEach { union ->
+                        DropdownMenuItem(
+                            text = { Text(formatUnionLabel(union)) },
+                            onClick = {
+                                selectedUnionPadresId = union.id
+                                selectedParentReference = null
+                                showUnionDropdown = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            if (selectedUnionPadresId == null) {
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Progenitor de referencia (opcional, solo si no se eligio union de padres)
+                Text(
+                    text = "Hijo/a de (opcional)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box {
+                    Surface(
+                        onClick = { showParentReferenceDropdown = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = NonnaCorners.Medium,
+                        color = MaterialTheme.colorScheme.surface,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = selectedParentReference ?: "Seleccionar progenitor existente (opcional)",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (selectedParentReference != null) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                            Icon(
+                                imageVector = Icons.Outlined.ExpandMore,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = showParentReferenceDropdown,
+                        onDismissRequest = { showParentReferenceDropdown = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Sin progenitor de referencia") },
+                            onClick = {
+                                selectedParentReference = null
+                                showParentReferenceDropdown = false
+                            }
+                        )
+                        existingMembers.forEach { member ->
+                            DropdownMenuItem(
+                                text = { Text(member) },
+                                onClick = {
+                                    selectedParentReference = member
+                                    showParentReferenceDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Si el usuario elige union de padres, el campo "Hijo/a de" no aplica.
+                if (selectedParentReference != null) {
+                    selectedParentReference = null
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Pareja opcional (independiente de la union de padres)
+            Text(
+                text = "Pareja (opcional)",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -149,7 +382,7 @@ fun AddPersonScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = selectedRelation ?: "Seleccionar familiar existente (opcional)",
+                            text = selectedRelation ?: "Seleccionar pareja existente (opcional)",
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (selectedRelation != null) {
                                 MaterialTheme.colorScheme.onSurface
@@ -170,7 +403,7 @@ fun AddPersonScreen(
                     onDismissRequest = { showRelationDropdown = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Sin conexión directa") },
+                        text = { Text("Sin pareja") },
                         onClick = {
                             selectedRelation = null
                             showRelationDropdown = false
@@ -187,6 +420,13 @@ fun AddPersonScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "La conexión principal se define con 'Parentesco conmigo' y, si corresponde, con 'Unión de padres' o 'Hijo/a de'. El campo de pareja solo agrega el vínculo con la otra persona.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -303,10 +543,13 @@ fun AddPersonScreen(
                         onAddPerson(
                             fullName,
                             selectedRelation,
+                            if (selectedUnionPadresId == null) selectedParentReference else null,
                             birthDate.ifBlank { null },
                             deathDate.ifBlank { null },
                             notes.ifBlank { null },
-                            createCofre
+                            createCofre,
+                            selectedUnionPadresId,
+                            selectedParentescoConmigo
                         )
                     },
                     style = NonnaButtonStyle.Primary,
@@ -357,7 +600,33 @@ private fun AddPersonScreenPreview() {
     NonnaTheme {
         AddPersonScreen(
             onBack = {},
-            onAddPerson = { _, _, _, _, _, _ -> }
+            onAddPerson = { _, _, _, _, _, _, _, _, _ -> }
         )
     }
 }
+
+private fun formatUnionLabel(union: UnionArbolDto): String {
+    val p1 = union.parent1?.displayName().orEmpty().ifBlank { "Sin nombre" }
+    val p2 = union.parent2?.displayName().orEmpty().ifBlank { "Sin segundo padre/madre" }
+    return "$p1 - $p2"
+}
+
+private val parentescoConmigoOptions = listOf(
+    "YO",
+    "PAPA", "MAMA",
+    "HIJO", "HIJA",
+    "ABUELO", "ABUELA",
+    "NIETO", "NIETA",
+    "BISABUELO", "BISABUELA",
+    "HERMANO", "HERMANA",
+    "TIO", "TIA",
+    "SOBRINO", "SOBRINA",
+    "PRIMO", "PRIMA",
+    "SUEGRO", "SUEGRA",
+    "YERNO", "NUERA",
+    "CUÑADO", "CUÑADA",
+    "PADRINO", "MADRINA",
+    "AHIJADO", "AHIJADA",
+    "AMIGO", "AMIGA",
+    "OTRO"
+)

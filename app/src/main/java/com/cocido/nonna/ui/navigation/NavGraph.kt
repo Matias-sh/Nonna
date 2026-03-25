@@ -167,6 +167,7 @@ fun NonnaNavHost(
         composable(Screen.FamilyTree.route) {
             val viewModel: FamilyTreeViewModel = hiltViewModel()
             val uiState = viewModel.state.collectAsStateWithLifecycle().value
+            val uniones = viewModel.uniones.collectAsStateWithLifecycle().value
 
             FamilyTreeScreen(
                 onTabSelected = { tab ->
@@ -183,8 +184,24 @@ fun NonnaNavHost(
                     }
                 },
                 onAddNode = { navController.navigate(Screen.AddPerson.route) },
+                onCreateUnion = { parent1Id, parent2Id, onResult ->
+                    viewModel.createUnion(parent1Id, parent2Id, onResult)
+                },
+                onDeleteUnion = { unionId, onResult ->
+                    viewModel.deleteUnion(unionId, onResult)
+                },
+                onEditPerson = { personId, fullName, parentescoConmigo, onResult ->
+                    viewModel.updatePerson(personId, fullName, parentescoConmigo, onResult)
+                },
+                onDeletePerson = { personId, onResult ->
+                    viewModel.deletePerson(personId, onResult)
+                },
                 nodes = uiState.nodes,
-                isLoading = uiState.isLoading
+                uniones = uniones,
+                focusPersonId = uiState.focusPersonId,
+                isLoading = uiState.isLoading,
+                errorMessage = uiState.errorMessage,
+                onErrorConsumed = { viewModel.clearError() }
             )
         }
         
@@ -197,17 +214,21 @@ fun NonnaNavHost(
             }
             val familyTreeViewModel: FamilyTreeViewModel = hiltViewModel(parentEntry)
             val existingMembers = familyTreeViewModel.getAllPersonNames()
+            val uniones = familyTreeViewModel.uniones.collectAsStateWithLifecycle().value
 
             AddPersonScreen(
                 onBack = { navController.popBackStack() },
-                onAddPerson = { name, relation, birthDate, deathDate, notes, createCofre ->
+                onAddPerson = { name, relation, parentReference, birthDate, deathDate, notes, createCofre, unionPadresId, parentescoConmigo ->
                     familyTreeViewModel.addPerson(
                         fullName = name,
                         selectedRelationName = relation,
+                        selectedParentReferenceName = parentReference,
                         birthDate = birthDate,
                         deathDate = deathDate,
                         notes = notes,
-                        createCofre = createCofre
+                        createCofre = createCofre,
+                        unionPadresId = unionPadresId,
+                        parentescoConmigo = parentescoConmigo
                     ) { success, _ ->
                         if (success) {
                             // Volvemos al árbol; el backend ya se encarga de crear el cofre
@@ -216,7 +237,8 @@ fun NonnaNavHost(
                         }
                     }
                 },
-                existingMembers = existingMembers
+                existingMembers = existingMembers,
+                uniones = uniones
             )
         }
         

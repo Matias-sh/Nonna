@@ -29,7 +29,9 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            // Evita volcar bytes binarios en multipart y reduce ruido.
+            level = HttpLoggingInterceptor.Level.HEADERS
+            redactHeader("Authorization")
         }
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)

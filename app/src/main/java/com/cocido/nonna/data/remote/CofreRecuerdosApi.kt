@@ -39,7 +39,7 @@ interface CofreRecuerdosApi {
         @Part("parentesco") parentesco: RequestBody,
         @Part("fraseDescripcion") fraseDescripcion: RequestBody,
         @Part fotoPortada: MultipartBody.Part? = null,
-        @Part("invitadosEmails") invitadosEmails: RequestBody? = null
+        @Part invitadosEmails: List<MultipartBody.Part> = emptyList()
     ): Response<CofreDto>
 
     @PATCH("cofre-recuerdos/{id}")

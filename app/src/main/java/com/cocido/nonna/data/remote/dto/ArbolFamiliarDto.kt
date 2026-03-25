@@ -12,6 +12,7 @@ data class PersonaArbolDto(
     @SerializedName("nombre") val nombre: String? = null,
     @SerializedName("name") val name: String? = null,
     @SerializedName("parentesco") val parentesco: String? = null,
+    @SerializedName("parentescoConmigo") val parentescoConmigo: String? = null,
     @SerializedName("relation") val relation: String? = null,
     @SerializedName("cofreRecuerdosId") val cofreRecuerdosId: String? = null,
     @SerializedName("cofreId") val cofreId: String? = null,
@@ -28,7 +29,7 @@ data class PersonaArbolDto(
     @SerializedName("cofre") val cofre: CofreEnArbolDto? = null
 ) {
     fun displayName(): String = nombreCompleto ?: nombre ?: name ?: ""
-    fun displayRelation(): String = parentesco ?: relation ?: ""
+    fun displayRelation(): String = parentescoConmigo ?: parentesco ?: relation ?: ""
     fun cofreIdOrNull(): String? = cofreRecuerdosId ?: cofreId ?: cofre?.id?.toString()
     fun childrenList(): List<PersonaArbolDto> = children ?: hijos ?: emptyList()
 }
@@ -76,9 +77,40 @@ data class CofreEnArbolDto(
  */
 data class PersonaArbolCreateRequest(
     @SerializedName("nombreCompleto") val nombreCompleto: String,
-    @SerializedName("conexionId") val conexionId: Int? = null,
+    @SerializedName("unionPadresId") val unionPadresId: Int? = null,
+    @SerializedName("parentescoConmigo") val parentescoConmigo: String? = null,
     @SerializedName("fechaNacimiento") val fechaNacimiento: String? = null,
     @SerializedName("fechaFallecimiento") val fechaFallecimiento: String? = null,
     @SerializedName("notasPersonales") val notasPersonales: String? = null,
-    @SerializedName("crearCofre") val crearCofre: Boolean = false
+    @SerializedName("crearCofre") val crearCofre: Boolean = false,
+    @SerializedName("crearUnionRaiz") val crearUnionRaiz: Boolean? = null
+)
+
+data class UnionArbolDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("parent1") val parent1: PersonaArbolDto? = null,
+    @SerializedName("parent2") val parent2: PersonaArbolDto? = null,
+    @SerializedName("hijos") val hijos: List<PersonaArbolDto>? = null
+)
+
+data class UnionArbolCreateRequest(
+    @SerializedName("parent1Id") val parent1Id: Int,
+    @SerializedName("parent2Id") val parent2Id: Int? = null
+)
+
+data class UnionesArbolResponseDto(
+    @SerializedName("personasRaiz") val personasRaiz: List<PersonaArbolDto> = emptyList(),
+    @SerializedName("uniones") val uniones: List<UnionArbolDto> = emptyList()
+)
+
+data class CrearPersonaResponseDto(
+    @SerializedName("persona") val persona: PersonaArbolDto? = null,
+    @SerializedName("unionRaizCreada") val unionRaizCreada: UnionArbolDto? = null,
+    // Compat por si el backend devuelve directamente la persona
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("nombreCompleto") val nombreCompleto: String? = null,
+    @SerializedName("fechaNacimiento") val fechaNacimiento: String? = null,
+    @SerializedName("fechaFallecimiento") val fechaFallecimiento: String? = null,
+    @SerializedName("notasPersonales") val notasPersonales: String? = null,
+    @SerializedName("parentescoConmigo") val parentescoConmigo: String? = null
 )

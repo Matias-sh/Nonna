@@ -1,8 +1,12 @@
 package com.cocido.nonna.data.remote
 
 import com.cocido.nonna.data.remote.dto.ArbolFamiliarResponseDto
+import com.cocido.nonna.data.remote.dto.CrearPersonaResponseDto
 import com.cocido.nonna.data.remote.dto.PersonaArbolCreateRequest
 import com.cocido.nonna.data.remote.dto.PersonaArbolDto
+import com.cocido.nonna.data.remote.dto.UnionArbolCreateRequest
+import com.cocido.nonna.data.remote.dto.UnionArbolDto
+import com.cocido.nonna.data.remote.dto.UnionesArbolResponseDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -10,7 +14,6 @@ import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
-import retrofit2.http.Query
 
 interface ArbolFamiliarApi {
 
@@ -43,7 +46,7 @@ interface ArbolFamiliarApi {
     @POST("arbol-familiar/persona")
     suspend fun crearPersona(
         @Body request: PersonaArbolCreateRequest
-    ): Response<PersonaArbolDto>
+    ): Response<CrearPersonaResponseDto>
 
     /**
      * Actualizar una persona del árbol familiar.
@@ -73,4 +76,16 @@ interface ArbolFamiliarApi {
      */
     @DELETE("arbol-familiar/arbol")
     suspend fun eliminarArbol(): Response<Unit>
+
+    @GET("arbol-familiar/uniones")
+    suspend fun listarUniones(): Response<UnionesArbolResponseDto>
+
+    @GET("arbol-familiar/uniones/{id}")
+    suspend fun obtenerUnion(@Path("id") id: String): Response<UnionArbolDto>
+
+    @POST("arbol-familiar/union")
+    suspend fun crearUnion(@Body request: UnionArbolCreateRequest): Response<UnionArbolDto>
+
+    @DELETE("arbol-familiar/uniones/{id}")
+    suspend fun eliminarUnion(@Path("id") id: String): Response<Unit>
 }
