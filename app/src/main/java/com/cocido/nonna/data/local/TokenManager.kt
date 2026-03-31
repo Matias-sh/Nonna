@@ -3,6 +3,7 @@ package com.cocido.nonna.data.local
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -21,6 +22,13 @@ class TokenManager @Inject constructor(
     private object Keys {
         val ACCESS_TOKEN = stringPreferencesKey("access_token")
         val USER_ID = stringPreferencesKey("user_id")
+        /**
+         * Persiste el estado de verificación de email.
+         * null (key ausente) = nunca guardado → se trata como verificado para usuarios legacy.
+         * false = email explícitamente NO verificado.
+         * true = email verificado.
+         */
+        val EMAIL_VERIFICADO = booleanPreferencesKey("email_verificado")
     }
 
     val token: Flow<String?> = context.dataStore.data.map { prefs ->
@@ -29,6 +37,14 @@ class TokenManager @Inject constructor(
 
     val userId: Flow<String?> = context.dataStore.data.map { prefs ->
         prefs[Keys.USER_ID]
+    }
+
+    /**
+     * null cuando la key no existe en DataStore (usuario previo o campo no devuelto por el backend).
+     * En ese caso la app asume verificado para no bloquear usuarios existentes.
+     */
+    val emailVerificado: Flow<Boolean?> = context.dataStore.data.map { prefs ->
+        prefs[Keys.EMAIL_VERIFICADO]
     }
 
     suspend fun saveToken(token: String) {
@@ -43,10 +59,17 @@ class TokenManager @Inject constructor(
         }
     }
 
+    suspend fun saveEmailVerificado(verified: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.EMAIL_VERIFICADO] = verified
+        }
+    }
+
     suspend fun clear() {
         context.dataStore.edit { prefs ->
             prefs.remove(Keys.ACCESS_TOKEN)
             prefs.remove(Keys.USER_ID)
+            prefs.remove(Keys.EMAIL_VERIFICADO)
         }
     }
 }

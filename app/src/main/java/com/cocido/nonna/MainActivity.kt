@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.ui.navigation.NonnaNavHost
+import com.cocido.nonna.ui.navigation.Screen
 import com.cocido.nonna.ui.theme.NonnaTheme
 import com.cocido.nonna.ui.viewmodel.AuthState
 import com.cocido.nonna.ui.viewmodel.MainViewModel
@@ -62,9 +63,16 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         else -> {
+                            // key(authState) recrea el NavHost cuando el estado cambia,
+                            // garantizando que el startDestination sea el correcto.
                             key(authState) {
+                                val startDestination = when (authState) {
+                                    is AuthState.EmailPendingVerification -> Screen.EmailVerification.route
+                                    else -> null // NavGraph elige según isLoggedIn
+                                }
                                 NonnaNavHost(
                                     isLoggedIn = (authState is AuthState.LoggedIn),
+                                    startDestination = startDestination,
                                     onLogout = { mainViewModel.logout() }
                                 )
                             }

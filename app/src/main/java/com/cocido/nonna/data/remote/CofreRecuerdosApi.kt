@@ -3,6 +3,7 @@ package com.cocido.nonna.data.remote
 import com.cocido.nonna.data.remote.dto.CofreCreateRequest
 import com.cocido.nonna.data.remote.dto.CofreDto
 import com.cocido.nonna.data.remote.dto.CofreInviteRequest
+import com.cocido.nonna.data.remote.dto.InvitacionDto
 import com.cocido.nonna.data.remote.dto.MisCofresResponse
 import com.cocido.nonna.data.remote.dto.PagedResponse
 import okhttp3.MultipartBody
@@ -68,4 +69,31 @@ interface CofreRecuerdosApi {
 
     @POST("cofre-recuerdos/invitar")
     suspend fun invitar(@Body request: CofreInviteRequest): Response<Unit>
+
+    /**
+     * Invitaciones recibidas por el usuario autenticado (estado PENDIENTE).
+     *
+     * ⚠️ CONFIRMAR CON BACKEND: el tipo de respuesta puede ser:
+     *   - List<InvitacionDto> (array directo)
+     *   - objeto con campo "invitaciones"
+     * Si el backend devuelve objeto, cambiar el tipo de retorno a MisInvitacionesResponse.
+     */
+    @GET("cofre-recuerdos/mis-invitaciones-pendientes")
+    suspend fun misInvitacionesPendientes(): Response<List<InvitacionDto>>
+
+    /**
+     * Invitaciones enviadas por el usuario autenticado.
+     *
+     * ⚠️ CONFIRMAR CON BACKEND: mismo aviso que misInvitacionesPendientes.
+     */
+    @GET("cofre-recuerdos/mis-invitaciones-enviadas")
+    suspend fun misInvitacionesEnviadas(): Response<List<InvitacionDto>>
+
+    /** Acepta la invitación con el ID dado. El usuario queda asociado al cofre. */
+    @POST("cofre-recuerdos/invitaciones/{id}/aceptar")
+    suspend fun aceptarInvitacion(@Path("id") id: String): Response<Unit>
+
+    /** Rechaza la invitación con el ID dado. */
+    @POST("cofre-recuerdos/invitaciones/{id}/rechazar")
+    suspend fun rechazarInvitacion(@Path("id") id: String): Response<Unit>
 }

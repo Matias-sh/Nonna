@@ -13,11 +13,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.cocido.nonna.ui.components.NonnaTab
 import com.cocido.nonna.ui.screens.auth.AuthScreen
+import com.cocido.nonna.ui.screens.auth.EmailVerificationScreen
 import com.cocido.nonna.ui.screens.cofres.CofreDetailScreen
 import com.cocido.nonna.ui.screens.cofres.CofresListScreen
 import com.cocido.nonna.ui.screens.cofres.CreateCofreScreen
 import com.cocido.nonna.ui.screens.cofres.EditCofreScreen
 import com.cocido.nonna.ui.screens.home.HomeScreen
+import com.cocido.nonna.ui.screens.invitaciones.InvitacionesPendientesScreen
 import com.cocido.nonna.ui.screens.memory.AddMemoryScreen
 import com.cocido.nonna.ui.screens.memory.MemoryDetailScreen
 import com.cocido.nonna.ui.screens.memory.SelectCofreScreen
@@ -38,14 +40,20 @@ sealed class Screen(val route: String) {
         fun createRoute(mode: String) = "auth/$mode"
     }
     data object Onboarding : Screen("onboarding")
-    
+
+    /** Pantalla de verificación de email. Sin parámetros: el VM llama getMe() para obtener el email. */
+    data object EmailVerification : Screen("email-verification")
+
     // Main tabs
     data object Home : Screen("home")
     data object Cofres : Screen("cofres")
     data object FamilyTree : Screen("tree")
     data object Profile : Screen("profile")
     data object ProfileSettings : Screen("profile/settings")
-    
+
+    /** Pantalla de invitaciones pendientes recibidas. */
+    data object InvitacionesPendientes : Screen("invitaciones-pendientes")
+
     // Detail screens
     data object CofreDetail : Screen("cofre/{cofreId}") {
         fun createRoute(cofreId: String) = "cofre/$cofreId"
@@ -53,7 +61,7 @@ sealed class Screen(val route: String) {
     data object MemoryDetail : Screen("memory/{memoryId}") {
         fun createRoute(memoryId: String) = "memory/$memoryId"
     }
-    
+
     // Creation screens
     data object CreateCofre : Screen("create-cofre")
     data object EditCofre : Screen("cofre/{cofreId}/edit") {
@@ -94,7 +102,7 @@ fun NonnaNavHost(
                 }
             )
         }
-        
+
         // Auth Screen
         composable(
             route = Screen.Auth.route,
@@ -112,9 +120,20 @@ fun NonnaNavHost(
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
                 }
+                // emailVerificationNeeded es manejado por MainViewModel → key(authState) recrea el NavHost
             )
         }
-        
+
+        // Email Verification Screen
+        composable(Screen.EmailVerification.route) {
+            EmailVerificationScreen(
+                onLogout = {
+                    onLogout()
+                    // MainViewModel limpia DataStore → AuthState.LoggedOut → NavHost recreado en Welcome
+                }
+            )
+        }
+
         // Onboarding Screen
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
@@ -125,7 +144,7 @@ fun NonnaNavHost(
                 }
             )
         }
-        
+
         // Home Screen
         composable(Screen.Home.route) {
             HomeScreen(
@@ -141,10 +160,13 @@ fun NonnaNavHost(
                 onAddMemory = { navController.navigate(Screen.SelectCofre.route) },
                 onContinueCofre = { cofreId ->
                     navController.navigate(Screen.CofreDetail.createRoute(cofreId))
+                },
+                onVerInvitaciones = {
+                    navController.navigate(Screen.InvitacionesPendientes.route)
                 }
             )
         }
-        
+
         // Cofres List Screen
         composable(Screen.Cofres.route) {
             CofresListScreen(
@@ -162,7 +184,7 @@ fun NonnaNavHost(
                 onCreateCofre = { navController.navigate(Screen.CreateCofre.route) }
             )
         }
-        
+
         // Family Tree Screen
         composable(Screen.FamilyTree.route) {
             val viewModel: FamilyTreeViewModel = hiltViewModel()
@@ -187,11 +209,9 @@ fun NonnaNavHost(
                 isLoading = uiState.isLoading
             )
         }
-        
+
         // Add Person Screen
         composable(Screen.AddPerson.route) {
-            // Compartimos el mismo ViewModel del árbol familiar para que
-            // tenga acceso al estado actual y pueda refrescar luego.
             val parentEntry = remember(navController) {
                 navController.getBackStackEntry(Screen.FamilyTree.route)
             }
@@ -210,8 +230,6 @@ fun NonnaNavHost(
                         createCofre = createCofre
                     ) { success, _ ->
                         if (success) {
-                            // Volvemos al árbol; el backend ya se encarga de crear el cofre
-                            // cuando createCofre = true.
                             navController.popBackStack()
                         }
                     }
@@ -219,7 +237,7 @@ fun NonnaNavHost(
                 existingMembers = existingMembers
             )
         }
-        
+
         // Profile Screen
         composable(Screen.Profile.route) {
             ProfileScreen(
@@ -234,7 +252,6 @@ fun NonnaNavHost(
                 onOpenSettings = { navController.navigate(Screen.ProfileSettings.route) },
                 onLogout = {
                     onLogout()
-                    // key(authState) en MainActivity recrea el NavHost con startDestination=Welcome
                 }
             )
         }
@@ -245,7 +262,20 @@ fun NonnaNavHost(
                 onBack = { navController.popBackStack() }
             )
         }
-        
+
+        // Invitaciones Pendientes Screen
+        composable(Screen.InvitacionesPendientes.route) {
+            InvitacionesPendientesScreen(
+                onBack = { navController.popBackStack() },
+                onCofreAceptado = { cofreId ->
+                    // Navegar al cofre recién aceptado y limpiar la pantalla de invitaciones
+                    navController.navigate(Screen.CofreDetail.createRoute(cofreId)) {
+                        popUpTo(Screen.InvitacionesPendientes.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         // Cofre Detail Screen
         composable(
             route = Screen.CofreDetail.route,
@@ -283,7 +313,7 @@ fun NonnaNavHost(
                 onUpdated = { }
             )
         }
-        
+
         // Create Cofre Screen
         composable(Screen.CreateCofre.route) {
             CreateCofreScreen(
@@ -293,7 +323,7 @@ fun NonnaNavHost(
                 }
             )
         }
-        
+
         // Select Cofre Screen
         composable(Screen.SelectCofre.route) {
             SelectCofreScreen(
@@ -306,7 +336,7 @@ fun NonnaNavHost(
                 onCreateCofre = { navController.navigate(Screen.CreateCofre.route) }
             )
         }
-        
+
         // Add Memory Screen
         composable(
             route = Screen.AddMemory.route,
@@ -327,7 +357,7 @@ fun NonnaNavHost(
                 }
             )
         }
-        
+
         // Memory Detail Screen
         composable(
             route = Screen.MemoryDetail.route,

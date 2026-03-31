@@ -18,9 +18,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -57,12 +59,14 @@ fun HomeScreen(
     onCreateCofre: () -> Unit,
     onAddMemory: () -> Unit,
     onContinueCofre: (String) -> Unit,
+    onVerInvitaciones: () -> Unit = {},
     viewModel: com.cocido.nonna.ui.viewmodel.HomeViewModel = hiltViewModel()
 ) {
     val cofres by viewModel.cofres.collectAsState()
     val user by viewModel.user.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val invitacionesCount by viewModel.invitacionesPendientesCount.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.load() }
 
@@ -102,10 +106,19 @@ fun HomeScreen(
                     .padding(NonnaDimens.screenPaddingHorizontal)
             ) {
                 Spacer(modifier = Modifier.height(NonnaDimens.spacing24))
-                
+
+                // Banner de invitaciones pendientes
+                if (invitacionesCount > 0) {
+                    InvitacionesBanner(
+                        count = invitacionesCount,
+                        onClick = onVerInvitaciones
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
                 // Greeting
                 GreetingSection(userName = userName)
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 // Continue where you left off
@@ -129,7 +142,7 @@ fun HomeScreen(
                 QuickActionsSection(
                     onCreateCofre = onCreateCofre,
                     onAddMemory = onAddMemory,
-                    onInviteFamily = { /* TODO */ }
+                    onInviteFamily = onVerInvitaciones
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -478,6 +491,67 @@ private fun UpcomingDatesSection() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun InvitacionesBanner(
+    count: Int,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = NonnaCorners.Card,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(NonnaDimens.cardPadding),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Mail,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.secondary
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (count == 1) "Tenés 1 invitación pendiente"
+                    else "Tenés $count invitaciones pendientes",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Text(
+                    text = "Alguien te invitó a un cofre de recuerdos.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = "Ver invitaciones",
+                tint = MaterialTheme.colorScheme.onSecondaryContainer
+            )
         }
     }
 }

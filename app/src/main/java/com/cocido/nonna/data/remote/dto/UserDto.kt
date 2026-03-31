@@ -15,7 +15,9 @@ data class UserDto(
     @SerializedName("avatar_url") val avatar_url: String? = null,
     @SerializedName("fotoPerfil") val fotoPerfil: String? = null,
     @SerializedName("createdAt") val createdAt: String? = null,
-    @SerializedName("created_at") val created_at: String? = null
+    @SerializedName("created_at") val created_at: String? = null,
+    /** Campo de verificación de email. null = no enviado por el backend (se trata como verificado). */
+    @SerializedName("emailVerificado") val emailVerificado: Boolean? = null
 ) {
     /** Constructor para crear UserDto manualmente (ej. desde UsuarioDto o AuthRepository). */
     constructor(id: String, email: String, name: String? = null) : this(

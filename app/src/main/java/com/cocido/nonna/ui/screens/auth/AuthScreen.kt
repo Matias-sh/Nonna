@@ -84,6 +84,17 @@ fun AuthScreen(
             snackbarHostState.showSnackbar(message, duration = androidx.compose.material3.SnackbarDuration.Short)
         }
     }
+    // Cuando el email no está verificado, el MainViewModel detecta el cambio en DataStore
+    // y recrea el NavHost con EmailVerificationScreen como destino.
+    // Solo mostramos feedback informativo al usuario mientras ocurre la transición.
+    LaunchedEffect(Unit) {
+        viewModel.emailVerificationNeeded.collectLatest {
+            snackbarHostState.showSnackbar(
+                "Revisá tu correo para verificar tu cuenta.",
+                duration = androidx.compose.material3.SnackbarDuration.Short
+            )
+        }
+    }
 
     NonnaDetailScaffold {
         Box {

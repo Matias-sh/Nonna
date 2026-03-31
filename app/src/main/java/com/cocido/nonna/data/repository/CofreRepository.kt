@@ -5,6 +5,9 @@ import com.cocido.nonna.data.remote.CofreRecuerdosApi
 import com.cocido.nonna.data.remote.dto.CofreCreateRequest
 import com.cocido.nonna.data.remote.dto.CofreDto
 import com.cocido.nonna.data.remote.dto.CofreInviteRequest
+import com.cocido.nonna.data.remote.dto.InvitacionDto
+import com.cocido.nonna.data.remote.dto.InvitacionUiModel
+import com.cocido.nonna.data.remote.dto.toUiModel
 import com.cocido.nonna.ui.components.CofreUiModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -171,6 +174,58 @@ class CofreRepository @Inject constructor(
             )
             if (response.isSuccessful) ApiResult.Success(Unit)
             else ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+        } catch (e: HttpException) {
+            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: IOException) {
+            ApiResult.Error("Sin conexión. Revisá tu internet.")
+        }
+    }
+
+    /** Obtiene la lista de invitaciones pendientes recibidas por el usuario autenticado. */
+    suspend fun invitacionesPendientes(): ApiResult<List<InvitacionUiModel>> {
+        return try {
+            val response = api.misInvitacionesPendientes()
+            if (response.isSuccessful) {
+                val list = response.body()?.map { it.toUiModel() } ?: emptyList()
+                ApiResult.Success(list)
+            } else {
+                ApiResult.Error(
+                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "Error al obtener invitaciones",
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: IOException) {
+            ApiResult.Error("Sin conexión. Revisá tu internet.")
+        }
+    }
+
+    /** Acepta una invitación. El usuario queda asociado al cofre. */
+    suspend fun aceptarInvitacion(invitacionId: String): ApiResult<Unit> {
+        return try {
+            val response = api.aceptarInvitacion(invitacionId)
+            if (response.isSuccessful) ApiResult.Success(Unit)
+            else ApiResult.Error(
+                NetworkErrorParser.parse(response.errorBody()?.string()) ?: "Error al aceptar invitación",
+                response.code()
+            )
+        } catch (e: HttpException) {
+            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: IOException) {
+            ApiResult.Error("Sin conexión. Revisá tu internet.")
+        }
+    }
+
+    /** Rechaza una invitación. */
+    suspend fun rechazarInvitacion(invitacionId: String): ApiResult<Unit> {
+        return try {
+            val response = api.rechazarInvitacion(invitacionId)
+            if (response.isSuccessful) ApiResult.Success(Unit)
+            else ApiResult.Error(
+                NetworkErrorParser.parse(response.errorBody()?.string()) ?: "Error al rechazar invitación",
+                response.code()
+            )
         } catch (e: HttpException) {
             ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
         } catch (e: IOException) {

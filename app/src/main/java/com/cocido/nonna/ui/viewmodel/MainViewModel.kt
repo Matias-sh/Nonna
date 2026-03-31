@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,12 +24,20 @@ class MainViewModel @Inject constructor(
     val isLoggedIn: Flow<Boolean> = authRepository.isLoggedIn
 
     init {
-        // Sesión persistida en DataStore: al abrir la app se lee el token y se muestra Home o Welcome
         viewModelScope.launch {
-            authRepository.token.collect { token ->
-                _authState.update {
-                    if (!token.isNullOrBlank()) AuthState.LoggedIn else AuthState.LoggedOut
+            combine(
+                authRepository.token,
+                authRepository.emailVerificado
+            ) { token, emailVerificado ->
+                when {
+                    token.isNullOrBlank() -> AuthState.LoggedOut
+                    // emailVerificado == false (explícito): el usuario se registró pero no verificó
+                    emailVerificado == false -> AuthState.EmailPendingVerification
+                    // null (no guardado) o true: usuario previo o ya verificado → permitir acceso
+                    else -> AuthState.LoggedIn
                 }
+            }.collect { state ->
+                _authState.update { state }
             }
         }
     }
@@ -44,4 +53,6 @@ sealed class AuthState {
     data object Loading : AuthState()
     data object LoggedIn : AuthState()
     data object LoggedOut : AuthState()
+    /** Token válido pero email sin verificar. Navegar a EmailVerificationScreen. */
+    data object EmailPendingVerification : AuthState()
 }

@@ -31,7 +31,8 @@ data class UsuarioDto(
     @SerializedName("activo") val activo: Boolean? = null,
     @SerializedName("ultimoAcceso") val ultimoAcceso: String? = null,
     @SerializedName("fotoPerfil") val fotoPerfil: String? = null,
-    @SerializedName("persona") val persona: PersonaDto? = null
+    @SerializedName("persona") val persona: PersonaDto? = null,
+    @SerializedName("emailVerificado") val emailVerificado: Boolean? = null
 ) {
     fun toUserDto(): UserDto = UserDto(
         idRaw = JsonPrimitive(id?.toString() ?: ""),
@@ -39,9 +40,17 @@ data class UsuarioDto(
         nombreUsuario = nombreUsuario,
         persona = persona,
         fotoPerfil = fotoPerfil,
-        name = listOf(persona?.nombre, persona?.apellido).filterNotNull().joinToString(" ").ifEmpty { nombreUsuario ?: "" }
+        name = listOf(persona?.nombre, persona?.apellido).filterNotNull().joinToString(" ").ifEmpty { nombreUsuario ?: "" },
+        emailVerificado = emailVerificado
     )
 }
+
+/** Cuerpo para POST /auth/verify-email: código de 6 dígitos. */
+data class VerifyEmailRequest(
+    @SerializedName("codigo") val codigo: String
+)
+// ⚠️ CONFIRMAR CON BACKEND: el campo puede llamarse "codigo", "code" o "token".
+// Si el backend usa otro nombre, cambiar @SerializedName arriba.
 
 data class AuthResponse(
     @SerializedName("token") val token: String? = null,

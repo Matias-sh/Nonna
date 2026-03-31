@@ -100,8 +100,12 @@ fun CofreDetailScreen(
     val cofre = cofreState
     var showInviteModal by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showEmailNotVerifiedDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    // El email del usuario está verificado si emailVerificado != false (null → legacy, asumimos OK)
+    val isEmailVerified = currentUser?.emailVerificado != false
 
     LaunchedEffect(Unit) { viewModel.load() }
 
@@ -298,7 +302,14 @@ fun CofreDetailScreen(
             )
             1 -> FamiliaTab(
                 members = buildFamiliaMembers(cofre, currentUser),
-                onInvite = { showInviteModal = true }
+                isEmailVerified = isEmailVerified,
+                onInvite = {
+                    if (isEmailVerified) {
+                        showInviteModal = true
+                    } else {
+                        showEmailNotVerifiedDialog = true
+                    }
+                }
             )
             2 -> DetallesTab(
                 cofre = cofre,
@@ -337,6 +348,21 @@ fun CofreDetailScreen(
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
                     Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (showEmailNotVerifiedDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmailNotVerifiedDialog = false },
+            title = { Text("Email sin verificar") },
+            text = {
+                Text("Necesitás verificar tu correo electrónico antes de poder invitar familiares. Revisá tu bandeja de entrada.")
+            },
+            confirmButton = {
+                TextButton(onClick = { showEmailNotVerifiedDialog = false }) {
+                    Text("Entendido")
                 }
             }
         )
@@ -540,6 +566,7 @@ private fun buildFamiliaMembers(
 @Composable
 private fun FamiliaTab(
     members: List<CofreMemberDisplay>,
+    isEmailVerified: Boolean = true,
     onInvite: () -> Unit
 ) {
     Column(
@@ -567,10 +594,29 @@ private fun FamiliaTab(
                 )
             }
             NonnaButton(
-                text = "Invitar",
+                text = if (isEmailVerified) "Invitar" else "🔒 Invitar",
                 onClick = onInvite,
                 size = com.cocido.nonna.ui.components.NonnaButtonSize.Small
             )
+        }
+
+        if (!isEmailVerified) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                        shape = NonnaCorners.Medium
+                    )
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = "Verificá tu email para poder invitar familiares.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
         }
         
         Spacer(modifier = Modifier.height(16.dp))
