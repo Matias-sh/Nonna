@@ -335,7 +335,7 @@ private fun OnboardingStep2(
                 .padding(16.dp)
         ) {
             Text(
-                text = "💡 Cada persona que invites podrá agregar sus propios recuerdos y fotos",
+                text = "Cada persona que invites podrá agregar sus propios recuerdos y fotos",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -439,7 +439,7 @@ private fun OnboardingStep3(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "✨ Perfecto. Vamos a crear tu cofre y después te ayudamos a subir tu primer recuerdo.",
+                    text = "Perfecto. Vamos a crear tu cofre y después te ayudamos a subir tu primer recuerdo.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

@@ -1,5 +1,6 @@
 package com.cocido.nonna.ui.screens.profile
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,10 +46,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.cocido.nonna.data.mock.UserPlan
 import com.cocido.nonna.ui.components.AppShell
-import com.cocido.nonna.ui.components.NonnaButton
-import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaTab
 import com.cocido.nonna.ui.components.SimpleHeader
 import com.cocido.nonna.ui.theme.NonnaDimens
@@ -65,6 +63,10 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     viewModel: com.cocido.nonna.ui.viewmodel.ProfileViewModel = hiltViewModel()
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val showSoon: () -> Unit = {
+        Toast.makeText(context, "Próximamente", Toast.LENGTH_SHORT).show()
+    }
     val user by viewModel.user.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     LaunchedEffect(Unit) { viewModel.load() }
@@ -174,7 +176,7 @@ fun ProfileScreen(
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                // Plan section
+                // Plan section (MVP: todo gratis)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = NonnaCorners.Card,
@@ -205,52 +207,14 @@ fun ProfileScreen(
                             
                             Surface(
                                 shape = NonnaCorners.Full,
-                                color = MaterialTheme.colorScheme.surfaceVariant
+                                color = MaterialTheme.colorScheme.primaryContainer
                             ) {
                                 Text(
                                     text = "Gratis",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                 )
-                            }
-                        }
-                        
-                        if (true) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        brush = Brush.linearGradient(
-                                            colors = listOf(
-                                                PrimaryGradientStart.copy(alpha = 0.1f),
-                                                PrimaryGradientEnd.copy(alpha = 0.1f)
-                                            )
-                                        ),
-                                        shape = NonnaCorners.Medium
-                                    )
-                                    .padding(NonnaDimens.cardPadding)
-                            ) {
-                                Column {
-                                    Text(
-                                        text = "🌟 Desbloquea más funciones",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = "Con Premium podés crear cofres ilimitados, exportar fotolibros y más",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    NonnaButton(
-                                        text = "Ver planes Premium",
-                                        onClick = { /* TODO */ }
-                                    )
-                                }
                             }
                         }
                     }
@@ -271,7 +235,7 @@ fun ProfileScreen(
                     icon = Icons.Outlined.FileDownload,
                     title = "Exportar datos",
                     subtitle = "Descargá todos tus recuerdos",
-                    onClick = { /* TODO */ }
+                    onClick = showSoon
                 )
                 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -280,7 +244,7 @@ fun ProfileScreen(
                     icon = Icons.Outlined.CreditCard,
                     title = "Fotolibro físico",
                     subtitle = "Próximamente: imprimí tu cofre",
-                    onClick = { /* TODO */ },
+                    onClick = showSoon,
                     badge = "Pronto"
                 )
                 
@@ -344,7 +308,7 @@ fun ProfileScreen(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        TextButton(onClick = { /* TODO */ }) {
+                        TextButton(onClick = showSoon) {
                             Text(
                                 text = "Términos",
                                 style = MaterialTheme.typography.bodySmall,
@@ -356,7 +320,7 @@ fun ProfileScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        TextButton(onClick = { /* TODO */ }) {
+                        TextButton(onClick = showSoon) {
                             Text(
                                 text = "Privacidad",
                                 style = MaterialTheme.typography.bodySmall,
@@ -368,7 +332,7 @@ fun ProfileScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        TextButton(onClick = { /* TODO */ }) {
+                        TextButton(onClick = showSoon) {
                             Text(
                                 text = "Ayuda",
                                 style = MaterialTheme.typography.bodySmall,

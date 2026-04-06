@@ -14,6 +14,8 @@ data class UserDto(
     @SerializedName("avatarUrl") val avatarUrl: String? = null,
     @SerializedName("avatar_url") val avatar_url: String? = null,
     @SerializedName("fotoPerfil") val fotoPerfil: String? = null,
+    @SerializedName("emailVerificado") val emailVerificado: Boolean? = null,
+    @SerializedName("email_verificado") val emailVerificadoSnake: Boolean? = null,
     @SerializedName("createdAt") val createdAt: String? = null,
     @SerializedName("created_at") val created_at: String? = null
 ) {
@@ -42,4 +44,6 @@ data class UserDto(
 
     /** Para mostrar en perfil/listas: nombre de usuario si existe, si no displayName. */
     fun displayNameOrUsername(): String = nombreUsuario ?: displayName()
+
+    fun isEmailVerified(): Boolean = emailVerificado ?: emailVerificadoSnake ?: false
 }

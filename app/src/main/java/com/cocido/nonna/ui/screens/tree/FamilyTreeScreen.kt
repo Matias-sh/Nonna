@@ -65,7 +65,7 @@ fun FamilyTreeScreen(
     var zoom by remember { mutableFloatStateOf(1f) }
     
     AppShell(
-        currentTab = NonnaTab.Arbol,
+        currentTab = NonnaTab.Cofres,
         onTabSelected = onTabSelected
     ) {
         if (isLoading) {
@@ -220,7 +220,7 @@ fun FamilyTreeScreen(
                             .padding(12.dp)
                     ) {
                         Text(
-                            text = "💡 Tocá una persona para ver su cofre (si tiene uno) o crear uno nuevo",
+                            text = "Tocá una persona para ver su cofre (si tiene uno) o crear uno nuevo",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

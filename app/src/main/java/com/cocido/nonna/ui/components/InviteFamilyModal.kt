@@ -53,7 +53,7 @@ fun InviteFamilyModal(
 ) {
     var email by remember { mutableStateOf("") }
     var selectedRole by remember { mutableStateOf(CofreRole.Colaborador) }
-    var message by remember { mutableStateOf("Te invito a construir el cofre de $cofreName juntos. 💝") }
+    var message by remember { mutableStateOf("Te invito a construir el cofre de $cofreName juntos.") }
     
     val roles = listOf(
         RoleOption(
@@ -232,7 +232,7 @@ fun InviteFamilyModal(
                             .padding(12.dp)
                     ) {
                         Text(
-                            text = "💌 Le enviaremos un email de invitación con tu mensaje y un link para unirse al cofre",
+                            text = "Le enviaremos un email de invitación con tu mensaje y un link para unirse al cofre",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

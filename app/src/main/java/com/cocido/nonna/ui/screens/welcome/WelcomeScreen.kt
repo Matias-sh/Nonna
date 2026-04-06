@@ -151,7 +151,7 @@ fun WelcomeScreen(
                 .padding(16.dp)
         ) {
             Text(
-                text = "🔒 Tu privacidad es sagrada. NONNA es un espacio privado, solo para tu familia.",
+                text = "Tu privacidad es sagrada. NONNA es un espacio privado, solo para tu familia.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

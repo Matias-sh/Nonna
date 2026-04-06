@@ -2,6 +2,7 @@ package com.cocido.nonna.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -23,11 +24,19 @@ class MainViewModel @Inject constructor(
     val isLoggedIn: Flow<Boolean> = authRepository.isLoggedIn
 
     init {
-        // Sesión persistida en DataStore: al abrir la app se lee el token y se muestra Home o Welcome
+        // Sesión persistida en DataStore: al abrir la app validamos token contra /auth/me
+        // para evitar estados inconsistentes (ej: emailVerificado desactualizado).
         viewModelScope.launch {
             authRepository.token.collect { token ->
-                _authState.update {
-                    if (!token.isNullOrBlank()) AuthState.LoggedIn else AuthState.LoggedOut
+                if (token.isNullOrBlank()) {
+                    _authState.update { AuthState.LoggedOut }
+                } else {
+                    _authState.update { AuthState.Loading }
+                    when (authRepository.getMe()) {
+                        is ApiResult.Success -> _authState.update { AuthState.LoggedIn }
+                        is ApiResult.Error -> _authState.update { AuthState.LoggedOut }
+                        else -> _authState.update { AuthState.LoggedOut }
+                    }
                 }
             }
         }

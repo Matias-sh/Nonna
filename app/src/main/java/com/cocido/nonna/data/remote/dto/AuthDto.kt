@@ -29,6 +29,7 @@ data class UsuarioDto(
     @SerializedName("email") val email: String? = null,
     /** Estado del usuario devuelto por el backend; no se envía en signup. */
     @SerializedName("activo") val activo: Boolean? = null,
+    @SerializedName("emailVerificado") val emailVerificado: Boolean? = null,
     @SerializedName("ultimoAcceso") val ultimoAcceso: String? = null,
     @SerializedName("fotoPerfil") val fotoPerfil: String? = null,
     @SerializedName("persona") val persona: PersonaDto? = null
@@ -39,6 +40,7 @@ data class UsuarioDto(
         nombreUsuario = nombreUsuario,
         persona = persona,
         fotoPerfil = fotoPerfil,
+        emailVerificado = emailVerificado,
         name = listOf(persona?.nombre, persona?.apellido).filterNotNull().joinToString(" ").ifEmpty { nombreUsuario ?: "" }
     )
 }

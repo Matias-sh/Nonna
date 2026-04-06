@@ -329,10 +329,6 @@ fun AddPersonScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "💡 ",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
                         text = buildAnnotatedString {
                             withStyle(style = SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)) {
                                 append("Consejo: ")

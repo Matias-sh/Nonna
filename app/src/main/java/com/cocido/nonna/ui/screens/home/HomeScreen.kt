@@ -128,8 +128,7 @@ fun HomeScreen(
                 // Quick actions
                 QuickActionsSection(
                     onCreateCofre = onCreateCofre,
-                    onAddMemory = onAddMemory,
-                    onInviteFamily = { /* TODO */ }
+                    onAddMemory = onAddMemory
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -331,8 +330,7 @@ private fun DailyPromptSection(onAddMemory: () -> Unit) {
 @Composable
 private fun QuickActionsSection(
     onCreateCofre: () -> Unit,
-    onAddMemory: () -> Unit,
-    onInviteFamily: () -> Unit
+    onAddMemory: () -> Unit
 ) {
     Column {
         Text(
@@ -368,17 +366,6 @@ private fun QuickActionsSection(
             )
         }
         
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        QuickActionCard(
-            icon = Icons.Outlined.Favorite,
-            title = "Invitar Familia",
-            description = "Construyan juntos este legado",
-            onClick = onInviteFamily,
-            iconBackgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
-            iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }
 

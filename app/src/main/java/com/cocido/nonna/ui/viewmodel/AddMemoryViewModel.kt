@@ -3,7 +3,9 @@ package com.cocido.nonna.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
+import com.cocido.nonna.data.repository.EmocionesRepository
 import com.cocido.nonna.data.repository.RecuerdosRepository
+import com.cocido.nonna.ui.components.EmotionalTag
 import com.cocido.nonna.ui.components.MemoryUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -12,12 +14,14 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class AddMemoryViewModel @Inject constructor(
-    private val recuerdosRepository: RecuerdosRepository
+    private val recuerdosRepository: RecuerdosRepository,
+    private val emocionesRepository: EmocionesRepository
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -28,6 +32,12 @@ class AddMemoryViewModel @Inject constructor(
 
     private val _saved = MutableSharedFlow<MemoryUiModel>()
     val saved: SharedFlow<MemoryUiModel> = _saved.asSharedFlow()
+
+    private val _emotionIdByName = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    init {
+        loadEmotions()
+    }
 
     fun save(
         cofreRecuerdosId: String,
@@ -55,5 +65,41 @@ class AddMemoryViewModel @Inject constructor(
             }
             _isLoading.value = false
         }
+    }
+
+    fun resolveEmotionPayload(tag: EmotionalTag?): Pair<String?, String?> {
+        if (tag == null) return null to null
+        val normalizedTag = normalizeKey(tag.label)
+        val emotionId = _emotionIdByName.value[normalizedTag]
+        return if (!emotionId.isNullOrBlank()) {
+            emotionId to null
+        } else {
+            null to tag.label
+        }
+    }
+
+    private fun loadEmotions() {
+        viewModelScope.launch {
+            emocionesRepository.search().collect { result ->
+                if (result is ApiResult.Success) {
+                    val map = result.data
+                        .mapNotNull { emotion ->
+                            val id = emotion.idValue().trim()
+                            val name = emotion.displayName().trim()
+                            if (id.isBlank() || name.isBlank()) null
+                            else normalizeKey(name) to id
+                        }
+                        .toMap()
+                    _emotionIdByName.value = map
+                }
+            }
+        }
+    }
+
+    private fun normalizeKey(value: String): String {
+        return java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .lowercase()
+            .trim()
     }
 }

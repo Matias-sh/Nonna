@@ -194,6 +194,7 @@ private fun RecuerdoDto.toUiModel(): MemoryUiModel {
         date = displayDate(),
         emotionalTag = emocionTag,
         thumbnailUrl = imageUrl,
+        audioUrl = audioUrl ?: rutaArchivo,
         duration = displayDuration()
     )
 }

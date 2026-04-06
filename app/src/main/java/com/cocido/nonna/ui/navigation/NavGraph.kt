@@ -133,7 +133,6 @@ fun NonnaNavHost(
                     when (tab) {
                         NonnaTab.Inicio -> { /* Already here */ }
                         NonnaTab.Cofres -> navController.navigate(Screen.Cofres.route)
-                        NonnaTab.Arbol -> navController.navigate(Screen.FamilyTree.route)
                         NonnaTab.Perfil -> navController.navigate(Screen.Profile.route)
                     }
                 },
@@ -152,7 +151,6 @@ fun NonnaNavHost(
                     when (tab) {
                         NonnaTab.Inicio -> navController.navigate(Screen.Home.route)
                         NonnaTab.Cofres -> { /* Already here */ }
-                        NonnaTab.Arbol -> navController.navigate(Screen.FamilyTree.route)
                         NonnaTab.Perfil -> navController.navigate(Screen.Profile.route)
                     }
                 },
@@ -173,7 +171,6 @@ fun NonnaNavHost(
                     when (tab) {
                         NonnaTab.Inicio -> navController.navigate(Screen.Home.route)
                         NonnaTab.Cofres -> navController.navigate(Screen.Cofres.route)
-                        NonnaTab.Arbol -> { /* Already here */ }
                         NonnaTab.Perfil -> navController.navigate(Screen.Profile.route)
                     }
                 },
@@ -227,7 +224,6 @@ fun NonnaNavHost(
                     when (tab) {
                         NonnaTab.Inicio -> navController.navigate(Screen.Home.route)
                         NonnaTab.Cofres -> navController.navigate(Screen.Cofres.route)
-                        NonnaTab.Arbol -> navController.navigate(Screen.FamilyTree.route)
                         NonnaTab.Perfil -> { /* Already here */ }
                     }
                 },
@@ -339,8 +335,6 @@ fun NonnaNavHost(
             MemoryDetailScreen(
                 memoryId = memoryId,
                 onBack = { navController.popBackStack() },
-                onEdit = { /* TODO */ },
-                onShare = { /* TODO */ },
                 onDelete = { navController.popBackStack() }
             )
         }

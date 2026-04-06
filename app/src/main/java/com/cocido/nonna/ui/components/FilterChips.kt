@@ -85,7 +85,6 @@ fun FilterChipItem(
 @Composable
 fun EmotionalTagChip(
     label: String,
-    emoji: String,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -116,7 +115,7 @@ fun EmotionalTagChip(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "$emoji $label",
+            text = label,
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -125,10 +124,10 @@ fun EmotionalTagChip(
 
 // Predefined emotional tags matching Figma design
 object EmotionalTags {
-    val alegre = FilterChip("alegre", "😊 Alegre")
-    val nostalgico = FilterChip("nostálgico", "🥹 Nostálgico")
-    val calmo = FilterChip("calmo", "😌 Calmo")
-    val familiar = FilterChip("familiar", "👨‍👩‍👧‍👦 Familiar")
+    val alegre = FilterChip("alegre", "Alegre")
+    val nostalgico = FilterChip("nostálgico", "Nostálgico")
+    val calmo = FilterChip("calmo", "Calmo")
+    val familiar = FilterChip("familiar", "Familiar")
     
     val all = listOf(alegre, nostalgico, calmo, familiar)
 }

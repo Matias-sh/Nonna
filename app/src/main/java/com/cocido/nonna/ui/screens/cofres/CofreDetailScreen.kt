@@ -1,5 +1,6 @@
 package com.cocido.nonna.ui.screens.cofres
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +49,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -92,6 +94,7 @@ fun CofreDetailScreen(
     onEditCofre: (String) -> Unit = {},
     viewModel: com.cocido.nonna.ui.viewmodel.CofreDetailViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val cofreState by viewModel.cofre.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
     val memoriesState by viewModel.memories.collectAsState()
@@ -686,6 +689,7 @@ private fun DetallesTab(
     onEdit: () -> Unit = {},
     onDelete: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -716,7 +720,7 @@ private fun DetallesTab(
                 Spacer(modifier = Modifier.height(12.dp))
                 DetailItem(label = "Parentesco", value = cofre.relation)
                 Spacer(modifier = Modifier.height(12.dp))
-                DetailItem(label = "Privacidad", value = "🔒 Solo invitados")
+                DetailItem(label = "Privacidad", value = "Solo invitados")
             }
         }
         
@@ -750,7 +754,7 @@ private fun DetallesTab(
                     
                     NonnaButton(
                         text = "Gestionar permisos",
-                        onClick = { /* TODO */ },
+                        onClick = { Toast.makeText(context, "Próximamente", Toast.LENGTH_SHORT).show() },
                         style = NonnaButtonStyle.Ghost,
                         fullWidth = true
                     )

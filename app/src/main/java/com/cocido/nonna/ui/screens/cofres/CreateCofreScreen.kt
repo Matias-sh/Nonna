@@ -284,7 +284,7 @@ fun CreateCofreScreen(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "🔒 Este cofre es privado por defecto. Solo las personas que invites podrán verlo.",
+                    text = "Este cofre es privado por defecto. Solo las personas que invites podrán verlo.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

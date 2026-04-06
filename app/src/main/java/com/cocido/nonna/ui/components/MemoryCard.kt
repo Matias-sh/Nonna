@@ -54,14 +54,13 @@ enum class MemoryType {
 
 enum class EmotionalTag(
     val label: String,
-    val emoji: String,
     val backgroundColor: Color,
     val textColor: Color
 ) {
-    Alegre("Alegre", "😊", TagAlegreBackground, TagAlegreText),
-    Nostalgico("Nostálgico", "🥹", TagNostalgicoBackground, TagNostalgicoText),
-    Calmo("Calmo", "😌", TagCalmoBackground, TagCalmoText),
-    Familiar("Familiar", "👨‍👩‍👧‍👦", TagFamiliarBackground, TagFamiliarText)
+    Alegre("Alegre", TagAlegreBackground, TagAlegreText),
+    Nostalgico("Nostálgico", TagNostalgicoBackground, TagNostalgicoText),
+    Calmo("Calmo", TagCalmoBackground, TagCalmoText),
+    Familiar("Familiar", TagFamiliarBackground, TagFamiliarText)
 }
 
 data class MemoryUiModel(
@@ -72,6 +71,7 @@ data class MemoryUiModel(
     val date: String,
     val emotionalTag: EmotionalTag? = null,
     val thumbnailUrl: String? = null,
+    val audioUrl: String? = null,
     val duration: String? = null // For audio
 )
 

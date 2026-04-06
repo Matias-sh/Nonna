@@ -23,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material3.Icon
@@ -49,7 +48,6 @@ enum class NonnaTab(
 ) {
     Inicio("inicio", "Inicio", Icons.Outlined.Home),
     Cofres("cofres", "Cofres", Icons.Outlined.Inventory2),
-    Arbol("arbol", "Árbol", Icons.Outlined.AccountTree),
     Perfil("perfil", "Perfil", Icons.Outlined.AccountCircle)
 }
 

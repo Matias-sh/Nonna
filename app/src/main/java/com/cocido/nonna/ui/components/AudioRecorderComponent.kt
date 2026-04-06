@@ -1,5 +1,7 @@
 package com.cocido.nonna.ui.components
 
+import android.media.MediaPlayer
+import android.media.MediaRecorder
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -33,6 +35,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +47,7 @@ import com.cocido.nonna.ui.theme.PrimaryGradientEnd
 import com.cocido.nonna.ui.theme.PrimaryGradientStart
 import kotlinx.coroutines.delay
 import kotlin.random.Random
+import java.io.File
 
 enum class RecorderState {
     Idle, Recording, Paused, Recorded, Playing
@@ -51,11 +55,15 @@ enum class RecorderState {
 
 @Composable
 fun AudioRecorderComponent(
-    onRecordingComplete: () -> Unit,
+    onRecordingComplete: (file: File, durationSeconds: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var state by remember { mutableStateOf(RecorderState.Idle) }
     var durationSeconds by remember { mutableIntStateOf(0) }
+    var recordedFile by remember { mutableStateOf<File?>(null) }
+    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var player by remember { mutableStateOf<MediaPlayer?>(null) }
     
     // Timer for recording
     LaunchedEffect(state) {
@@ -170,7 +178,23 @@ fun AudioRecorderComponent(
                     RecorderState.Idle -> {
                         // Record button
                         IconButton(
-                            onClick = { state = RecorderState.Recording },
+                            onClick = {
+                                runCatching {
+                                    val outputFile = File.createTempFile("nonna_audio_", ".m4a", context.cacheDir)
+                                    val localRecorder = MediaRecorder().apply {
+                                        setAudioSource(MediaRecorder.AudioSource.MIC)
+                                        setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                                        setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                                        setOutputFile(outputFile.absolutePath)
+                                        prepare()
+                                        start()
+                                    }
+                                    recorder = localRecorder
+                                    recordedFile = outputFile
+                                    durationSeconds = 0
+                                    state = RecorderState.Recording
+                                }
+                            },
                             modifier = Modifier
                                 .size(64.dp)
                                 .background(
@@ -190,7 +214,10 @@ fun AudioRecorderComponent(
                     RecorderState.Recording -> {
                         // Pause button
                         IconButton(
-                            onClick = { state = RecorderState.Paused },
+                            onClick = {
+                                runCatching { recorder?.pause() }
+                                state = RecorderState.Paused
+                            },
                             modifier = Modifier
                                 .size(56.dp)
                                 .background(
@@ -209,8 +236,12 @@ fun AudioRecorderComponent(
                         // Stop button
                         IconButton(
                             onClick = {
+                                runCatching {
+                                    recorder?.stop()
+                                    recorder?.release()
+                                }
+                                recorder = null
                                 state = RecorderState.Recorded
-                                onRecordingComplete()
                             },
                             modifier = Modifier
                                 .size(64.dp)
@@ -231,7 +262,10 @@ fun AudioRecorderComponent(
                     RecorderState.Paused -> {
                         // Resume button
                         IconButton(
-                            onClick = { state = RecorderState.Recording },
+                            onClick = {
+                                runCatching { recorder?.resume() }
+                                state = RecorderState.Recording
+                            },
                             modifier = Modifier
                                 .size(56.dp)
                                 .background(
@@ -250,8 +284,12 @@ fun AudioRecorderComponent(
                         // Stop button
                         IconButton(
                             onClick = {
+                                runCatching {
+                                    recorder?.stop()
+                                    recorder?.release()
+                                }
+                                recorder = null
                                 state = RecorderState.Recorded
-                                onRecordingComplete()
                             },
                             modifier = Modifier
                                 .size(64.dp)
@@ -273,10 +311,25 @@ fun AudioRecorderComponent(
                         // Play/Pause button
                         IconButton(
                             onClick = {
-                                state = if (state == RecorderState.Playing) {
-                                    RecorderState.Recorded
+                                if (state == RecorderState.Playing) {
+                                    runCatching { player?.pause() }
+                                    state = RecorderState.Recorded
                                 } else {
-                                    RecorderState.Playing
+                                    val targetFile = recordedFile
+                                    if (targetFile != null) {
+                                        runCatching {
+                                            player?.release()
+                                            player = MediaPlayer().apply {
+                                                setDataSource(targetFile.absolutePath)
+                                                prepare()
+                                                setOnCompletionListener {
+                                                    state = RecorderState.Recorded
+                                                }
+                                                start()
+                                            }
+                                            state = RecorderState.Playing
+                                        }
+                                    }
                                 }
                             },
                             modifier = Modifier
@@ -301,6 +354,14 @@ fun AudioRecorderComponent(
                         // Delete button
                         IconButton(
                             onClick = {
+                                runCatching {
+                                    recorder?.release()
+                                    player?.release()
+                                }
+                                recorder = null
+                                player = null
+                                recordedFile?.delete()
+                                recordedFile = null
                                 state = RecorderState.Idle
                                 durationSeconds = 0
                             },
@@ -322,7 +383,12 @@ fun AudioRecorderComponent(
                         // Save button
                         NonnaButton(
                             text = "Guardar audio",
-                            onClick = onRecordingComplete
+                            onClick = {
+                                recordedFile?.let { file ->
+                                    onRecordingComplete(file, durationSeconds)
+                                }
+                            },
+                            enabled = recordedFile != null
                         )
                     }
                 }

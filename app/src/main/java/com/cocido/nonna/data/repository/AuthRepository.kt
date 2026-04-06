@@ -27,7 +27,8 @@ class AuthRepository @Inject constructor(
                 val tokenValue = body?.tokenValue
                 if (!tokenValue.isNullOrBlank()) {
                     tokenManager.saveToken(tokenValue)
-                    val user = body?.user ?: body?.usuario?.toUserDto() ?: authApi.getMe().body()
+                    val meUser = runCatching { authApi.getMe().body() }.getOrNull()
+                    val user = meUser ?: body?.user ?: body?.usuario?.toUserDto()
                     user?.id?.let { tokenManager.saveUserId(it) }
                     ApiResult.Success(user ?: UserDto("", email, email))
                 } else {
@@ -69,7 +70,8 @@ class AuthRepository @Inject constructor(
                 val tokenValue = body?.tokenValue
                 if (!tokenValue.isNullOrBlank()) {
                     tokenManager.saveToken(tokenValue)
-                    val user = body?.user ?: body?.usuario?.toUserDto() ?: authApi.getMe().body()
+                    val meUser = runCatching { authApi.getMe().body() }.getOrNull()
+                    val user = meUser ?: body?.user ?: body?.usuario?.toUserDto()
                     user?.id?.let { tokenManager.saveUserId(it) }
                     ApiResult.Success(user ?: UserDto("", email, nombreVal))
                 } else {
