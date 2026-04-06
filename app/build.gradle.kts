@@ -6,9 +6,17 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+import java.util.Properties
+import org.gradle.api.GradleException
+
 android {
     namespace = "com.cocido.nonna"
     compileSdk = 35
+    val keystorePropsFile = rootProject.file("keystore.properties")
+    val keystoreProps = Properties()
+    val hasKeystoreProps = keystorePropsFile.exists().also { exists ->
+        if (exists) keystorePropsFile.inputStream().use { keystoreProps.load(it) }
+    }
     
     packaging {
         jniLibs {
@@ -21,10 +29,24 @@ android {
         applicationId = "com.cocido.nonna"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "0.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        create("release") {
+            if (hasKeystoreProps) {
+                val storeFilePath = keystoreProps.getProperty("storeFile")
+                if (!storeFilePath.isNullOrBlank()) {
+                    storeFile = file(storeFilePath)
+                }
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -33,8 +55,12 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
+            if (!hasKeystoreProps) {
+                throw GradleException("Falta keystore.properties para firmar la release.")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

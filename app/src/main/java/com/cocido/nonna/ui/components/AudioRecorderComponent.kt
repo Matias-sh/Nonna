@@ -1,7 +1,13 @@
 package com.cocido.nonna.ui.components
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -64,6 +70,34 @@ fun AudioRecorderComponent(
     var recordedFile by remember { mutableStateOf<File?>(null) }
     var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
+
+    fun startRecording() {
+        runCatching {
+            val outputFile = File.createTempFile("nonna_audio_", ".m4a", context.cacheDir)
+            val localRecorder = MediaRecorder().apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setOutputFile(outputFile.absolutePath)
+                prepare()
+                start()
+            }
+            recorder = localRecorder
+            recordedFile = outputFile
+            durationSeconds = 0
+            state = RecorderState.Recording
+        }
+    }
+
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            startRecording()
+        } else {
+            Toast.makeText(context, "Necesitás habilitar el micrófono para grabar audio.", Toast.LENGTH_SHORT).show()
+        }
+    }
     
     // Timer for recording
     LaunchedEffect(state) {
@@ -179,20 +213,14 @@ fun AudioRecorderComponent(
                         // Record button
                         IconButton(
                             onClick = {
-                                runCatching {
-                                    val outputFile = File.createTempFile("nonna_audio_", ".m4a", context.cacheDir)
-                                    val localRecorder = MediaRecorder().apply {
-                                        setAudioSource(MediaRecorder.AudioSource.MIC)
-                                        setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                                        setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                                        setOutputFile(outputFile.absolutePath)
-                                        prepare()
-                                        start()
-                                    }
-                                    recorder = localRecorder
-                                    recordedFile = outputFile
-                                    durationSeconds = 0
-                                    state = RecorderState.Recording
+                                val hasAudioPermission = ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.RECORD_AUDIO
+                                ) == PackageManager.PERMISSION_GRANTED
+                                if (!hasAudioPermission) {
+                                    audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                } else {
+                                    startRecording()
                                 }
                             },
                             modifier = Modifier

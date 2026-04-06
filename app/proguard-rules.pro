@@ -31,7 +31,7 @@
 -keep @androidx.room.Dao class *
 
 # Keep Retrofit interfaces
--keep interface com.cocido.nonna.data.remote.api.** { *; }
+-keep interface com.cocido.nonna.data.remote.** { *; }
 
 # Keep Dagger Hilt classes
 -keep class dagger.hilt.** { *; }
