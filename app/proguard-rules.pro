@@ -153,7 +153,7 @@
 -dontwarn kotlin.reflect.jvm.internal.**
 
 # --- CameraX ---
--keep androidx.camera.** { *; }
+-keep class androidx.camera.** { *; }
 
 # --- Media3 / ExoPlayer ---
 -keep class androidx.media3.** { *; }

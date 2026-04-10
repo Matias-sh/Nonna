@@ -20,7 +20,6 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -80,27 +79,9 @@ fun CofresListScreen(
         currentTab = NonnaTab.Cofres,
         onTabSelected = onTabSelected
     ) {
-        Scaffold(
-            floatingActionButton = {
-                if (cofres.isNotEmpty()) {
-                    FloatingActionButton(
-                        onClick = onCreateCofre,
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(bottom = 72.dp) // Above bottom nav
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Nuevo cofre"
-                        )
-                    }
-                }
-            }
-        ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize()) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
+                modifier = Modifier.fillMaxSize()
             ) {
                 SimpleHeader(
                     title = "Cofres",
@@ -174,7 +155,7 @@ fun CofresListScreen(
                             contentPadding = PaddingValues(
                                 start = NonnaDimens.screenPaddingHorizontal,
                                 end = NonnaDimens.screenPaddingHorizontal,
-                                bottom = 100.dp // Bottom nav + FAB padding
+                                bottom = 24.dp
                             ),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -187,6 +168,23 @@ fun CofresListScreen(
                             }
                         }
                     }
+                }
+            }
+
+            if (cofres.isNotEmpty()) {
+                FloatingActionButton(
+                    onClick = onCreateCofre,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(NonnaDimens.screenPaddingHorizontal)
+                        .padding(bottom = 16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Nuevo cofre"
+                    )
                 }
             }
         }

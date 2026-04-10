@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.CofreRepository
 import com.cocido.nonna.ui.components.CofreUiModel
+import com.cocido.nonna.util.ImageCompressor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -84,11 +85,17 @@ class EditCofreViewModel @Inject constructor(
     }
 
     private suspend fun uriToTempFile(uri: Uri): File = withContext(Dispatchers.IO) {
-        val ext = context.contentResolver.getType(uri)?.substringAfter("/") ?: "jpg"
-        val file = File.createTempFile("cofre_cover", ".$ext", context.cacheDir)
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            file.outputStream().use { output -> input.copyTo(output) }
+        ImageCompressor.compressForUpload(
+            context = context,
+            uri = uri,
+            maxBytes = 1024 * 1024
+        ) ?: run {
+            val ext = context.contentResolver.getType(uri)?.substringAfter("/") ?: "jpg"
+            val file = File.createTempFile("cofre_cover", ".$ext", context.cacheDir)
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                file.outputStream().use { output -> input.copyTo(output) }
+            }
+            file
         }
-        file
     }
 }

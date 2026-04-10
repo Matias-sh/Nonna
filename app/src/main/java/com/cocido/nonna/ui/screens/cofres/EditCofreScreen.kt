@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,8 +26,6 @@ import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +34,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,14 +45,16 @@ import coil.compose.AsyncImage
 import com.cocido.nonna.data.mock.relationOptions
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
+import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
+import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTextArea
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.components.PageHeader
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -70,8 +70,9 @@ fun EditCofreScreen(
     var description by remember { mutableStateOf("") }
     var coverImageUri by remember { mutableStateOf<Uri?>(null) }
     val isLoading by viewModel.isLoading.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    var feedbackVisible by remember { mutableStateOf(false) }
+    var feedbackMessage by remember { mutableStateOf("") }
+    var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
 
     var hasInitialized by remember { mutableStateOf(false) }
     LaunchedEffect(cofre) {
@@ -89,12 +90,26 @@ fun EditCofreScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.updateSuccess.collectLatest { onUpdated(); onBack() }
+        viewModel.updateSuccess.collectLatest {
+            feedbackMessage = "Cofre actualizado correctamente"
+            feedbackType = NonnaFeedbackType.Success
+            feedbackVisible = true
+            delay(1200)
+            feedbackVisible = false
+            onUpdated()
+            onBack()
+        }
     }
 
     LaunchedEffect(Unit) {
         viewModel.errorMessage.collectLatest { msg ->
-            msg?.let { scope.launch { snackbarHostState.showSnackbar(it) } }
+            msg?.let {
+                feedbackMessage = it
+                feedbackType = NonnaFeedbackType.Error
+                feedbackVisible = true
+                delay(1800)
+                feedbackVisible = false
+            }
         }
     }
 
@@ -113,6 +128,7 @@ fun EditCofreScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
+                        .imePadding()
                         .padding(NonnaDimens.screenPaddingHorizontal)
                 ) {
                     Spacer(modifier = Modifier.height(24.dp))
@@ -288,7 +304,12 @@ fun EditCofreScreen(
                     Spacer(modifier = Modifier.height(32.dp))
                 }
             }
-            SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
+            NonnaBottomFeedbackBanner(
+                visible = feedbackVisible,
+                message = feedbackMessage,
+                type = feedbackType,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

@@ -12,8 +12,11 @@ import com.cocido.nonna.data.repository.NetworkErrorParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -38,6 +41,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    private val _updateSuccess = MutableSharedFlow<Unit>()
+    val updateSuccess: SharedFlow<Unit> = _updateSuccess.asSharedFlow()
 
     fun load() {
         viewModelScope.launch {
@@ -134,6 +140,7 @@ class ProfileViewModel @Inject constructor(
                 )
                 if (response.isSuccessful) {
                     _user.value = response.body()
+                    _updateSuccess.emit(Unit)
                 } else {
                     _errorMessage.value = NetworkErrorParser.parse(response.errorBody()?.string())
                         ?: "No se pudo actualizar el perfil"

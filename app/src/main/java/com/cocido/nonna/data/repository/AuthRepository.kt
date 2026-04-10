@@ -46,7 +46,11 @@ class AuthRepository @Inject constructor(
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         } catch (e: Exception) {
-            ApiResult.Error("No se pudo iniciar sesión. Probá de nuevo en unos minutos.")
+            val detail = e.localizedMessage?.takeIf { it.isNotBlank() }
+            ApiResult.Error(
+                detail?.let { "No se pudo iniciar sesión. $it" }
+                    ?: "No se pudo iniciar sesión. Probá de nuevo en unos minutos."
+            )
         }
     }
 

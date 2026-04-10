@@ -67,7 +67,7 @@ fun ProfileScreen(
     // En perfil mostramos el nombre \"humano\" (persona/nombre) más que el username técnico.
     val userName = displayUser?.displayName() ?: ""
     val userEmail = displayUser?.email ?: ""
-    val avatarUrl = displayUser?.avatarUrl ?: displayUser?.avatar_url ?: displayUser?.fotoPerfil
+    val avatarUrl = displayUser?.profileImageUrl()
     val joinedDate = displayUser?.createdAt ?: displayUser?.created_at ?: ""
 
     AppShell(

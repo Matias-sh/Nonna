@@ -9,7 +9,6 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.net.Uri
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
@@ -83,6 +82,8 @@ import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.util.ImageCompressor
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
+import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
+import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTextArea
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.components.PageHeader
@@ -90,6 +91,7 @@ import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import coil.compose.AsyncImage
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.delay
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -113,9 +115,17 @@ fun AddMemoryScreen(
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
     val scope = rememberCoroutineScope()
+    var feedbackVisible by remember { mutableStateOf(false) }
+    var feedbackMessage by remember { mutableStateOf("") }
+    var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
     val isLoading by viewModel.isLoading.collectAsState()
     LaunchedEffect(Unit) {
         viewModel.saved.collectLatest { _: com.cocido.nonna.ui.components.MemoryUiModel ->
+            feedbackMessage = "Recuerdo guardado correctamente"
+            feedbackType = NonnaFeedbackType.Success
+            feedbackVisible = true
+            delay(1200)
+            feedbackVisible = false
             onSave()
         }
     }
@@ -171,7 +181,13 @@ fun AddMemoryScreen(
             if (permanentlyDenied) {
                 showCameraSettingsDialog = true
             } else {
-                Toast.makeText(context, "Necesitás habilitar el permiso de cámara", Toast.LENGTH_SHORT).show()
+                feedbackMessage = "Necesitás habilitar el permiso de cámara"
+                feedbackType = NonnaFeedbackType.Error
+                feedbackVisible = true
+                scope.launch {
+                    delay(1800)
+                    feedbackVisible = false
+                }
             }
         }
     }
@@ -193,12 +209,13 @@ fun AddMemoryScreen(
         AddMemoryStep.Details -> "Agregá los detalles"
     }
     
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         if (showCameraSettingsDialog) {
             AlertDialog(
                 onDismissRequest = { showCameraSettingsDialog = false },
@@ -365,6 +382,13 @@ fun AddMemoryScreen(
                 )
             }
         }
+    }
+        NonnaBottomFeedbackBanner(
+            visible = feedbackVisible,
+            message = feedbackMessage,
+            type = feedbackType,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 

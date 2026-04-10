@@ -14,6 +14,9 @@ data class UserDto(
     @SerializedName("avatarUrl") val avatarUrl: String? = null,
     @SerializedName("avatar_url") val avatar_url: String? = null,
     @SerializedName("fotoPerfil") val fotoPerfil: String? = null,
+    @SerializedName("urlFotoPerfil") val urlFotoPerfil: String? = null,
+    @SerializedName("foto_perfil") val fotoPerfilSnake: String? = null,
+    @SerializedName("url_foto_perfil") val urlFotoPerfilSnake: String? = null,
     @SerializedName("emailVerificado") val emailVerificado: Boolean? = null,
     @SerializedName("email_verificado") val emailVerificadoSnake: Boolean? = null,
     @SerializedName("createdAt") val createdAt: String? = null,
@@ -39,4 +42,21 @@ data class UserDto(
     fun displayNameOrUsername(): String = nombreUsuario ?: displayName()
 
     fun isEmailVerified(): Boolean = emailVerificado ?: emailVerificadoSnake ?: false
+
+    fun profileImageUrl(): String? {
+        val raw = listOfNotNull(
+            avatarUrl,
+            avatar_url,
+            fotoPerfil,
+            urlFotoPerfil,
+            fotoPerfilSnake,
+            urlFotoPerfilSnake
+        ).firstOrNull { !it.isNullOrBlank() && it != "string" }?.trim() ?: return null
+
+        return when {
+            raw.startsWith("http://") || raw.startsWith("https://") -> raw
+            raw.startsWith("/") -> "https://apinonna.pushsoftware.com.ar$raw"
+            else -> "https://apinonna.pushsoftware.com.ar/$raw"
+        }
+    }
 }

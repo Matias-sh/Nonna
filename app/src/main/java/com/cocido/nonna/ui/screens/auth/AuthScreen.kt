@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -23,15 +24,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Alignment
@@ -46,7 +44,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
+import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
+import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.navigation.AuthMode
 import com.cocido.nonna.ui.theme.NonnaDimens
@@ -70,8 +70,8 @@ fun AuthScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     val isLoading by viewModel.isLoading.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    var feedbackVisible by remember { mutableStateOf(false) }
+    var feedbackMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.authSuccess.collectLatest { _ ->
@@ -80,17 +80,20 @@ fun AuthScreen(
     }
     LaunchedEffect(Unit) {
         viewModel.errorMessage.collectLatest { message ->
-            snackbarHostState.showSnackbar(message, duration = androidx.compose.material3.SnackbarDuration.Short)
+            feedbackMessage = message
+            feedbackVisible = true
+            kotlinx.coroutines.delay(1800)
+            feedbackVisible = false
         }
     }
 
     NonnaDetailScaffold {
-        Box {
-            SnackbarHost(hostState = snackbarHostState)
+        Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
+                    .imePadding()
             ) {
                 // Header with back button
                 Row(
@@ -313,6 +316,12 @@ fun AuthScreen(
                     }
                 }
             }
+            NonnaBottomFeedbackBanner(
+                visible = feedbackVisible,
+                message = feedbackMessage,
+                type = NonnaFeedbackType.Error,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

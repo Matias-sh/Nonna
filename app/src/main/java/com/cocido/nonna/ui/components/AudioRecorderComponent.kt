@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -40,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
@@ -52,6 +52,7 @@ import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.PrimaryGradientEnd
 import com.cocido.nonna.ui.theme.PrimaryGradientStart
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 import java.io.File
 
@@ -65,11 +66,14 @@ fun AudioRecorderComponent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf(RecorderState.Idle) }
     var durationSeconds by remember { mutableIntStateOf(0) }
     var recordedFile by remember { mutableStateOf<File?>(null) }
     var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
+    var feedbackVisible by remember { mutableStateOf(false) }
+    var feedbackMessage by remember { mutableStateOf("") }
 
     fun startRecording() {
         runCatching {
@@ -95,7 +99,12 @@ fun AudioRecorderComponent(
         if (granted) {
             startRecording()
         } else {
-            Toast.makeText(context, "Necesitás habilitar el micrófono para grabar audio.", Toast.LENGTH_SHORT).show()
+            feedbackMessage = "Necesitás habilitar el micrófono para grabar audio"
+            feedbackVisible = true
+            scope.launch {
+                delay(1800)
+                feedbackVisible = false
+            }
         }
     }
     
@@ -421,6 +430,13 @@ fun AudioRecorderComponent(
                     }
                 }
             }
+
+            NonnaBottomFeedbackBanner(
+                visible = feedbackVisible,
+                message = feedbackMessage,
+                type = NonnaFeedbackType.Error,
+                includeNavigationBarsPadding = false
+            )
         }
     }
 }

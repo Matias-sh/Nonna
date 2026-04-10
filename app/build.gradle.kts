@@ -26,11 +26,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.cocido.nonna"
+        applicationId = "com.cocido.nonna.free"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 6
+        versionName = "0.1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -51,7 +51,9 @@ android {
 
     val isReleaseTaskRequested = gradle.startParameter.taskNames.any { task ->
         val normalized = task.lowercase()
-        normalized.contains("release") || normalized.contains("bundle")
+        normalized.contains("bundlerelease") ||
+            normalized.contains("assemblerelease") ||
+            normalized.contains("publishrelease")
     }
 
     buildTypes {
@@ -71,8 +73,10 @@ android {
             if (!hasKeystoreProps && isReleaseTaskRequested) {
                 throw GradleException("Falta keystore.properties para firmar la release.")
             }
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // MVP release: desactivamos minify/shrink para evitar errores de reflexión
+            // (ej: Retrofit/Kotlin generic signatures) que no aparecen en debug.
+            isMinifyEnabled = false
+            isShrinkResources = false
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

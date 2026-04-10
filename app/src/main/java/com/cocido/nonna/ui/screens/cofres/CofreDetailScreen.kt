@@ -71,6 +71,8 @@ import com.cocido.nonna.ui.components.MemoryFilters
 import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
+import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
+import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.PageHeader
 import com.cocido.nonna.ui.components.PermissionBadge
 import com.cocido.nonna.ui.theme.NonnaDimens
@@ -79,10 +81,9 @@ import com.cocido.nonna.ui.theme.PrimaryGradientEnd
 import com.cocido.nonna.ui.theme.PrimaryGradientStart
 import com.cocido.nonna.ui.components.InviteFamilyModal
 import kotlinx.coroutines.flow.collectLatest
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
 
 @Composable
 fun CofreDetailScreen(
@@ -102,22 +103,41 @@ fun CofreDetailScreen(
     val cofre = cofreState
     var showInviteModal by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var feedbackVisible by remember { mutableStateOf(false) }
+    var feedbackMessage by remember { mutableStateOf("") }
+    var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
 
     LaunchedEffect(Unit) { viewModel.load() }
 
     LaunchedEffect(Unit) {
-        viewModel.deleteSuccess.collectLatest { onBack() }
+        viewModel.deleteSuccess.collectLatest {
+            feedbackMessage = "Cofre eliminado correctamente"
+            feedbackType = NonnaFeedbackType.Success
+            feedbackVisible = true
+            delay(1200)
+            feedbackVisible = false
+            onBack()
+        }
     }
     LaunchedEffect(Unit) {
         viewModel.inviteSuccess.collectLatest {
-            scope.launch { snackbarHostState.showSnackbar("Invitación enviada") }
+            feedbackMessage = "Invitación enviada"
+            feedbackType = NonnaFeedbackType.Success
+            feedbackVisible = true
+            delay(1400)
+            feedbackVisible = false
         }
     }
     LaunchedEffect(errorMessage) {
         errorMessage?.let { msg ->
-            scope.launch { snackbarHostState.showSnackbar(msg) }
+            feedbackMessage = msg
+            feedbackType = NonnaFeedbackType.Error
+            feedbackVisible = true
+            scope.launch {
+                delay(1800)
+                feedbackVisible = false
+            }
             viewModel.clearError()
         }
     }
@@ -134,6 +154,9 @@ fun CofreDetailScreen(
             else -> true
         }
     }
+    val realPhotoCount = memoriesState.count { it.type == MemoryType.Photo }
+    val realAudioCount = memoriesState.count { it.type == MemoryType.Audio }
+    val realTextCount = memoriesState.count { it.type == MemoryType.Text }
     
     Box(modifier = Modifier.fillMaxSize()) {
     Column(
@@ -250,18 +273,18 @@ fun CofreDetailScreen(
             ) {
                 StatItem(
                     icon = Icons.Outlined.Image,
-                    count = cofre.photoCount,
-                    label = "fotos"
+                    count = realPhotoCount,
+                    label = if (realPhotoCount == 1) "foto" else "fotos"
                 )
                 StatItem(
                     icon = Icons.Outlined.AudioFile,
-                    count = cofre.audioCount,
-                    label = "audios"
+                    count = realAudioCount,
+                    label = if (realAudioCount == 1) "audio" else "audios"
                 )
                 StatItem(
                     icon = Icons.Outlined.Description,
-                    count = cofre.textCount,
-                    label = "textos"
+                    count = realTextCount,
+                    label = if (realTextCount == 1) "texto" else "textos"
                 )
                 StatItem(
                     icon = Icons.Outlined.People,
@@ -344,7 +367,12 @@ fun CofreDetailScreen(
         )
     }
 
-    SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
+    NonnaBottomFeedbackBanner(
+        visible = feedbackVisible,
+        message = feedbackMessage,
+        type = feedbackType,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    )
     }
 }
 
@@ -527,7 +555,7 @@ private fun buildFamiliaMembers(
     if (!cofre.isOwner) return emptyList()
     val fullName = currentUser.displayName()
     val username = currentUser.nombreUsuario
-    val avatar = currentUser.fotoPerfil ?: currentUser.avatarUrl ?: currentUser.avatar_url
+    val avatar = currentUser.profileImageUrl()
     return listOf(
         CofreMemberDisplay(
             fullName = fullName,

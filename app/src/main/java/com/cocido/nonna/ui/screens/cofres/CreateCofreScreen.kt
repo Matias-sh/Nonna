@@ -20,14 +20,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +34,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import coil.compose.AsyncImage
 import kotlinx.coroutines.flow.collectLatest
@@ -49,13 +47,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.data.mock.relationOptions
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
+import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
+import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTextArea
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.components.PageHeader
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 data class NewCofre(
     val name: String,
@@ -78,8 +78,9 @@ fun CreateCofreScreen(
     var inviteEmails by remember { mutableStateOf<List<String>>(emptyList()) }
     var emailInput by remember { mutableStateOf("") }
     val isLoading by viewModel.isLoading.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    var feedbackVisible by remember { mutableStateOf(false) }
+    var feedbackMessage by remember { mutableStateOf("") }
+    var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -89,13 +90,24 @@ fun CreateCofreScreen(
 
     LaunchedEffect(Unit) {
         viewModel.created.collectLatest { _ ->
+            feedbackMessage = "Cofre creado correctamente"
+            feedbackType = NonnaFeedbackType.Success
+            feedbackVisible = true
+            delay(1200)
+            feedbackVisible = false
             onCreate(NewCofre(name = name, relation = relation, description = description, coverImageUrl = coverImageUri?.toString()))
         }
     }
 
     LaunchedEffect(Unit) {
         viewModel.errorMessage.collectLatest { msg ->
-            msg?.let { scope.launch { snackbarHostState.showSnackbar(it) } }
+            msg?.let {
+                feedbackMessage = it
+                feedbackType = NonnaFeedbackType.Error
+                feedbackVisible = true
+                delay(1800)
+                feedbackVisible = false
+            }
         }
     }
 
@@ -116,6 +128,7 @@ fun CreateCofreScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(NonnaDimens.screenPaddingHorizontal)
         ) {
             Spacer(modifier = Modifier.height(24.dp))
@@ -401,7 +414,12 @@ fun CreateCofreScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
         }
-            SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
+            NonnaBottomFeedbackBanner(
+                visible = feedbackVisible,
+                message = feedbackMessage,
+                type = feedbackType,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }
