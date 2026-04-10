@@ -26,14 +26,7 @@ data class RecuerdoDto(
     @SerializedName("createdAt") val createdAt: String? = null
 ) {
     /** id como string (backend puede devolver número). */
-    fun idValue(): String = when {
-        idRaw == null -> ""
-        idRaw.isJsonPrimitive -> {
-            val p = idRaw.asJsonPrimitive
-            if (p.isNumber) p.asInt.toString() else p.asString
-        }
-        else -> ""
-    }
+    fun idValue(): String = idRaw.primitiveIdString()
     fun displayTitle(): String = titulo ?: title ?: ""
     fun displayDescription(): String? = descripcion ?: description
     fun displayDate(): String = fecha ?: date ?: ""

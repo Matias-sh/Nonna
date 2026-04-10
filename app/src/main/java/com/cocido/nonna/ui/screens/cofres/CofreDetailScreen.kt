@@ -1,6 +1,5 @@
 package com.cocido.nonna.ui.screens.cofres
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -689,7 +688,6 @@ private fun DetallesTab(
     onEdit: () -> Unit = {},
     onDelete: () -> Unit = {}
 ) {
-    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -748,13 +746,6 @@ private fun DetallesTab(
                     NonnaButton(
                         text = "Editar información del cofre",
                         onClick = onEdit,
-                        style = NonnaButtonStyle.Ghost,
-                        fullWidth = true
-                    )
-                    
-                    NonnaButton(
-                        text = "Gestionar permisos",
-                        onClick = { Toast.makeText(context, "Próximamente", Toast.LENGTH_SHORT).show() },
                         style = NonnaButtonStyle.Ghost,
                         fullWidth = true
                     )

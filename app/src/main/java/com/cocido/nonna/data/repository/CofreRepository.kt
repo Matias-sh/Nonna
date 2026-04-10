@@ -12,6 +12,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import com.google.gson.JsonParseException
 import retrofit2.HttpException
 import java.io.File
 import java.io.IOException
@@ -32,6 +33,8 @@ class CofreRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             emit(ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code()))
+        } catch (e: JsonParseException) {
+            emit(ApiResult.Error(API_RESPONSE_PARSE_ERROR))
         } catch (e: IOException) {
             emit(ApiResult.Error("Sin conexión. Revisá tu internet."))
         }
@@ -48,6 +51,8 @@ class CofreRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
@@ -99,6 +104,8 @@ class CofreRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
@@ -142,6 +149,8 @@ class CofreRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
@@ -154,6 +163,8 @@ class CofreRepository @Inject constructor(
             else ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
         } catch (e: HttpException) {
             ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
@@ -173,6 +184,8 @@ class CofreRepository @Inject constructor(
             else ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
         } catch (e: HttpException) {
             ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }

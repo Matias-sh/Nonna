@@ -7,6 +7,7 @@ import com.cocido.nonna.data.remote.dto.PersonaArbolCreateRequest
 import com.cocido.nonna.data.remote.dto.PersonaArbolDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import com.google.gson.JsonParseException
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
@@ -30,6 +31,8 @@ class ArbolFamiliarRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             emit(ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code()))
+        } catch (e: JsonParseException) {
+            emit(ApiResult.Error(API_RESPONSE_PARSE_ERROR))
         } catch (e: IOException) {
             emit(ApiResult.Error("Sin conexión. Revisá tu internet."))
         }
@@ -65,6 +68,8 @@ class ArbolFamiliarRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
@@ -101,6 +106,8 @@ class ArbolFamiliarRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
@@ -119,6 +126,8 @@ class ArbolFamiliarRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
@@ -137,6 +146,8 @@ class ArbolFamiliarRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }

@@ -10,8 +10,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * Módulo de Dagger Hilt para la aplicación
- * Versión simplificada para MVP con datos mock
+ * Módulo de Dagger Hilt para dependencias de aplicación.
  */
 @Module
 @InstallIn(SingletonComponent::class)

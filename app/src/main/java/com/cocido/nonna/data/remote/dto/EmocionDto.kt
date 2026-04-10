@@ -11,13 +11,6 @@ data class EmocionDto(
     @SerializedName("emoji") val emoji: String? = null
 ) {
     /** id como string (backend puede devolver número). */
-    fun idValue(): String = when {
-        idRaw == null -> ""
-        idRaw.isJsonPrimitive -> {
-            val p = idRaw.asJsonPrimitive
-            if (p.isNumber) p.asInt.toString() else p.asString
-        }
-        else -> ""
-    }
+    fun idValue(): String = idRaw.primitiveIdString()
     fun displayName(): String = nombre ?: name ?: ""
 }

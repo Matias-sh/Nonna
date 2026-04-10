@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.flow.map
+import com.google.gson.JsonParseException
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
@@ -40,8 +41,12 @@ class AuthRepository @Inject constructor(
         } catch (e: HttpException) {
             if (e.code() == 401) ApiResult.Error("Email o contraseña incorrectos")
             else ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
+        } catch (e: Exception) {
+            ApiResult.Error("No se pudo iniciar sesión. Probá de nuevo en unos minutos.")
         }
     }
 
@@ -82,8 +87,12 @@ class AuthRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
+        } catch (e: Exception) {
+            ApiResult.Error("No se pudo completar el registro. Probá de nuevo en unos minutos.")
         }
     }
 
@@ -104,8 +113,12 @@ class AuthRepository @Inject constructor(
             } else {
                 ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
             }
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
+        } catch (e: Exception) {
+            ApiResult.Error("No se pudo cargar tu perfil. Probá de nuevo en unos minutos.")
         }
     }
 

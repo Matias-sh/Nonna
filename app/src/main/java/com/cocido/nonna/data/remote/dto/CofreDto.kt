@@ -25,14 +25,7 @@ data class CofreDto(
     @SerializedName("isOwner") val isOwner: Boolean? = null,
     @SerializedName("esPropietario") val esPropietario: Boolean? = null
 ) {
-    fun idValue(): String = when {
-        idRaw == null -> ""
-        idRaw.isJsonPrimitive -> {
-            val p = idRaw.asJsonPrimitive
-            if (p.isNumber) p.asInt.toString() else p.asString
-        }
-        else -> ""
-    }
+    fun idValue(): String = idRaw.primitiveIdString()
     fun displayName(): String = nombre ?: name ?: ""
     fun displayRelation(): String = parentesco ?: relation ?: ""
     fun coverUrl(): String? = imagenPortada ?: imagenUrl ?: coverImageUrl ?: urlPortada

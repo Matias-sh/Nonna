@@ -6,32 +6,6 @@ import com.cocido.nonna.ui.components.EmotionalTag
 import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.ui.components.MemoryUiModel
 
-// Mock User
-data class MockUser(
-    val id: String,
-    val name: String,
-    val email: String,
-    val avatarUrl: String? = null,
-    val plan: UserPlan = UserPlan.Free,
-    val cofresCount: Int = 0,
-    val memoriesCount: Int = 0,
-    val joinedDate: String = ""
-)
-
-enum class UserPlan {
-    Free, Premium
-}
-
-val mockCurrentUser = MockUser(
-    id = "user-1",
-    name = "María García",
-    email = "maria@email.com",
-    plan = UserPlan.Free,
-    cofresCount = 3,
-    memoriesCount = 47,
-    joinedDate = "Enero 2024"
-)
-
 // Mock Cofres
 val mockCofres = listOf(
     CofreUiModel(

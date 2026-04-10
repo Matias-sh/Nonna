@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName
 
 data class UserDto(
     @SerializedName("id") private val idRaw: JsonElement? = null,
-    @SerializedName("email") val email: String,
+    @SerializedName("email") val email: String = "",
     @SerializedName("nombreUsuario") val nombreUsuario: String? = null,
     @SerializedName("nombre") val nombre: String? = null,
     @SerializedName("name") val name: String? = null,
@@ -28,14 +28,7 @@ data class UserDto(
 
     /** id como string (backend puede devolver número). */
     val id: String
-        get() = when {
-            idRaw == null -> ""
-            idRaw.isJsonPrimitive -> {
-                val p = idRaw.asJsonPrimitive
-                if (p.isNumber) p.asInt.toString() else p.asString
-            }
-            else -> ""
-        }
+        get() = idRaw.primitiveIdString()
 
     /** Nombre completo (persona nombre+apellido) o nombre de usuario o email. */
     fun displayName(): String =

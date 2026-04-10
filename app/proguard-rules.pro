@@ -118,12 +118,63 @@
     @androidx.annotation.Keep *;
 }
 
-# Optimize and obfuscate
--optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
--optimizationpasses 5
--allowaccessmodification
--dontpreverify
+# No añadir bloques de optimización extra aquí: ya aplica proguard-android-optimize.txt;
+# optimizaciones manuales extra suelen ser la causa de fallos solo en release.
 
 # Keep line numbers for crash reports
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# --- Retrofit / OkHttp (refuerzo; parte ya viene embebido en los AAR) ---
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations, AnnotationDefault
+-keepclassmembers,allowshrinking,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+-dontwarn javax.annotation.**
+-dontwarn kotlin.Unit
+-dontwarn retrofit2.KotlinExtensions
+-dontwarn retrofit2.KotlinExtensions$*
+
+# --- OkHttp (platform / registro de APIs internas) ---
+-dontwarn okhttp3.internal.platform.**
+-keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
+
+# --- Gson (factories por reflexión) ---
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+
+# --- Moshi en classpath (Retrofit usa Gson; evita ruido R8) ---
+-dontwarn com.squareup.moshi.**
+
+# --- Kotlin ---
+-dontwarn kotlin.reflect.jvm.internal.**
+
+# --- CameraX ---
+-keep androidx.camera.** { *; }
+
+# --- Media3 / ExoPlayer ---
+-keep class androidx.media3.** { *; }
+-dontwarn androidx.media3.**
+
+# --- DataStore / protobuf interno ---
+-keepclassmembers class * extends androidx.datastore.preferences.protobuf.GeneratedMessageLite {
+    <fields>;
+}
+
+# --- WorkManager ---
+-dontwarn androidx.work.impl.**
+
+# --- Glide (por si R8 elimina generados del compilador) ---
+-keep public class * implements com.bumptech.glide.module.GlideModule
+-keep class * extends com.bumptech.glide.module.AppGlideModule
+-keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
+    **[] $VALUES;
+    public *;
+}
+
+# --- App (manifest / Hilt) ---
+-keep class com.cocido.nonna.NonnaApplication { *; }
+-keep class com.cocido.nonna.MainActivity { *; }

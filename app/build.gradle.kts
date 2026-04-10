@@ -49,13 +49,26 @@ android {
         }
     }
 
+    val isReleaseTaskRequested = gradle.startParameter.taskNames.any { task ->
+        val normalized = task.lowercase()
+        normalized.contains("release") || normalized.contains("bundle")
+    }
+
     buildTypes {
         debug {
             isDebuggable = true
             applicationIdSuffix = ".debug"
         }
+        create("qa") {
+            initWith(getByName("release"))
+            // Variante release-like para validar R8/obfuscación sin keystore de producción.
+            isDebuggable = true
+            applicationIdSuffix = ".qa"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
         release {
-            if (!hasKeystoreProps) {
+            if (!hasKeystoreProps && isReleaseTaskRequested) {
                 throw GradleException("Falta keystore.properties para firmar la release.")
             }
             isMinifyEnabled = true
@@ -65,20 +78,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-        }
-    }
-    
-    flavorDimensions += "version"
-    productFlavors {
-        create("free") {
-            dimension = "version"
-            applicationIdSuffix = ".free"
-            versionNameSuffix = "-free"
-        }
-        create("premium") {
-            dimension = "version"
-            applicationIdSuffix = ".premium"
-            versionNameSuffix = "-premium"
         }
     }
     
@@ -92,6 +91,7 @@ android {
     }
     
     buildFeatures {
+        buildConfig = true
         viewBinding = false
         dataBinding = false
         compose = true

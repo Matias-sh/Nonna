@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -291,22 +290,6 @@ fun AuthScreen(
                 enabled = !isLoading && email.isNotBlank() && password.isNotBlank() &&
                         (mode == AuthMode.Login || (password == confirmPassword && nombre.isNotBlank() && apellido.isNotBlank() && nombreUsuario.isNotBlank()))
                     )
-                    
-                    // Forgot password (login only)
-                    if (mode == AuthMode.Login) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        TextButton(
-                            onClick = { /* TODO: Forgot password */ },
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
-                        ) {
-                            Text(
-                                text = "¿Olvidaste tu contraseña?",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
                     
                     Spacer(modifier = Modifier.height(32.dp))
                     

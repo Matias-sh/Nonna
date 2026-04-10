@@ -1,6 +1,5 @@
 package com.cocido.nonna.ui.screens.profile
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,20 +17,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.CreditCard
-import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +41,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.cocido.nonna.BuildConfig
 import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.NonnaTab
 import com.cocido.nonna.ui.components.SimpleHeader
@@ -63,10 +59,6 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     viewModel: com.cocido.nonna.ui.viewmodel.ProfileViewModel = hiltViewModel()
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val showSoon: () -> Unit = {
-        Toast.makeText(context, "Próximamente", Toast.LENGTH_SHORT).show()
-    }
     val user by viewModel.user.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     LaunchedEffect(Unit) { viewModel.load() }
@@ -176,76 +168,11 @@ fun ProfileScreen(
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                // Plan section (MVP: todo gratis)
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = NonnaCorners.Card,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(NonnaDimens.cardPaddingLarge)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Plan Actual",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "Gratis",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            
-                            Surface(
-                                shape = NonnaCorners.Full,
-                                color = MaterialTheme.colorScheme.primaryContainer
-                            ) {
-                                Text(
-                                    text = "Gratis",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
                 // Options
                 Text(
                     text = "Opciones",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                OptionCard(
-                    icon = Icons.Outlined.FileDownload,
-                    title = "Exportar datos",
-                    subtitle = "Descargá todos tus recuerdos",
-                    onClick = showSoon
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                OptionCard(
-                    icon = Icons.Outlined.CreditCard,
-                    title = "Fotolibro físico",
-                    subtitle = "Próximamente: imprimí tu cofre",
-                    onClick = showSoon,
-                    badge = "Pronto"
                 )
                 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -304,42 +231,12 @@ fun ProfileScreen(
                     )
                     
                     Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        TextButton(onClick = showSoon) {
-                            Text(
-                                text = "Términos",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Text(
-                            text = "•",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        TextButton(onClick = showSoon) {
-                            Text(
-                                text = "Privacidad",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Text(
-                            text = "•",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        TextButton(onClick = showSoon) {
-                            Text(
-                                text = "Ayuda",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                    Text(
+                        text = "Versión ${BuildConfig.VERSION_NAME}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
                 }
                 
                 Spacer(modifier = Modifier.height(100.dp)) // Bottom nav padding

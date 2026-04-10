@@ -7,6 +7,7 @@ import com.cocido.nonna.data.remote.CofreRecuerdosApi
 import com.cocido.nonna.data.remote.EmocionesApi
 import com.cocido.nonna.data.remote.RecuerdosApi
 import com.cocido.nonna.data.remote.UsuarioApi
+import com.cocido.nonna.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,7 +30,11 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
