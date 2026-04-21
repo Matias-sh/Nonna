@@ -396,15 +396,23 @@ private fun MemoryDetailContent(
                     )
                 }
                 
-                if (memory.emotionalTag != null) {
+                if (memory.emotionalTag != null || !memory.emotionalCustomLabel.isNullOrBlank()) {
                     Surface(
                         shape = NonnaCorners.Full,
-                        color = MaterialTheme.colorScheme.tertiaryContainer
+                        color = if (memory.emotionalTag != null) {
+                            MaterialTheme.colorScheme.tertiaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        }
                     ) {
                         Text(
-                            text = memory.emotionalTag.label,
+                            text = memory.emotionalTag?.label ?: memory.emotionalCustomLabel.orEmpty(),
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            color = if (memory.emotionalTag != null) {
+                                MaterialTheme.colorScheme.onTertiaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            },
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }

@@ -87,6 +87,7 @@ data class MemoryUiModel(
     val description: String? = null,
     val date: String,
     val emotionalTag: EmotionalTag? = null,
+    val emotionalCustomLabel: String? = null,
     val thumbnailUrl: String? = null,
     val audioUrl: String? = null,
     val duration: String? = null // For audio
@@ -230,6 +231,8 @@ private fun MemoryCardGrid(
                     
                     if (memory.emotionalTag != null) {
                         EmotionalTagBadge(tag = memory.emotionalTag)
+                    } else if (!memory.emotionalCustomLabel.isNullOrBlank()) {
+                        CustomEmotionBadge(text = memory.emotionalCustomLabel)
                     }
                 }
             }
@@ -344,6 +347,9 @@ private fun MemoryCardList(
             if (memory.emotionalTag != null) {
                 Spacer(modifier = Modifier.width(8.dp))
                 EmotionalTagBadge(tag = memory.emotionalTag)
+            } else if (!memory.emotionalCustomLabel.isNullOrBlank()) {
+                Spacer(modifier = Modifier.width(8.dp))
+                CustomEmotionBadge(text = memory.emotionalCustomLabel)
             }
         }
     }
@@ -363,6 +369,27 @@ fun EmotionalTagBadge(
             text = tag.label,
             style = MaterialTheme.typography.labelSmall,
             color = tag.textColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+
+@Composable
+fun CustomEmotionBadge(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = NonnaCorners.Full,
+        color = MaterialTheme.colorScheme.secondaryContainer
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)

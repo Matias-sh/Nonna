@@ -58,6 +58,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 
+private const val MAX_MEMORY_DESCRIPTION_LENGTH = 280
+
 @Composable
 fun EditMemoryScreen(
     memoryId: String,
@@ -70,6 +72,7 @@ fun EditMemoryScreen(
     val memory by viewModel.memory.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
+    val isTextMemory = memory?.type == MemoryType.Text
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -109,7 +112,7 @@ fun EditMemoryScreen(
         title = current.title
         date = current.date
         emotionalTag = current.emotionalTag
-        customEmotion = ""
+        customEmotion = current.emotionalCustomLabel.orEmpty()
         resolvedTextContent = current.description
         if (current.type == MemoryType.Text && current.description.isNullOrBlank()) {
             resolvedTextContent = withContext(Dispatchers.IO) {
@@ -233,9 +236,16 @@ fun EditMemoryScreen(
             NonnaTextArea(
                 value = description,
                 onValueChange = { description = it },
-                label = "Descripción",
+                label = if (isTextMemory) "Contenido" else "Descripción",
                 minLines = 4,
                 maxLines = 8,
+                helperText = if (isTextMemory) null else "${description.length}/$MAX_MEMORY_DESCRIPTION_LENGTH",
+                isError = !isTextMemory && description.length > MAX_MEMORY_DESCRIPTION_LENGTH,
+                errorMessage = if (!isTextMemory && description.length > MAX_MEMORY_DESCRIPTION_LENGTH) {
+                    "Supera el máximo de $MAX_MEMORY_DESCRIPTION_LENGTH caracteres."
+                } else {
+                    null
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -352,7 +362,10 @@ fun EditMemoryScreen(
                             )
                         }
                     },
-                    enabled = title.isNotBlank() && !isSaving && !isPreparingReplacement,
+                    enabled = title.isNotBlank() &&
+                        !isSaving &&
+                        !isPreparingReplacement &&
+                        (isTextMemory || description.length <= MAX_MEMORY_DESCRIPTION_LENGTH),
                     modifier = Modifier.weight(1f)
                 )
             }

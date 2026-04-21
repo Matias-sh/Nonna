@@ -1,5 +1,6 @@
 package com.cocido.nonna.data.repository
 
+import android.util.Log
 import com.cocido.nonna.data.remote.RecuerdosApi
 import com.cocido.nonna.data.remote.dto.RecuerdoCreateRequest
 import com.cocido.nonna.data.remote.dto.RecuerdoDto
@@ -20,6 +21,10 @@ import javax.inject.Inject
 class RecuerdosRepository @Inject constructor(
     private val api: RecuerdosApi
 ) {
+    private companion object {
+        const val TOMCAT_EMOTION_TAG = "TomcatEmotionCheck"
+    }
+
     fun recuerdosByCofre(cofreId: String): Flow<ApiResult<List<MemoryUiModel>>> = flow {
         emit(ApiResult.Loading)
         try {
@@ -96,17 +101,13 @@ class RecuerdosRepository @Inject constructor(
                 response.body()?.let { ApiResult.Success(it.toUiModel()) }
                     ?: ApiResult.Error("Error al crear recuerdo")
             } else {
-                val message = when (response.code()) {
-                    413 -> "La imagen es demasiado grande. Probá con otra más chica."
-                    else -> response.errorBody()?.string() ?: "Error"
-                }
+                val raw = response.errorBody()?.string() ?: "Error"
+                val message = mapRecuerdoBackendError(raw, response.code())
                 ApiResult.Error(message, response.code())
             }
         } catch (e: HttpException) {
-            val message = when (e.code()) {
-                413 -> "La imagen es demasiado grande. Probá con otra más chica."
-                else -> e.response()?.errorBody()?.string() ?: e.message()
-            }
+            val raw = e.response()?.errorBody()?.string() ?: e.message() ?: "Error"
+            val message = mapRecuerdoBackendError(raw, e.code())
             ApiResult.Error(message ?: "Error", e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
@@ -125,6 +126,10 @@ class RecuerdosRepository @Inject constructor(
         file: File? = null
     ): ApiResult<MemoryUiModel> {
         return try {
+            Log.d(
+                TOMCAT_EMOTION_TAG,
+                "PATCH recuerdos/$id payload -> emocionId=$emocionId, emocionPersonalizada=$emocionPersonalizada, hasFile=${file != null}"
+            )
             val response = if (file != null) {
                 val mediaType = when (file.extension.lowercase()) {
                     "jpg", "jpeg", "png", "gif", "webp" -> "image/*".toMediaTypeOrNull()
@@ -156,20 +161,30 @@ class RecuerdosRepository @Inject constructor(
                 )
             }
             if (response.isSuccessful) {
-                response.body()?.let { ApiResult.Success(it.toUiModel()) }
-                    ?: ApiResult.Error("Error al actualizar")
+                response.body()?.let { updated ->
+                    Log.d(
+                        TOMCAT_EMOTION_TAG,
+                        "PATCH recuerdos/$id response -> emocionId=${updated.emocionId}, emocionPersonalizada=${updated.emocionPersonalizada}"
+                    )
+                    runCatching { api.getById(id) }.onSuccess { verifyResponse ->
+                        val verified = verifyResponse.body()
+                        Log.d(
+                            TOMCAT_EMOTION_TAG,
+                            "GET recuerdos/$id verify -> code=${verifyResponse.code()}, emocionId=${verified?.emocionId}, emocionPersonalizada=${verified?.emocionPersonalizada}"
+                        )
+                    }.onFailure {
+                        Log.w(TOMCAT_EMOTION_TAG, "GET verify failed: ${it.message}")
+                    }
+                    ApiResult.Success(updated.toUiModel())
+                } ?: ApiResult.Error("Error al actualizar")
             } else {
-                val message = when (response.code()) {
-                    413 -> "El archivo es demasiado grande. Probá con uno más liviano."
-                    else -> response.errorBody()?.string() ?: "Error"
-                }
+                val raw = response.errorBody()?.string() ?: "Error"
+                val message = mapRecuerdoBackendError(raw, response.code())
                 ApiResult.Error(message, response.code())
             }
         } catch (e: HttpException) {
-            val message = when (e.code()) {
-                413 -> "El archivo es demasiado grande. Probá con uno más liviano."
-                else -> e.response()?.errorBody()?.string() ?: e.message()
-            }
+            val raw = e.response()?.errorBody()?.string() ?: e.message() ?: "Error"
+            val message = mapRecuerdoBackendError(raw, e.code())
             ApiResult.Error(message ?: "Error", e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
@@ -191,6 +206,15 @@ class RecuerdosRepository @Inject constructor(
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
     }
+}
+
+private fun mapRecuerdoBackendError(raw: String, code: Int?): String {
+    val normalized = raw.lowercase()
+    if (code == 413) return "El archivo es demasiado grande. Probá con uno más liviano."
+    if (normalized.contains("cofr03_descripcion") || normalized.contains("descripcion")) {
+        return "La descripción es demasiado larga. Reducí el texto e intentá nuevamente."
+    }
+    return raw
 }
 
 /** Resuelve EmotionalTag desde el nombre que devuelve la API o emocionPersonalizada. */
@@ -229,6 +253,7 @@ private fun RecuerdoDto.toUiModel(): MemoryUiModel {
         nombreFromApi = emocion?.displayName(),
         emocionPersonalizada = emocionPersonalizada
     )
+    val emotionalCustomLabel = emocionPersonalizada?.trim()?.takeIf { it.isNotBlank() }
     return MemoryUiModel(
         id = idValue(),
         type = memoryType,
@@ -236,6 +261,7 @@ private fun RecuerdoDto.toUiModel(): MemoryUiModel {
         description = displayDescription(),
         date = displayDate(),
         emotionalTag = emocionTag,
+        emotionalCustomLabel = if (emocionTag == null) emotionalCustomLabel else null,
         thumbnailUrl = imageUrl,
         audioUrl = audioUrl ?: rutaArchivo,
         duration = displayDuration()
