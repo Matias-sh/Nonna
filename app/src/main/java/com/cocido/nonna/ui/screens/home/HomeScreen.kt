@@ -44,6 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.NonnaButton
+import com.cocido.nonna.ui.components.NonnaStaggerItem
 import com.cocido.nonna.ui.components.NonnaTab
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
@@ -104,34 +105,40 @@ fun HomeScreen(
                     .padding(NonnaDimens.screenPaddingHorizontal)
             ) {
                 Spacer(modifier = Modifier.height(NonnaDimens.spacing24))
-                
-                // Greeting
-                GreetingSection(userName = userName)
+                NonnaStaggerItem(index = 0, stepDelayMs = 100) {
+                    GreetingSection(userName = userName)
+                }
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 // Continue where you left off
                 if (lastCofre != null) {
-                    ContinueSection(
-                        cofreName = lastCofre.name,
-                        cofreRelation = lastCofre.relation,
-                        coverImageUrl = lastCofre.coverImageUrl?.takeIf { it.isNotBlank() && it != "string" },
-                        onClick = { onContinueCofre(lastCofre.id) }
-                    )
+                    NonnaStaggerItem(index = 1, stepDelayMs = 100) {
+                        ContinueSection(
+                            cofreName = lastCofre.name,
+                            cofreRelation = lastCofre.relation,
+                            coverImageUrl = lastCofre.coverImageUrl?.takeIf { it.isNotBlank() && it != "string" },
+                            onClick = { onContinueCofre(lastCofre.id) }
+                        )
+                    }
                     
                     Spacer(modifier = Modifier.height(32.dp))
                 }
                 
                 // Daily prompt
-                DailyPromptSection(onAddMemory = onAddMemory)
+                NonnaStaggerItem(index = 2, stepDelayMs = 100) {
+                    DailyPromptSection(onAddMemory = onAddMemory)
+                }
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 // Quick actions
-                QuickActionsSection(
-                    onCreateCofre = onCreateCofre,
-                    onAddMemory = onAddMemory
-                )
+                NonnaStaggerItem(index = 3, stepDelayMs = 100) {
+                    QuickActionsSection(
+                        onCreateCofre = onCreateCofre,
+                        onAddMemory = onAddMemory
+                    )
+                }
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 

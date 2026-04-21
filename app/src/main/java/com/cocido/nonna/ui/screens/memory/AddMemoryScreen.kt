@@ -4,9 +4,6 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Paint
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -17,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -32,13 +30,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AudioFile
-import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Mic
@@ -46,26 +41,19 @@ import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
@@ -83,6 +71,9 @@ import com.cocido.nonna.util.ImageCompressor
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
+import com.cocido.nonna.ui.components.NonnaCropContract
+import com.cocido.nonna.ui.components.NonnaCropRequest
+import com.cocido.nonna.ui.components.NonnaDatePickerField
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTextArea
 import com.cocido.nonna.ui.components.NonnaTextField
@@ -94,16 +85,15 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.delay
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.unit.IntSize
 
 enum class AddMemoryStep {
     Type, Content, Details
 }
+
+private const val MAX_MEMORY_DESCRIPTION_LENGTH = 280
 
 @Composable
 fun AddMemoryScreen(
@@ -142,18 +132,27 @@ fun AddMemoryScreen(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var recordedAudioFile by remember { mutableStateOf<File?>(null) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
-    var photoScale by remember { mutableFloatStateOf(1f) }
-    var photoOffset by remember { mutableStateOf(Offset.Zero) }
-    var photoViewportSize by remember { mutableStateOf(IntSize.Zero) }
+    val cropLauncher = rememberLauncherForActivityResult(
+        contract = NonnaCropContract()
+    ) { result ->
+        result?.let { croppedUri ->
+            selectedImageUri = croppedUri
+            hasImageSelected = true
+        }
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            selectedImageUri = it
-            hasImageSelected = true
-            photoScale = 1f
-            photoOffset = Offset.Zero
+            cropLauncher.launch(
+                NonnaCropRequest(
+                    sourceUri = it,
+                    aspectRatio = 4f / 5f,
+                    title = "Editar imagen del recuerdo",
+                    lockAspectRatio = false
+                )
+            )
         }
     }
     val cameraPreviewLauncher = rememberLauncherForActivityResult(
@@ -164,10 +163,14 @@ fun AddMemoryScreen(
             FileOutputStream(imageFile).use { out ->
                 it.compress(Bitmap.CompressFormat.JPEG, 92, out)
             }
-            selectedImageUri = Uri.fromFile(imageFile)
-            hasImageSelected = true
-            photoScale = 1f
-            photoOffset = Offset.Zero
+            cropLauncher.launch(
+                NonnaCropRequest(
+                    sourceUri = Uri.fromFile(imageFile),
+                    aspectRatio = 4f / 5f,
+                    title = "Editar imagen del recuerdo",
+                    lockAspectRatio = false
+                )
+            )
         }
     }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -276,9 +279,6 @@ fun AddMemoryScreen(
                     hasAudioRecording = hasAudioRecording,
                     hasImageSelected = hasImageSelected,
                     selectedImageUri = selectedImageUri,
-                    photoScale = photoScale,
-                    photoOffset = photoOffset,
-                    photoViewportSize = photoViewportSize,
                     onRequestPickImage = { imagePickerLauncher.launch("image/*") },
                     onRequestCaptureImage = {
                         val granted = ContextCompat.checkSelfPermission(
@@ -290,17 +290,6 @@ fun AddMemoryScreen(
                         } else {
                             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                         }
-                    },
-                    onPhotoTransformChange = { scale, offset ->
-                        photoScale = scale
-                        photoOffset = offset
-                    },
-                    onPhotoViewportSizeChange = { size ->
-                        photoViewportSize = size
-                    },
-                    onResetPhotoTransform = {
-                        photoScale = 1f
-                        photoOffset = Offset.Zero
                     },
                     onBackToType = { step = AddMemoryStep.Type },
                     onContinue = { step = AddMemoryStep.Details },
@@ -338,19 +327,28 @@ fun AddMemoryScreen(
                     },
                     onBack = { step = AddMemoryStep.Content },
                     onSave = {
+                        if (description.length > MAX_MEMORY_DESCRIPTION_LENGTH) {
+                            feedbackMessage = "La descripción es muy larga (máximo $MAX_MEMORY_DESCRIPTION_LENGTH caracteres)."
+                            feedbackType = NonnaFeedbackType.Error
+                            feedbackVisible = true
+                            scope.launch {
+                                delay(1800)
+                                feedbackVisible = false
+                            }
+                            return@DetailsStep
+                        }
                         val cid = cofreId
                         if (cid != null) {
                         scope.launch {
                             val file = withContext(Dispatchers.IO) {
                                 when (selectedType) {
                                     MemoryType.Photo -> selectedImageUri?.let { uri ->
-                                        createEditedPhotoFile(
+                                        ImageCompressor.compressForUpload(
                                             context = context,
                                             uri = uri,
-                                            viewportSize = photoViewportSize,
-                                            scale = photoScale,
-                                            offset = photoOffset
-                                        ) ?: ImageCompressor.compressForUpload(context, uri, maxBytes = 1024 * 1024)
+                                            maxBytes = 1024L * 1024L,
+                                            maxLongEdge = 1600
+                                        )
                                     }
                                     MemoryType.Text -> File.createTempFile("recuerdo", ".txt").apply {
                                         writeText(textContent.ifBlank { "" })
@@ -371,6 +369,12 @@ fun AddMemoryScreen(
                                     emocionId = if (customEmotionClean != null) null else emotionId,
                                     emocionPersonalizada = customEmotionClean ?: emotionCustomFromTag
                                 )
+                            } else {
+                                feedbackMessage = "La imagen es demasiado pesada. Probá con otra o recortala más."
+                                feedbackType = NonnaFeedbackType.Error
+                                feedbackVisible = true
+                                delay(2200)
+                                feedbackVisible = false
                             }
                         }
                         } else {
@@ -491,14 +495,8 @@ private fun ContentStep(
     onAudioRecorded: (File) -> Unit,
     hasImageSelected: Boolean,
     selectedImageUri: Uri?,
-    photoScale: Float,
-    photoOffset: Offset,
-    photoViewportSize: IntSize,
     onRequestPickImage: () -> Unit,
     onRequestCaptureImage: () -> Unit,
-    onPhotoTransformChange: (Float, Offset) -> Unit,
-    onPhotoViewportSizeChange: (IntSize) -> Unit,
-    onResetPhotoTransform: () -> Unit,
     onBackToType: () -> Unit,
     onContinue: () -> Unit,
     onRequestDictation: () -> Unit
@@ -514,14 +512,8 @@ private fun ContentStep(
             MemoryType.Photo -> PhotoContent(
                 hasImage = hasImageSelected,
                 selectedImageUri = selectedImageUri,
-                photoScale = photoScale,
-                photoOffset = photoOffset,
-                photoViewportSize = photoViewportSize,
                 onPickImageClick = onRequestPickImage,
-                onCaptureImageClick = onRequestCaptureImage,
-                onPhotoTransformChange = onPhotoTransformChange,
-                onPhotoViewportSizeChange = onPhotoViewportSizeChange,
-                onResetPhotoTransform = onResetPhotoTransform
+                onCaptureImageClick = onRequestCaptureImage
             )
             MemoryType.Audio -> AudioContent(
                 onRecorded = onAudioRecorded
@@ -534,16 +526,6 @@ private fun ContentStep(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-
-        TextButton(
-            onClick = onBackToType,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text(
-                text = "Volver a elegir tipo",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
 
         // Show continue button when content is ready (text, photo or audio)
         if (contentReady) {
@@ -574,132 +556,75 @@ private fun ContentStep(
 private fun PhotoContent(
     hasImage: Boolean,
     selectedImageUri: Uri?,
-    photoScale: Float,
-    photoOffset: Offset,
-    photoViewportSize: IntSize,
     onPickImageClick: () -> Unit,
-    onCaptureImageClick: () -> Unit,
-    onPhotoTransformChange: (Float, Offset) -> Unit,
-    onPhotoViewportSizeChange: (IntSize) -> Unit,
-    onResetPhotoTransform: () -> Unit
+    onCaptureImageClick: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        BoxWithConstraints(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(340.dp)
-                .clip(NonnaCorners.Large),
+                .aspectRatio(4f / 5f)
+                .clip(NonnaCorners.Large)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+                    shape = NonnaCorners.Large
+                )
+                .clickable(onClick = onPickImageClick),
             contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
-            )
-
-            val cropWidth = maxWidth * 0.88f
-            val cropHeight = cropWidth * (5f / 4f)
-
-            Box(
-                modifier = Modifier
-                    .width(cropWidth)
-                    .height(cropHeight)
-                    .clip(NonnaCorners.Large)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                        shape = NonnaCorners.Large
+            if (hasImage && selectedImageUri != null) {
+                AsyncImage(
+                    model = selectedImageUri,
+                    contentDescription = "Imagen seleccionada",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(NonnaCorners.Large)
+                        .border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                            shape = NonnaCorners.Large
+                        ),
+                    contentScale = ContentScale.Crop
+                )
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp),
+                    shape = NonnaCorners.Full,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
+                ) {
+                    Text(
+                        text = "Tocá la imagen para cambiarla",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
-                    .onSizeChanged { onPhotoViewportSizeChange(it) }
-            ) {
-                if (hasImage && selectedImageUri != null) {
-                    AsyncImage(
-                        model = selectedImageUri,
-                        contentDescription = "Imagen seleccionada",
-                        modifier = Modifier
-                            .matchParentSize()
-                            .graphicsLayer {
-                                scaleX = photoScale
-                                scaleY = photoScale
-                                translationX = photoOffset.x
-                                translationY = photoOffset.y
-                            }
-                            .pointerInput(selectedImageUri, photoScale, photoOffset) {
-                                detectTransformGestures { _, pan, zoom, _ ->
-                                    val newScale = (photoScale * zoom).coerceIn(1f, 4f)
-                                    val unclampedOffset = photoOffset + pan
-                                    val clampedOffset = clampPhotoOffset(
-                                        offset = unclampedOffset,
-                                        scale = newScale,
-                                        viewportSize = IntSize(size.width, size.height)
-                                    )
-                                    onPhotoTransformChange(newScale, clampedOffset)
-                                }
-                            },
-                        contentScale = ContentScale.Crop
+                }
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Upload,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .drawWithContent {
-                                drawContent()
-                                val w = size.width
-                                val h = size.height
-                                val stroke = 1.dp.toPx()
-                                val c = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.35f)
-                                drawLine(c, Offset(w / 3f, 0f), Offset(w / 3f, h), strokeWidth = stroke)
-                                drawLine(c, Offset((w / 3f) * 2f, 0f), Offset((w / 3f) * 2f, h), strokeWidth = stroke)
-                                drawLine(c, Offset(0f, h / 3f), Offset(w, h / 3f), strokeWidth = stroke)
-                                drawLine(c, Offset(0f, (h / 3f) * 2f), Offset(w, (h / 3f) * 2f), strokeWidth = stroke)
-                            }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Subir foto",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                } else {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Upload,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "Subir foto",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "Tomá o elegí una imagen",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        text = "Tocá aquí para elegir desde galería",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-        }
-
-        if (hasImage) {
-            Text(
-                text = "Zoom",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Slider(
-                value = photoScale,
-                onValueChange = { newScale ->
-                    val clampedOffset = clampPhotoOffset(
-                        offset = photoOffset,
-                        scale = newScale,
-                        viewportSize = photoViewportSize
-                    )
-                    onPhotoTransformChange(newScale, clampedOffset)
-                },
-                valueRange = 1f..4f
-            )
         }
 
         FlowRow(
@@ -707,18 +632,11 @@ private fun PhotoContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            NonnaButton(text = "Galería", onClick = onPickImageClick, style = NonnaButtonStyle.Outline)
-            NonnaButton(text = "Cámara", onClick = onCaptureImageClick, style = NonnaButtonStyle.Outline)
-            if (hasImage) {
-                NonnaButton(text = "Recentrar", onClick = onResetPhotoTransform, style = NonnaButtonStyle.Outline)
-            }
-        }
-        if (hasImage) {
-            Text(
-                text = "Editor pro: pinch para zoom, arrastrá para encuadrar y usá slider para ajuste fino.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            NonnaButton(
+                text = if (hasImage) "Cambiar imagen" else "Galería",
+                onClick = onPickImageClick
             )
+            NonnaButton(text = "Cámara", onClick = onCaptureImageClick, style = NonnaButtonStyle.Outline)
         }
     }
 }
@@ -778,6 +696,10 @@ private fun DetailsStep(
     canSave: Boolean,
     isLoading: Boolean = false
 ) {
+    val descriptionLength = description.length
+    val descriptionIsTooLong = descriptionLength > MAX_MEMORY_DESCRIPTION_LENGTH
+    val canSelectPresetEmotion = customEmotion.isBlank()
+    val canWriteCustomEmotion = emotionalTag == null
     Column {
         // Preview
         Box(
@@ -852,6 +774,13 @@ private fun DetailsStep(
                 label = "Contexto o historia (opcional)",
                 placeholder = "Contá algo sobre este recuerdo...",
                 minLines = 4,
+                helperText = "$descriptionLength/$MAX_MEMORY_DESCRIPTION_LENGTH",
+                isError = descriptionIsTooLong,
+                errorMessage = if (descriptionIsTooLong) {
+                    "Supera el máximo de $MAX_MEMORY_DESCRIPTION_LENGTH caracteres."
+                } else {
+                    null
+                },
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -859,12 +788,10 @@ private fun DetailsStep(
         Spacer(modifier = Modifier.height(16.dp))
         
         // Date
-        NonnaTextField(
+        NonnaDatePickerField(
             value = date,
             onValueChange = onDateChange,
             label = "Fecha (aproximada)",
-            leadingIcon = Icons.Outlined.CalendarMonth,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )
         
@@ -891,6 +818,7 @@ private fun DetailsStep(
                     onClick = {
                         onEmotionalTagChange(if (isSelected) null else tag)
                     },
+                    enabled = canSelectPresetEmotion,
                     shape = NonnaCorners.Medium,
                     color = if (isSelected) {
                         MaterialTheme.colorScheme.primaryContainer
@@ -919,6 +847,14 @@ private fun DetailsStep(
                 }
             }
         }
+        if (!canSelectPresetEmotion) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Las emociones sugeridas se desactivan mientras escribís una emoción personalizada.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -927,8 +863,17 @@ private fun DetailsStep(
             onValueChange = onCustomEmotionChange,
             label = "O escribí una emoción personalizada",
             placeholder = "Ej: Agradecido, Orgullosa, Melancólico",
+            enabled = canWriteCustomEmotion,
             modifier = Modifier.fillMaxWidth()
         )
+        if (!canWriteCustomEmotion) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "El campo personalizado se habilita al deseleccionar la emoción sugerida.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         
         Spacer(modifier = Modifier.height(32.dp))
         
@@ -946,7 +891,7 @@ private fun DetailsStep(
             NonnaButton(
                 text = if (isLoading) "Guardando..." else "Guardar recuerdo",
                 onClick = onSave,
-                enabled = canSave && !isLoading,
+                enabled = canSave && !isLoading && !descriptionIsTooLong,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -961,48 +906,3 @@ private fun android.content.Context.findActivity(): Activity? = when (this) {
     else -> null
 }
 
-private fun createEditedPhotoFile(
-    context: android.content.Context,
-    uri: Uri,
-    viewportSize: IntSize,
-    scale: Float,
-    offset: Offset
-): File? {
-    if (viewportSize.width <= 0 || viewportSize.height <= 0) return null
-    return runCatching {
-        val input: InputStream = context.contentResolver.openInputStream(uri) ?: return null
-        val sourceBitmap = input.use { BitmapFactory.decodeStream(it) } ?: return null
-        val outputBitmap = Bitmap.createBitmap(viewportSize.width, viewportSize.height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(outputBitmap)
-        canvas.drawColor(android.graphics.Color.WHITE)
-
-        val baseScale = maxOf(
-            viewportSize.width.toFloat() / sourceBitmap.width.toFloat(),
-            viewportSize.height.toFloat() / sourceBitmap.height.toFloat()
-        )
-        val finalScale = baseScale * scale
-        val drawWidth = sourceBitmap.width * finalScale
-        val drawHeight = sourceBitmap.height * finalScale
-        val left = (viewportSize.width - drawWidth) / 2f + offset.x
-        val top = (viewportSize.height - drawHeight) / 2f + offset.y
-        val dst = android.graphics.RectF(left, top, left + drawWidth, top + drawHeight)
-
-        canvas.drawBitmap(sourceBitmap, null, dst, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
-
-        File.createTempFile("recuerdo_editado", ".jpg", context.cacheDir).apply {
-            FileOutputStream(this).use { out ->
-                outputBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
-            }
-        }
-    }.getOrNull()
-}
-
-private fun clampPhotoOffset(offset: Offset, scale: Float, viewportSize: IntSize): Offset {
-    if (viewportSize.width <= 0 || viewportSize.height <= 0) return offset
-    val maxX = ((scale - 1f) * viewportSize.width / 2f).coerceAtLeast(0f)
-    val maxY = ((scale - 1f) * viewportSize.height / 2f).coerceAtLeast(0f)
-    return Offset(
-        x = offset.x.coerceIn(-maxX, maxX),
-        y = offset.y.coerceIn(-maxY, maxY)
-    )
-}

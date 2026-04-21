@@ -29,20 +29,36 @@ fun FilterChipsRow(
     chips: List<FilterChip>,
     selectedChipId: String,
     onChipSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scrollable: Boolean = true
 ) {
     val scrollState = rememberScrollState()
-    
-    Row(
-        modifier = modifier.horizontalScroll(scrollState),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        chips.forEach { chip ->
-            FilterChipItem(
-                chip = chip,
-                isSelected = chip.id == selectedChipId,
-                onClick = { onChipSelected(chip.id) }
-            )
+
+    if (scrollable) {
+        Row(
+            modifier = modifier.horizontalScroll(scrollState),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            chips.forEach { chip ->
+                FilterChipItem(
+                    chip = chip,
+                    isSelected = chip.id == selectedChipId,
+                    onClick = { onChipSelected(chip.id) }
+                )
+            }
+        }
+    } else {
+        Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            chips.forEach { chip ->
+                FilterChipItem(
+                    chip = chip,
+                    isSelected = chip.id == selectedChipId,
+                    onClick = { onChipSelected(chip.id) }
+                )
+            }
         }
     }
 }

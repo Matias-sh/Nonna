@@ -5,12 +5,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.cocido.nonna.ui.components.NonnaMotion
 import com.cocido.nonna.ui.components.NonnaTab
 import com.cocido.nonna.ui.screens.auth.AuthScreen
 import com.cocido.nonna.ui.screens.cofres.CofreDetailScreen
@@ -19,6 +24,7 @@ import com.cocido.nonna.ui.screens.cofres.CreateCofreScreen
 import com.cocido.nonna.ui.screens.cofres.EditCofreScreen
 import com.cocido.nonna.ui.screens.home.HomeScreen
 import com.cocido.nonna.ui.screens.memory.AddMemoryScreen
+import com.cocido.nonna.ui.screens.memory.EditMemoryScreen
 import com.cocido.nonna.ui.screens.memory.MemoryDetailScreen
 import com.cocido.nonna.ui.screens.memory.SelectCofreScreen
 import com.cocido.nonna.ui.screens.onboarding.OnboardingScreen
@@ -53,6 +59,9 @@ sealed class Screen(val route: String) {
     data object MemoryDetail : Screen("memory/{memoryId}") {
         fun createRoute(memoryId: String) = "memory/$memoryId"
     }
+    data object EditMemory : Screen("memory/{memoryId}/edit") {
+        fun createRoute(memoryId: String) = "memory/$memoryId/edit"
+    }
     
     // Creation screens
     data object CreateCofre : Screen("create-cofre")
@@ -81,7 +90,31 @@ fun NonnaNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = effectiveStartDestination
+        startDestination = effectiveStartDestination,
+        enterTransition = {
+            fadeIn(animationSpec = NonnaMotion.screenFadeIn) + scaleIn(
+                initialScale = 0.985f,
+                animationSpec = NonnaMotion.navSpring
+            )
+        },
+        exitTransition = {
+            fadeOut(animationSpec = NonnaMotion.screenFadeOut) + scaleOut(
+                targetScale = 0.995f,
+                animationSpec = NonnaMotion.navSpring
+            )
+        },
+        popEnterTransition = {
+            fadeIn(animationSpec = NonnaMotion.screenFadeIn) + scaleIn(
+                initialScale = 0.99f,
+                animationSpec = NonnaMotion.navSpring
+            )
+        },
+        popExitTransition = {
+            fadeOut(animationSpec = NonnaMotion.screenFadeOut) + scaleOut(
+                targetScale = 0.995f,
+                animationSpec = NonnaMotion.navSpring
+            )
+        }
     ) {
         // Welcome Screen
         composable(Screen.Welcome.route) {
@@ -335,7 +368,22 @@ fun NonnaNavHost(
             MemoryDetailScreen(
                 memoryId = memoryId,
                 onBack = { navController.popBackStack() },
-                onDelete = { navController.popBackStack() }
+                onDelete = { navController.popBackStack() },
+                onEdit = { id -> navController.navigate(Screen.EditMemory.createRoute(id)) }
+            )
+        }
+
+        composable(
+            route = Screen.EditMemory.route,
+            arguments = listOf(
+                navArgument("memoryId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val memoryId = backStackEntry.arguments?.getString("memoryId") ?: ""
+            EditMemoryScreen(
+                memoryId = memoryId,
+                onBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() }
             )
         }
     }

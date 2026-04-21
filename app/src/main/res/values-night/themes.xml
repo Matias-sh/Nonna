@@ -79,4 +79,12 @@
         <!-- Estilos de FAB -->
         <item name="floatingActionButtonStyle">@style/Widget.Nonna.FAB</item>
     </style>
+
+    <style name="Theme.Nonna.Cropper" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/accent_terracotta</item>
+        <item name="android:statusBarColor">@color/surface_warm</item>
+        <item name="android:navigationBarColor">@color/background_primary</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
 </resources>

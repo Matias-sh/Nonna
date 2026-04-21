@@ -44,6 +44,18 @@ interface RecuerdosApi {
         @Body request: RecuerdoCreateRequest
     ): Response<RecuerdoDto>
 
+    @Multipart
+    @PATCH("recuerdos/{id}")
+    suspend fun updateFull(
+        @Path("id") id: String,
+        @Part file: MultipartBody.Part? = null,
+        @Part("titulo") titulo: RequestBody? = null,
+        @Part("descripcion") descripcion: RequestBody? = null,
+        @Part("fecha") fecha: RequestBody? = null,
+        @Part("emocionId") emocionId: RequestBody? = null,
+        @Part("emocionPersonalizada") emocionPersonalizada: RequestBody? = null
+    ): Response<RecuerdoDto>
+
     @GET("recuerdos/{id}")
     suspend fun getById(@Path("id") id: String): Response<RecuerdoDto>
 

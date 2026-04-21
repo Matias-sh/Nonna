@@ -1,7 +1,14 @@
 package com.cocido.nonna.ui.screens.tree
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,8 +38,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,6 +56,8 @@ import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.NonnaTab
 import com.cocido.nonna.ui.components.SimpleHeader
+import com.cocido.nonna.ui.components.rememberMotionInteractionSource
+import com.cocido.nonna.ui.components.nonnaInteractiveScale
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.PrimaryGradientEnd
@@ -305,53 +316,85 @@ private fun TreeNodeView(
     node: TreeNode,
     onNodeClick: (nodeId: String, cofreId: String?) -> Unit
 ) {
+    val interactionSource = rememberMotionInteractionSource()
+    val pressed by interactionSource.collectIsPressedAsState()
+    var showNode by remember(node.id) { mutableStateOf(false) }
+    val bounceScale by animateFloatAsState(
+        targetValue = if (pressed) 0.94f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "tree_node_bounce"
+    )
+    LaunchedEffect(node.id) {
+        showNode = true
+    }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Node button
-        Surface(
-            onClick = { onNodeClick(node.id, node.cofreId) },
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                PrimaryGradientStart.copy(alpha = 0.2f),
-                                PrimaryGradientEnd.copy(alpha = 0.2f)
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = node.name.first().toString(),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface
+        AnimatedVisibility(
+            visible = showNode,
+            enter = scaleIn(
+                initialScale = 0.8f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
                 )
-                
-                // Badge if has cofre
-                if (node.cofreId != null) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .size(20.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Inventory2,
-                            contentDescription = "Tiene cofre",
-                            modifier = Modifier.size(10.dp),
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
+            ) + fadeIn()
+        ) {
+            Surface(
+                onClick = { onNodeClick(node.id, node.cofreId) },
+                interactionSource = interactionSource,
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier
+                    .nonnaInteractiveScale(interactionSource, pressed = 0.94f)
+                    .graphicsLayer {
+                        scaleX = bounceScale
+                        scaleY = bounceScale
+                    }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    PrimaryGradientStart.copy(alpha = 0.2f),
+                                    PrimaryGradientEnd.copy(alpha = 0.2f)
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = node.name.first().toString(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    // Badge if has cofre
+                    if (node.cofreId != null) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(20.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Inventory2,
+                                contentDescription = "Tiene cofre",
+                                modifier = Modifier.size(10.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
                     }
                 }
             }

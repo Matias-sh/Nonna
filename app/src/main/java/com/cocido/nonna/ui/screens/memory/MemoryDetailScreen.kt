@@ -2,13 +2,13 @@ package com.cocido.nonna.ui.screens.memory
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,7 +26,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AudioFile
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Pause
@@ -57,10 +59,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import androidx.compose.runtime.collectAsState
 import androidx.media3.common.MediaItem
@@ -88,6 +95,7 @@ fun MemoryDetailScreen(
     memoryId: String,
     onBack: () -> Unit,
     onDelete: () -> Unit = {},
+    onEdit: (String) -> Unit = {},
     viewModel: com.cocido.nonna.ui.viewmodel.MemoryDetailViewModel = hiltViewModel()
 ) {
     val memory by viewModel.memory.collectAsState()
@@ -117,15 +125,19 @@ fun MemoryDetailScreen(
                 )
             }
         }
-        else -> MemoryDetailContent(
-            memory = memory!!,
+        else -> {
+            val currentMemory = memory!!
+            MemoryDetailContent(
+            memory = currentMemory,
             onBack = onBack,
+            onEdit = { onEdit(currentMemory.id) },
             onDelete = {
                 viewModel.delete(onSuccess = onDelete)
             },
             showMenu = showMenu,
             onShowMenuChange = { showMenu = it }
         )
+        }
     }
 }
 
@@ -133,12 +145,45 @@ fun MemoryDetailScreen(
 private fun MemoryDetailContent(
     memory: com.cocido.nonna.ui.components.MemoryUiModel,
     onBack: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     showMenu: Boolean,
     onShowMenuChange: (Boolean) -> Unit
 ) {
     val photoUrls = remember(memory.thumbnailUrl) { parsePotentialPhotoUrls(memory.thumbnailUrl) }
     var selectedPhotoUrl by remember(photoUrls) { mutableStateOf(photoUrls.firstOrNull()) }
+    var showPhotoViewer by remember { mutableStateOf(false) }
+    var showTapHint by remember(selectedPhotoUrl) { mutableStateOf(selectedPhotoUrl != null) }
+    var fallbackTextContent by remember(memory.id) { mutableStateOf<String?>(null) }
+    var isLoadingFallbackText by remember(memory.id) { mutableStateOf(false) }
+
+    LaunchedEffect(memory.id, memory.type, memory.description, memory.audioUrl) {
+        if (memory.type != MemoryType.Text) return@LaunchedEffect
+        if (!memory.description.isNullOrBlank()) {
+            fallbackTextContent = null
+            isLoadingFallbackText = false
+            return@LaunchedEffect
+        }
+        val candidateUrl = memory.audioUrl?.trim().orEmpty()
+        if (!looksLikeRemoteUrl(candidateUrl)) {
+            fallbackTextContent = null
+            isLoadingFallbackText = false
+            return@LaunchedEffect
+        }
+        isLoadingFallbackText = true
+        fallbackTextContent = withContext(Dispatchers.IO) {
+            downloadTextFromUrl(candidateUrl)
+        }
+        isLoadingFallbackText = false
+    }
+
+    LaunchedEffect(selectedPhotoUrl) {
+        if (selectedPhotoUrl != null) {
+            showTapHint = true
+            delay(5000)
+            showTapHint = false
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -183,6 +228,16 @@ private fun MemoryDetailContent(
                     onDismissRequest = { onShowMenuChange(false) }
                 ) {
                     DropdownMenuItem(
+                        text = { Text("Editar") },
+                        onClick = {
+                            onShowMenuChange(false)
+                            onEdit()
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Outlined.Edit, contentDescription = null)
+                        }
+                    )
+                    DropdownMenuItem(
                         text = { Text("Eliminar") },
                         onClick = {
                             onShowMenuChange(false)
@@ -212,27 +267,55 @@ private fun MemoryDetailContent(
                     coverUrl = memory.thumbnailUrl?.takeIf { isLikelyImageUrl(it) }
                 )
             } else {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
-                    shape = NonnaCorners.Large,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                if (memory.type == MemoryType.Photo && selectedPhotoUrl != null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = NonnaCorners.Large,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
                     ) {
-                        if (memory.type == MemoryType.Photo && selectedPhotoUrl != null) {
+                        Box {
                             AsyncImage(
                                 model = selectedPhotoUrl,
                                 contentDescription = memory.title,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showPhotoViewer = true },
+                                contentScale = ContentScale.FillWidth
                             )
-                        } else {
+                            if (showTapHint) {
+                                Surface(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(bottom = 12.dp),
+                                    shape = NonnaCorners.Full,
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.86f)
+                                ) {
+                                    Text(
+                                        text = "Tocá para ampliar",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
+                        shape = NonnaCorners.Large,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             val icon = when (memory.type) {
                                 MemoryType.Photo -> Icons.Outlined.Image
                                 MemoryType.Audio -> Icons.Outlined.AudioFile
@@ -361,6 +444,8 @@ private fun MemoryDetailContent(
             
             // Text content for text memories
             if (memory.type == MemoryType.Text) {
+                val textContent = memory.description?.trim().takeUnless { it.isNullOrBlank() }
+                    ?: fallbackTextContent?.trim().takeUnless { it.isNullOrBlank() }
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Card(
@@ -382,11 +467,19 @@ private fun MemoryDetailContent(
                         Spacer(modifier = Modifier.height(8.dp))
                         
                         Text(
-                            text = "\"${memory.description ?: ""}\"",
+                            text = when {
+                                !textContent.isNullOrBlank() -> textContent
+                                isLoadingFallbackText -> "Cargando contenido del archivo..."
+                                else -> "Este recuerdo de texto no tiene contenido visible todavía."
+                            },
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                             ),
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = if (textContent.isNullOrBlank()) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
                         )
                     }
                 }
@@ -412,6 +505,72 @@ private fun MemoryDetailContent(
             }
             
             Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+
+    if (showPhotoViewer && selectedPhotoUrl != null) {
+        PhotoFullScreenViewer(
+            imageUrl = selectedPhotoUrl!!,
+            onDismiss = { showPhotoViewer = false }
+        )
+    }
+}
+
+@Composable
+private fun PhotoFullScreenViewer(
+    imageUrl: String,
+    onDismiss: () -> Unit
+) {
+    var scale by remember { mutableStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .clickable(onClick = onDismiss)
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        scale = (scale * zoom).coerceIn(1f, 4f)
+                        offset = if (scale > 1f) offset + pan else Offset.Zero
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = "Imagen en pantalla completa",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = false) {}
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        translationX = offset.x
+                        translationY = offset.y
+                    },
+                contentScale = ContentScale.Fit
+            )
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(12.dp)
+                    .background(
+                        color = Color.Black.copy(alpha = 0.45f),
+                        shape = CircleShape
+                    )
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = "Cerrar visor",
+                    tint = Color.White
+                )
+            }
         }
     }
 }
@@ -680,6 +839,56 @@ private fun downloadAudioToCache(
             errorMessage = "No se pudo reproducir este audio."
         )
     }
+}
+
+private fun looksLikeRemoteUrl(url: String): Boolean {
+    if (url.isBlank()) return false
+    val normalized = url.lowercase()
+    return normalized.startsWith("https://") || normalized.startsWith("http://")
+}
+
+private fun downloadTextFromUrl(sourceUrl: String): String? {
+    return runCatching {
+        val client = OkHttpClient.Builder()
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .build()
+        val request = Request.Builder()
+            .url(sourceUrl)
+            .header("User-Agent", "NONNA-Android")
+            .build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null
+            val mediaType = response.body?.contentType()?.toString()?.lowercase().orEmpty()
+            val rawBody = response.body?.string()
+                ?.replace("\u0000", "")
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: return null
+
+            if (isTextualContentType(mediaType) || looksLikeReadableText(rawBody)) {
+                rawBody
+            } else {
+                null
+            }
+        }
+    }.getOrNull()
+}
+
+private fun isTextualContentType(contentType: String): Boolean {
+    if (contentType.isBlank()) return false
+    return contentType.startsWith("text/") ||
+        contentType.contains("json") ||
+        contentType.contains("xml") ||
+        contentType.contains("csv")
+}
+
+private fun looksLikeReadableText(value: String): Boolean {
+    if (value.isBlank()) return false
+    val sample = value.take(512)
+    val printableChars = sample.count { it == '\n' || it == '\r' || it == '\t' || !it.isISOControl() }
+    val ratio = printableChars.toFloat() / sample.length.coerceAtLeast(1)
+    return ratio > 0.9f
 }
 
 private fun parsePotentialPhotoUrls(raw: String?): List<String> {

@@ -9,6 +9,10 @@ data class RecuerdoDto(
     @SerializedName("title") val title: String? = null,
     @SerializedName("descripcion") val descripcion: String? = null,
     @SerializedName("description") val description: String? = null,
+    @SerializedName("contenidoTexto") val contenidoTexto: String? = null,
+    @SerializedName("contenido") val contenido: String? = null,
+    @SerializedName("texto") val texto: String? = null,
+    @SerializedName("content") val content: String? = null,
     @SerializedName("tipo") val tipo: String? = null,
     @SerializedName("type") val type: String? = null,
     @SerializedName("tipoArchivo") val tipoArchivo: String? = null,
@@ -28,9 +32,20 @@ data class RecuerdoDto(
     /** id como string (backend puede devolver número). */
     fun idValue(): String = idRaw.primitiveIdString()
     fun displayTitle(): String = titulo ?: title ?: ""
-    fun displayDescription(): String? = descripcion ?: description
+    fun displayDescription(): String? = firstNotBlank(
+        descripcion,
+        description,
+        contenidoTexto,
+        contenido,
+        texto,
+        content
+    )
     fun displayDate(): String = fecha ?: date ?: ""
     fun displayDuration(): String? = duracion ?: duration
+
+    private fun firstNotBlank(vararg values: String?): String? {
+        return values.firstOrNull { !it.isNullOrBlank() }?.trim()
+    }
 }
 
 data class RecuerdoCreateRequest(
@@ -38,6 +53,7 @@ data class RecuerdoCreateRequest(
     @SerializedName("descripcion") val descripcion: String? = null,
     @SerializedName("fecha") val fecha: String? = null,
     @SerializedName("emocionId") val emocionId: String? = null,
+    @SerializedName("emocionPersonalizada") val emocionPersonalizada: String? = null,
     @SerializedName("thumbnailUrl") val thumbnailUrl: String? = null,
     @SerializedName("audioUrl") val audioUrl: String? = null,
     @SerializedName("contenidoTexto") val contenidoTexto: String? = null

@@ -58,16 +58,21 @@ fun CofreCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val interactionSource = rememberMotionInteractionSource()
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .nonnaInteractiveScale(interactionSource, pressed = 0.98f),
+        interactionSource = interactionSource,
         shape = NonnaCorners.Card,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp,
-            hoveredElevation = 4.dp
+            defaultElevation = 2.dp,
+            hoveredElevation = 8.dp,
+            pressedElevation = 8.dp
         )
     ) {
         Column {

@@ -9,6 +9,7 @@ import com.cocido.nonna.data.remote.dto.UserDto
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.AuthRepository
 import com.cocido.nonna.data.repository.NetworkErrorParser
+import com.cocido.nonna.util.ImageCompressor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -114,11 +115,18 @@ class ProfileViewModel @Inject constructor(
 
                 val fotoPart: MultipartBody.Part? = avatarUri?.let { uri ->
                     try {
-                        val input = context.contentResolver.openInputStream(uri) ?: return@let null
-                        val ext = "jpg"
-                        val file = File.createTempFile("avatar", ".$ext", context.cacheDir)
-                        input.use { i ->
-                            file.outputStream().use { o -> i.copyTo(o) }
+                        val file = ImageCompressor.compressForUpload(
+                            context = context,
+                            uri = uri,
+                            maxBytes = 1024 * 1024
+                        ) ?: run {
+                            val input = context.contentResolver.openInputStream(uri) ?: return@let null
+                            val ext = "jpg"
+                            val fallbackFile = File.createTempFile("avatar", ".$ext", context.cacheDir)
+                            input.use { i ->
+                                fallbackFile.outputStream().use { o -> i.copyTo(o) }
+                            }
+                            fallbackFile
                         }
                         val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
                         MultipartBody.Part.createFormData("fotoPerfil", file.name, requestFile)

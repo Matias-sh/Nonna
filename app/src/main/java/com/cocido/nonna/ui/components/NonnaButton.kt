@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -58,11 +59,13 @@ fun NonnaButton(
     iconPosition: IconPosition = IconPosition.Start,
     fullWidth: Boolean = false
 ) {
+    val interactionSource = rememberMotionInteractionSource()
+    val elevation = nonnaButtonElevation(style)
     val buttonModifier = if (fullWidth) {
         modifier.fillMaxWidth()
     } else {
         modifier
-    }
+    }.nonnaInteractiveScale(interactionSource = interactionSource, pressed = 0.985f)
     
     val height = when (size) {
         NonnaButtonSize.Small -> NonnaDimens.buttonHeightSmall
@@ -88,6 +91,7 @@ fun NonnaButton(
                 onClick = onClick,
                 modifier = buttonModifier.height(height),
                 enabled = enabled,
+                interactionSource = interactionSource,
                 shape = NonnaCorners.Button,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -95,6 +99,7 @@ fun NonnaButton(
                     disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                     disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
                 ),
+                elevation = elevation,
                 contentPadding = contentPadding
             ) {
                 ButtonContent(text, icon, iconPosition, iconSize)
@@ -106,6 +111,7 @@ fun NonnaButton(
                 onClick = onClick,
                 modifier = buttonModifier.height(height),
                 enabled = enabled,
+                interactionSource = interactionSource,
                 shape = NonnaCorners.Button,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondary,
@@ -113,6 +119,7 @@ fun NonnaButton(
                     disabledContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
                     disabledContentColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.5f)
                 ),
+                elevation = elevation,
                 contentPadding = contentPadding
             ) {
                 ButtonContent(text, icon, iconPosition, iconSize)
@@ -124,6 +131,7 @@ fun NonnaButton(
                 onClick = onClick,
                 modifier = buttonModifier.height(height),
                 enabled = enabled,
+                interactionSource = interactionSource,
                 shape = NonnaCorners.Button,
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = MaterialTheme.colorScheme.onSurface
@@ -136,6 +144,7 @@ fun NonnaButton(
                         MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                     }
                 ),
+                elevation = elevation,
                 contentPadding = contentPadding
             ) {
                 ButtonContent(text, icon, iconPosition, iconSize)
@@ -147,10 +156,12 @@ fun NonnaButton(
                 onClick = onClick,
                 modifier = buttonModifier.height(height),
                 enabled = enabled,
+                interactionSource = interactionSource,
                 shape = NonnaCorners.Button,
                 colors = ButtonDefaults.textButtonColors(
                     contentColor = MaterialTheme.colorScheme.primary
                 ),
+                elevation = elevation,
                 contentPadding = contentPadding
             ) {
                 ButtonContent(text, icon, iconPosition, iconSize)
@@ -162,6 +173,7 @@ fun NonnaButton(
                 onClick = onClick,
                 modifier = buttonModifier.height(height),
                 enabled = enabled,
+                interactionSource = interactionSource,
                 shape = NonnaCorners.Button,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error,
@@ -169,11 +181,43 @@ fun NonnaButton(
                     disabledContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.5f),
                     disabledContentColor = MaterialTheme.colorScheme.onError.copy(alpha = 0.5f)
                 ),
+                elevation = elevation,
                 contentPadding = contentPadding
             ) {
                 ButtonContent(text, icon, iconPosition, iconSize)
             }
         }
+    }
+}
+
+@Composable
+private fun nonnaButtonElevation(style: NonnaButtonStyle): ButtonElevation {
+    return when (style) {
+        NonnaButtonStyle.Primary,
+        NonnaButtonStyle.Secondary,
+        NonnaButtonStyle.Destructive -> ButtonDefaults.buttonElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 6.dp,
+            focusedElevation = 4.dp,
+            hoveredElevation = 4.dp,
+            disabledElevation = 0.dp
+        )
+
+        NonnaButtonStyle.Outline -> ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 2.dp,
+            focusedElevation = 1.dp,
+            hoveredElevation = 1.dp,
+            disabledElevation = 0.dp
+        )
+
+        NonnaButtonStyle.Ghost -> ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 1.dp,
+            focusedElevation = 0.dp,
+            hoveredElevation = 0.dp,
+            disabledElevation = 0.dp
+        )
     }
 }
 

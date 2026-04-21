@@ -81,6 +81,14 @@
     </style>
 
     <style name="Theme.Nonna" parent="Base.Theme.Nonna" />
+
+    <style name="Theme.Nonna.Cropper" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/accent_terracotta</item>
+        <item name="android:statusBarColor">@color/surface_warm</item>
+        <item name="android:navigationBarColor">@color/background_primary</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
     
     <!-- Estilos de componentes personalizados -->
     <style name="Widget.Nonna.Button" parent="Widget.Material3.Button">

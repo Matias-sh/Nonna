@@ -1,6 +1,11 @@
 package com.cocido.nonna.ui.screens.cofres
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,9 +22,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -75,6 +80,7 @@ import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.PageHeader
 import com.cocido.nonna.ui.components.PermissionBadge
+import com.cocido.nonna.ui.components.NonnaStaggerItem
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.PrimaryGradientEnd
@@ -200,20 +206,21 @@ fun CofreDetailScreen(
             else -> {
         // Cover image
         val coverUrl = cofre.coverImageUrl?.takeIf { it.isNotBlank() && it != "string" }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(NonnaDimens.coverHeightMedium)
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            PrimaryGradientStart.copy(alpha = 0.2f),
-                            PrimaryGradientEnd.copy(alpha = 0.2f)
+        AnimatedVisibility(visible = true, enter = fadeIn(animationSpec = spring())) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(NonnaDimens.coverHeightMedium)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                PrimaryGradientStart.copy(alpha = 0.2f),
+                                PrimaryGradientEnd.copy(alpha = 0.2f)
+                            )
                         )
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
             if (coverUrl != null) {
                 AsyncImage(
                     model = coverUrl,
@@ -258,13 +265,18 @@ fun CofreDetailScreen(
                     color = Color.White.copy(alpha = 0.9f)
                 )
             }
+            }
         }
         
         // Stats bar
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(initialOffsetY = { it / 4 }, animationSpec = spring()) + fadeIn()
         ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface
+            ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -291,6 +303,7 @@ fun CofreDetailScreen(
                     count = cofre.memberCount,
                     label = if (cofre.memberCount == 1) "miembro" else "miembros"
                 )
+            }
             }
         }
         
@@ -428,23 +441,22 @@ private fun RecuerdosTab(
                 )
             }
         } else {
-            Spacer(modifier = Modifier.height(16.dp))
-            
+            val controlsScrollState = rememberScrollState()
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(controlsScrollState),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FilterChipsRow(
                     chips = MemoryFilters.all,
                     selectedChipId = memoryFilter,
                     onChipSelected = onFilterChange,
-                    modifier = Modifier.weight(1f)
+                    scrollable = false
                 )
-                
-                // View mode toggle
+
                 Surface(
-                    modifier = Modifier.padding(start = 8.dp),
                     shape = NonnaCorners.Medium,
                     color = MaterialTheme.colorScheme.surfaceVariant
                 ) {
@@ -507,17 +519,19 @@ private fun RecuerdosTab(
                 }
             } else if (viewMode == MemoryCardViewMode.Grid) {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 160.dp),
+                    columns = GridCells.Fixed(2),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(filteredMemories) { memory ->
-                        MemoryCard(
-                            memory = memory,
-                            onClick = { onMemoryClick(memory.id) },
-                            viewMode = MemoryCardViewMode.Grid
-                        )
+                    itemsIndexed(filteredMemories, key = { _, memory -> memory.id }) { index, memory ->
+                        NonnaStaggerItem(index = index, stepDelayMs = 50) {
+                            MemoryCard(
+                                memory = memory,
+                                onClick = { onMemoryClick(memory.id) },
+                                viewMode = MemoryCardViewMode.Grid
+                            )
+                        }
                     }
                 }
             } else {
@@ -525,12 +539,14 @@ private fun RecuerdosTab(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(filteredMemories) { memory ->
-                        MemoryCard(
-                            memory = memory,
-                            onClick = { onMemoryClick(memory.id) },
-                            viewMode = MemoryCardViewMode.List
-                        )
+                    itemsIndexed(filteredMemories, key = { _, memory -> memory.id }) { index, memory ->
+                        NonnaStaggerItem(index = index, stepDelayMs = 50) {
+                            MemoryCard(
+                                memory = memory,
+                                onClick = { onMemoryClick(memory.id) },
+                                viewMode = MemoryCardViewMode.List
+                            )
+                        }
                     }
                 }
             }
@@ -632,7 +648,8 @@ private fun FamiliaTab(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(members) { member ->
+                itemsIndexed(members, key = { _, member -> member.email }) { index, member ->
+                    NonnaStaggerItem(index = index, stepDelayMs = 60) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = NonnaCorners.Card,
@@ -703,6 +720,7 @@ private fun FamiliaTab(
                             
                             PermissionBadge(role = member.role)
                         }
+                    }
                     }
                 }
             }

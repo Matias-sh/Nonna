@@ -195,7 +195,10 @@ class FamilyTreeViewModel @Inject constructor(
      */
     private fun normalizeDate(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
-        val parts = raw.split("/", "-", ".")
+        val trimmed = raw.trim()
+        val isoMatch = Regex("""^\d{4}-\d{2}-\d{2}$""")
+        if (isoMatch.matches(trimmed)) return trimmed
+        val parts = trimmed.split("/", "-", ".")
         if (parts.size != 3) return null
 
         val (d, m, y) = parts

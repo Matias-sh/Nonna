@@ -1,5 +1,6 @@
 package com.cocido.nonna.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,9 +31,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -134,6 +138,12 @@ private fun NavItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val interactionSource = rememberMotionInteractionSource()
+    val iconScale by animateFloatAsState(
+        targetValue = if (selected) 1.1f else 1f,
+        animationSpec = NonnaMotion.bounceSpring,
+        label = "bottom_nav_icon_scale"
+    )
     val color = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -143,10 +153,13 @@ private fun NavItem(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
+            .nonnaInteractiveScale(interactionSource = interactionSource, pressed = 0.98f)
             .selectable(
                 selected = selected,
                 onClick = onClick,
-                role = Role.Tab
+                role = Role.Tab,
+                interactionSource = interactionSource,
+                indication = null
             )
             .padding(vertical = 8.dp, horizontal = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -167,7 +180,9 @@ private fun NavItem(
             Icon(
                 imageVector = tab.icon,
                 contentDescription = tab.label,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier
+                    .size(24.dp)
+                    .scale(iconScale),
                 tint = color
             )
         }
@@ -229,9 +244,19 @@ private fun SidebarNavItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val interactionSource = rememberMotionInteractionSource()
+    val offsetX by animateFloatAsState(
+        targetValue = if (isSelected) 4f else 0f,
+        animationSpec = NonnaMotion.navSpring,
+        label = "sidebar_hover_offset"
+    )
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .nonnaInteractiveScale(interactionSource, pressed = 0.98f)
+            .padding(start = offsetX.dp),
+        interactionSource = interactionSource,
         shape = MaterialTheme.shapes.medium,
         color = if (isSelected) {
             MaterialTheme.colorScheme.primary

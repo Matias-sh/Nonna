@@ -46,6 +46,8 @@ import coil.compose.AsyncImage
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
+import com.cocido.nonna.ui.components.NonnaCropContract
+import com.cocido.nonna.ui.components.NonnaCropRequest
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.PageHeader
 import com.cocido.nonna.ui.theme.NonnaDimens
@@ -70,11 +72,24 @@ fun ProfileSettingsScreen(
 
     val currentAvatarUrl = user?.profileImageUrl()
     var avatarUri by remember { mutableStateOf<Uri?>(null) }
+    val cropLauncher = rememberLauncherForActivityResult(
+        contract = NonnaCropContract()
+    ) { result ->
+        result?.let { avatarUri = it }
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        avatarUri = uri
+        if (uri != null) {
+            cropLauncher.launch(
+                NonnaCropRequest(
+                    sourceUri = uri,
+                    aspectRatio = 1f,
+                    title = "Editar foto de perfil"
+                )
+            )
+        }
     }
 
     LaunchedEffect(Unit) {

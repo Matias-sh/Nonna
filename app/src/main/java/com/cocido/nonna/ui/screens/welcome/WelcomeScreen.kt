@@ -1,5 +1,10 @@
 package com.cocido.nonna.ui.screens.welcome
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,6 +25,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -42,6 +52,19 @@ fun WelcomeScreen(
     onCreateCofre: () -> Unit,
     onLogin: () -> Unit
 ) {
+    var logoVisible by remember { mutableStateOf(false) }
+    var descriptionVisible by remember { mutableStateOf(false) }
+    var buttonsVisible by remember { mutableStateOf(false) }
+    var privacyVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        logoVisible = true
+        kotlinx.coroutines.delay(200)
+        descriptionVisible = true
+        kotlinx.coroutines.delay(100)
+        buttonsVisible = true
+        kotlinx.coroutines.delay(100)
+        privacyVisible = true
+    }
     NonnaDetailScaffold {
         Column(
             modifier = Modifier
@@ -52,11 +75,16 @@ fun WelcomeScreen(
             verticalArrangement = Arrangement.Top
         ) {
         // Logo - usamos el mismo gráfico que el launcher, sin marcos extra
-        Image(
-            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
-            contentDescription = "Logo de NONNA",
-            modifier = Modifier.size(160.dp)
-        )
+        AnimatedVisibility(
+            visible = logoVisible,
+            enter = scaleIn(initialScale = 0.8f, animationSpec = spring())
+        ) {
+            Image(
+                painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                contentDescription = "Logo de NONNA",
+                modifier = Modifier.size(160.dp)
+            )
+        }
         
         Spacer(modifier = Modifier.height(16.dp))
         
@@ -66,12 +94,14 @@ fun WelcomeScreen(
             color = MaterialTheme.colorScheme.onBackground
         )
         
-        Text(
-            text = "El cofre donde la memoria vive para siempre",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+        AnimatedVisibility(visible = descriptionVisible, enter = fadeIn(animationSpec = spring())) {
+            Text(
+                text = "El cofre donde la memoria vive para siempre",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
         
         Spacer(modifier = Modifier.height(48.dp))
         
@@ -119,44 +149,51 @@ fun WelcomeScreen(
         Spacer(modifier = Modifier.height(48.dp))
         
         // Action buttons
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        AnimatedVisibility(
+            visible = buttonsVisible,
+            enter = slideInVertically(initialOffsetY = { it / 5 }, animationSpec = spring()) + fadeIn()
         ) {
-            NonnaButton(
-                text = "Crear mi primer cofre",
-                onClick = onCreateCofre,
-                style = NonnaButtonStyle.Primary,
-                fullWidth = true
-            )
-            
-            NonnaButton(
-                text = "Ingresar",
-                onClick = onLogin,
-                style = NonnaButtonStyle.Outline,
-                fullWidth = true
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                NonnaButton(
+                    text = "Crear mi primer cofre",
+                    onClick = onCreateCofre,
+                    style = NonnaButtonStyle.Primary,
+                    fullWidth = true
+                )
+
+                NonnaButton(
+                    text = "Ingresar",
+                    onClick = onLogin,
+                    style = NonnaButtonStyle.Outline,
+                    fullWidth = true
+                )
+            }
         }
         
         Spacer(modifier = Modifier.height(32.dp))
         
         // Privacy note
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    shape = NonnaCorners.Medium
+        AnimatedVisibility(visible = privacyVisible, enter = fadeIn(animationSpec = spring())) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = NonnaCorners.Medium
+                    )
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Tu privacidad es sagrada. NONNA es un espacio privado, solo para tu familia.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "Tu privacidad es sagrada. NONNA es un espacio privado, solo para tu familia.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            }
         }
         }
     }

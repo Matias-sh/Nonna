@@ -14,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -40,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
+import com.cocido.nonna.ui.components.NonnaDatePickerField
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
@@ -190,35 +190,21 @@ fun AddPersonScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Fecha de nacimiento
-            Text(
-                text = "Fecha de nacimiento",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            NonnaTextField(
+            NonnaDatePickerField(
                 value = birthDate,
                 onValueChange = { birthDate = it },
-                placeholder = "dd/mm/aaaa",
-                trailingIcon = Icons.Outlined.CalendarMonth,
+                label = "Fecha de nacimiento",
+                disallowFutureDates = true,
                 modifier = Modifier.fillMaxWidth()
             )
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Fecha de fallecimiento
-            Text(
-                text = "Fecha de fallecimiento (opcional)",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            NonnaTextField(
+            NonnaDatePickerField(
                 value = deathDate,
                 onValueChange = { deathDate = it },
-                placeholder = "dd/mm/aaaa",
-                trailingIcon = Icons.Outlined.CalendarMonth,
+                label = "Fecha de fallecimiento (opcional)",
+                disallowFutureDates = true,
                 modifier = Modifier.fillMaxWidth()
             )
             

@@ -1,5 +1,8 @@
 package com.cocido.nonna.ui.screens.cofres
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Inventory2
@@ -28,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,7 +46,10 @@ import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.FilterChipsRow
 import com.cocido.nonna.ui.components.NonnaTab
 import com.cocido.nonna.ui.components.NonnaTextField
+import com.cocido.nonna.ui.components.NonnaStaggerItem
+import com.cocido.nonna.ui.components.NonnaMotion
 import com.cocido.nonna.ui.components.SimpleHeader
+import com.cocido.nonna.ui.components.rememberMotionInteractionSource
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaTheme
 import androidx.compose.ui.tooling.preview.Preview
@@ -57,8 +65,17 @@ fun CofresListScreen(
     var activeFilter by remember { mutableStateOf(CofreFilters.todos.id) }
     val cofres by viewModel.cofres.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    var fabVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.load() }
+    LaunchedEffect(cofres.isNotEmpty()) {
+        if (cofres.isNotEmpty()) {
+            kotlinx.coroutines.delay(300)
+            fabVisible = true
+        } else {
+            fabVisible = false
+        }
+    }
 
     val filteredCofres = cofres.filter { cofre ->
         // Apply search
@@ -151,7 +168,7 @@ fun CofresListScreen(
                         }
                     } else {
                         LazyVerticalGrid(
-                            columns = GridCells.Adaptive(minSize = 280.dp),
+                            columns = GridCells.Fixed(2),
                             contentPadding = PaddingValues(
                                 start = NonnaDimens.screenPaddingHorizontal,
                                 end = NonnaDimens.screenPaddingHorizontal,
@@ -160,11 +177,14 @@ fun CofresListScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            items(filteredCofres) { cofre ->
-                                CofreCard(
-                                    cofre = cofre,
-                                    onClick = { onCofreClick(cofre.id) }
-                                )
+                            itemsIndexed(filteredCofres, key = { _, cofre -> cofre.id }) { index, cofre ->
+                                NonnaStaggerItem(index = index, stepDelayMs = NonnaMotion.StaggerStepMs) {
+                                    CofreCard(
+                                        cofre = cofre,
+                                        onClick = { onCofreClick(cofre.id) },
+                                        modifier = Modifier
+                                    )
+                                }
                             }
                         }
                     }
@@ -172,19 +192,40 @@ fun CofresListScreen(
             }
 
             if (cofres.isNotEmpty()) {
-                FloatingActionButton(
-                    onClick = onCreateCofre,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                val fabInteraction = rememberMotionInteractionSource()
+                val fabPressed by fabInteraction.collectIsPressedAsState()
+                val fabScale by animateFloatAsState(
+                    targetValue = when {
+                        fabPressed -> 0.9f
+                        else -> 1f
+                    },
+                    animationSpec = NonnaMotion.bounceSpring,
+                    label = "cofres_fab_scale"
+                )
+                AnimatedVisibility(
+                    visible = fabVisible,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(NonnaDimens.screenPaddingHorizontal)
-                        .padding(bottom = 16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Nuevo cofre"
+                        .padding(bottom = 16.dp),
+                    enter = scaleIn(
+                        initialScale = 0f,
+                        animationSpec = NonnaMotion.bounceSpring
                     )
+                ) {
+                    FloatingActionButton(
+                        onClick = onCreateCofre,
+                        interactionSource = fabInteraction,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier
+                            .scale(fabScale)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Nuevo cofre"
+                        )
+                    }
                 }
             }
         }

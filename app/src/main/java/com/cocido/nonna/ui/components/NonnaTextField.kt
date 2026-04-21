@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -53,7 +55,8 @@ fun NonnaTextField(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     isError: Boolean = false,
     errorMessage: String? = null,
-    helperText: String? = null
+    helperText: String? = null,
+    onClick: (() -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -102,6 +105,13 @@ fun NonnaTextField(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(NonnaCorners.Input)
+                        .then(
+                            if (onClick != null) {
+                                Modifier.clickable(onClick = onClick)
+                            } else {
+                                Modifier
+                            }
+                        )
                         .background(InputBackground)
                         .border(
                             width = 1.dp,
@@ -109,7 +119,7 @@ fun NonnaTextField(
                             shape = NonnaCorners.Input
                         )
                         .padding(horizontal = NonnaDimens.inputPadding)
-                        .height(if (singleLine) NonnaDimens.inputHeight else (NonnaDimens.inputHeight * minLines))
+                        .heightIn(min = NonnaDimens.inputHeight)
                 ) {
                     Row(
                         modifier = Modifier

@@ -120,26 +120,57 @@ class RecuerdosRepository @Inject constructor(
         titulo: String? = null,
         descripcion: String? = null,
         fecha: String? = null,
-        emocionId: String? = null
+        emocionId: String? = null,
+        emocionPersonalizada: String? = null,
+        file: File? = null
     ): ApiResult<MemoryUiModel> {
         return try {
-            val response = api.update(
-                id,
-                RecuerdoCreateRequest(
-                    titulo = titulo,
-                    descripcion = descripcion,
-                    fecha = fecha,
-                    emocionId = emocionId
+            val response = if (file != null) {
+                val mediaType = when (file.extension.lowercase()) {
+                    "jpg", "jpeg", "png", "gif", "webp" -> "image/*".toMediaTypeOrNull()
+                    "txt" -> "text/plain".toMediaTypeOrNull()
+                    "mp3", "m4a", "ogg", "wav" -> "audio/*".toMediaTypeOrNull()
+                    else -> "application/octet-stream".toMediaTypeOrNull()
+                } ?: "application/octet-stream".toMediaTypeOrNull()!!
+                val filePart = MultipartPartHelper.createFormDataFile("file", file, mediaType)
+                val textPlain = "text/plain".toMediaTypeOrNull()
+                api.updateFull(
+                    id = id,
+                    file = filePart,
+                    titulo = titulo?.toRequestBody(contentType = textPlain),
+                    descripcion = descripcion?.toRequestBody(contentType = textPlain),
+                    fecha = fecha?.toRequestBody(contentType = textPlain),
+                    emocionId = emocionId?.toRequestBody(contentType = textPlain),
+                    emocionPersonalizada = emocionPersonalizada?.toRequestBody(contentType = textPlain)
                 )
-            )
+            } else {
+                api.update(
+                    id,
+                    RecuerdoCreateRequest(
+                        titulo = titulo,
+                        descripcion = descripcion,
+                        fecha = fecha,
+                        emocionId = emocionId,
+                        emocionPersonalizada = emocionPersonalizada
+                    )
+                )
+            }
             if (response.isSuccessful) {
                 response.body()?.let { ApiResult.Success(it.toUiModel()) }
                     ?: ApiResult.Error("Error al actualizar")
             } else {
-                ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+                val message = when (response.code()) {
+                    413 -> "El archivo es demasiado grande. Probá con uno más liviano."
+                    else -> response.errorBody()?.string() ?: "Error"
+                }
+                ApiResult.Error(message, response.code())
             }
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            val message = when (e.code()) {
+                413 -> "El archivo es demasiado grande. Probá con uno más liviano."
+                else -> e.response()?.errorBody()?.string() ?: e.message()
+            }
+            ApiResult.Error(message ?: "Error", e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
@@ -166,13 +197,13 @@ class RecuerdosRepository @Inject constructor(
 private fun resolveEmotionalTag(
     nombreFromApi: String?,
     emocionPersonalizada: String?
-): EmotionalTag {
+): EmotionalTag? {
     val fromPersonalizada = emocionPersonalizada?.trim()?.takeIf { it.isNotBlank() }?.let { value ->
         EmotionalTag.entries.find { it.label.equals(value, ignoreCase = true) }
     }
     if (fromPersonalizada != null) return fromPersonalizada
 
-    val name = nombreFromApi?.trim()?.takeIf { it.isNotBlank() } ?: return EmotionalTag.Nostalgico
+    val name = nombreFromApi?.trim()?.takeIf { it.isNotBlank() } ?: return null
     val exact = EmotionalTag.entries.find { it.label.equals(name, ignoreCase = true) }
     if (exact != null) return exact
 
@@ -181,7 +212,7 @@ private fun resolveEmotionalTag(
         name.equals("Nostalgia", true) || name.equals("Nostalgico", true) || name.startsWith("Nostalg", true) -> EmotionalTag.Nostalgico
         name.equals("Calma", true) || name.startsWith("Calm", true) -> EmotionalTag.Calmo
         name.startsWith("Familiar", true) -> EmotionalTag.Familiar
-        else -> EmotionalTag.Nostalgico
+        else -> null
     }
 }
 
@@ -190,6 +221,7 @@ private fun RecuerdoDto.toUiModel(): MemoryUiModel {
     val memoryType = when {
         tipoStr.contains("FOTO") || tipoStr.contains("PHOTO") || tipoStr.contains("IMAGE") || tipoStr == "IMAGEN" -> MemoryType.Photo
         tipoStr.contains("AUDIO") -> MemoryType.Audio
+        tipoStr.contains("TEXTO") || tipoStr.contains("TEXT") || tipoStr.contains("TXT") || tipoStr.contains("DOCUMENT") -> MemoryType.Text
         else -> MemoryType.Text
     }
     val imageUrl = rutaArchivo ?: thumbnailUrl

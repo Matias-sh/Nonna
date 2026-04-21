@@ -44,10 +44,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.cocido.nonna.data.mock.relationOptions
+import com.cocido.nonna.data.mock.relationOptionsByCategory
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
+import com.cocido.nonna.ui.components.NonnaCropContract
+import com.cocido.nonna.ui.components.NonnaCropRequest
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTextArea
@@ -72,7 +74,8 @@ fun CreateCofreScreen(
     viewModel: com.cocido.nonna.ui.viewmodel.CreateCofreViewModel = hiltViewModel()
 ) {
     var name by remember { mutableStateOf("") }
-    var relation by remember { mutableStateOf("") }
+    var selectedRelationOption by remember { mutableStateOf<String?>(null) }
+    var customRelation by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var coverImageUri by remember { mutableStateOf<Uri?>(null) }
     var inviteEmails by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -82,11 +85,28 @@ fun CreateCofreScreen(
     var feedbackMessage by remember { mutableStateOf("") }
     var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
 
+    val cropLauncher = rememberLauncherForActivityResult(
+        contract = NonnaCropContract()
+    ) { result ->
+        result?.let { coverImageUri = it }
+    }
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        if (uri != null) coverImageUri = uri
+        if (uri != null) {
+            cropLauncher.launch(
+                NonnaCropRequest(
+                    sourceUri = uri,
+                    aspectRatio = 16f / 9f,
+                    title = "Editar portada del cofre"
+                )
+            )
+        }
     }
+
+    val finalRelation = customRelation.trim().ifBlank { selectedRelationOption.orEmpty() }
+    val canSelectPresetRelation = customRelation.isBlank()
+    val canWriteCustomRelation = selectedRelationOption == null
 
     LaunchedEffect(Unit) {
         viewModel.created.collectLatest { _ ->
@@ -95,7 +115,14 @@ fun CreateCofreScreen(
             feedbackVisible = true
             delay(1200)
             feedbackVisible = false
-            onCreate(NewCofre(name = name, relation = relation, description = description, coverImageUrl = coverImageUri?.toString()))
+            onCreate(
+                NewCofre(
+                    name = name,
+                    relation = finalRelation,
+                    description = description,
+                    coverImageUrl = coverImageUri?.toString()
+                )
+            )
         }
     }
 
@@ -111,7 +138,7 @@ fun CreateCofreScreen(
         }
     }
 
-    val canSubmit = name.isNotBlank() && description.isNotBlank() && !isLoading
+    val canSubmit = name.isNotBlank() && finalRelation.isNotBlank() && description.isNotBlank() && !isLoading
     
     NonnaDetailScaffold {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -234,43 +261,76 @@ fun CreateCofreScreen(
             
             Spacer(modifier = Modifier.height(8.dp))
             
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                relationOptions.forEach { option ->
-                    Surface(
-                        onClick = { relation = option },
-                        shape = NonnaCorners.Medium,
-                        color = if (relation == option) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    ) {
-                        Text(
-                            text = option,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (relation == option) {
-                                MaterialTheme.colorScheme.onPrimary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
+            relationOptionsByCategory.forEach { (category, options) ->
+                Text(
+                    text = category,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    options.forEach { option ->
+                        Surface(
+                            onClick = {
+                                selectedRelationOption = option
+                                customRelation = ""
                             },
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                        )
+                            enabled = canSelectPresetRelation,
+                            shape = NonnaCorners.Medium,
+                            color = if (selectedRelationOption == option) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            }
+                        ) {
+                            Text(
+                                text = option,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (selectedRelationOption == option) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
                     }
                 }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            if (!canSelectPresetRelation) {
+                Text(
+                    text = "Las opciones sugeridas se desactivan mientras escribís un parentesco personalizado.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
             }
             
             Spacer(modifier = Modifier.height(8.dp))
             
             NonnaTextField(
-                value = relation,
-                onValueChange = { relation = it },
+                value = customRelation,
+                onValueChange = {
+                    customRelation = it
+                    if (it.isNotBlank()) selectedRelationOption = null
+                },
                 placeholder = "O escribí otro...",
+                enabled = canWriteCustomRelation,
                 modifier = Modifier.fillMaxWidth()
             )
+            if (!canWriteCustomRelation) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "El campo personalizado se habilita al deseleccionar el parentesco sugerido.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -392,7 +452,7 @@ fun CreateCofreScreen(
                     onClick = {
                         viewModel.create(
                             name = name,
-                            relation = relation,
+                            relation = finalRelation,
                             description = description.trim(),
                             coverImageUri = coverImageUri,
                             inviteEmails = inviteEmails

@@ -192,28 +192,89 @@ val mockFamilyTree = listOf(
 
 // Relation options for creating cofre (display text)
 val relationOptions = listOf(
-    "Abuela",
-    "Abuelo",
-    "Bisabuela",
-    "Bisabuelo",
-    "Tía",
-    "Tío",
-    "Madre",
     "Padre",
-    "Otro familiar"
+    "Madre",
+    "Hijo",
+    "Hija",
+    "Abuelo",
+    "Abuela",
+    "Nieto",
+    "Nieta",
+    "Bisabuelo",
+    "Bisabuela",
+    "Hermano",
+    "Hermana",
+    "Tío",
+    "Tía",
+    "Sobrino",
+    "Sobrina",
+    "Primo",
+    "Prima",
+    "Suegro",
+    "Suegra",
+    "Yerno",
+    "Nuera",
+    "Cuñado",
+    "Cuñada",
+    "Padrino",
+    "Madrina",
+    "Ahijado",
+    "Ahijada",
+    "Amigo",
+    "Amiga",
+    "Pareja",
+    "Otro"
+)
+
+val relationOptionsByCategory: Map<String, List<String>> = mapOf(
+    "Familia" to listOf(
+        "Padre", "Madre", "Hijo", "Hija",
+        "Abuelo", "Abuela", "Nieto", "Nieta",
+        "Bisabuelo", "Bisabuela", "Hermano", "Hermana",
+        "Tío", "Tía", "Sobrino", "Sobrina",
+        "Primo", "Prima"
+    ),
+    "Relaciones especiales" to listOf(
+        "Suegro", "Suegra", "Yerno", "Nuera", "Cuñado", "Cuñada",
+        "Padrino", "Madrina", "Ahijado", "Ahijada",
+        "Amigo", "Amiga", "Pareja", "Otro"
+    )
 )
 
 /** Mapeo display → valor API para parentesco (backend espera ABUELA, ABUELO, etc.). */
 val relationDisplayToApi: Map<String, String> = mapOf(
-    "Abuela" to "ABUELA",
-    "Abuelo" to "ABUELO",
-    "Bisabuela" to "BISABUELA",
-    "Bisabuelo" to "BISABUELO",
-    "Tía" to "TIA",
-    "Tío" to "TIO",
-    "Madre" to "MADRE",
     "Padre" to "PADRE",
-    "Otro familiar" to "OTRO"
+    "Madre" to "MADRE",
+    "Hijo" to "HIJO",
+    "Hija" to "HIJA",
+    "Abuelo" to "ABUELO",
+    "Abuela" to "ABUELA",
+    "Nieto" to "NIETO",
+    "Nieta" to "NIETA",
+    "Bisabuelo" to "BISABUELO",
+    "Bisabuela" to "BISABUELA",
+    "Hermano" to "HERMANO",
+    "Hermana" to "HERMANA",
+    "Tío" to "TIO",
+    "Tía" to "TIA",
+    "Sobrino" to "SOBRINO",
+    "Sobrina" to "SOBRINA",
+    "Primo" to "PRIMO",
+    "Prima" to "PRIMA",
+    "Suegro" to "SUEGRO",
+    "Suegra" to "SUEGRA",
+    "Yerno" to "YERNO",
+    "Nuera" to "NUERA",
+    "Cuñado" to "CUÑADO",
+    "Cuñada" to "CUÑADA",
+    "Padrino" to "PADRINO",
+    "Madrina" to "MADRINA",
+    "Ahijado" to "AHIJADO",
+    "Ahijada" to "AHIJADA",
+    "Amigo" to "AMIGO",
+    "Amiga" to "AMIGA",
+    "Pareja" to "PAREJA",
+    "Otro" to "OTRO"
 )
 
 fun relationToApi(display: String): String = relationDisplayToApi[display] ?: display.uppercase().replace(" ", "_")

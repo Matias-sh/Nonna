@@ -9,7 +9,8 @@ data class PagedResponse<T>(
     @SerializedName("content") val content: List<T>? = null,
     @SerializedName("data") val data: List<T>? = null,
     @SerializedName("items") val items: List<T>? = null,
+    @SerializedName("recuerdos") val recuerdos: List<T>? = null,
     @SerializedName("totalElements") val totalElements: Int? = null
 ) {
-    fun list(): List<T> = content ?: data ?: items ?: emptyList()
+    fun list(): List<T> = content ?: data ?: items ?: recuerdos ?: emptyList()
 }
