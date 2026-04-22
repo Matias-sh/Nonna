@@ -18,11 +18,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +44,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -52,11 +58,17 @@ import com.cocido.nonna.ui.components.NonnaCropContract
 import com.cocido.nonna.ui.components.NonnaCropRequest
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
 import com.cocido.nonna.ui.components.NonnaFeedbackType
+import com.cocido.nonna.ui.components.InviteEmailTrailingAddPill
 import com.cocido.nonna.ui.components.NonnaTextArea
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.relationCategoryLabel
+import com.cocido.nonna.ui.components.relationOptionLabel
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
+import com.cocido.nonna.util.FormValidators
+import com.cocido.nonna.util.UserMessages
 import kotlinx.coroutines.delay
 
 data class NewCofre(
@@ -73,6 +85,7 @@ fun CreateCofreScreen(
     onCreate: (NewCofre) -> Unit,
     viewModel: com.cocido.nonna.ui.viewmodel.CreateCofreViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     var name by remember { mutableStateOf("") }
     var selectedRelationOption by remember { mutableStateOf<String?>(null) }
     var customRelation by remember { mutableStateOf("") }
@@ -80,10 +93,33 @@ fun CreateCofreScreen(
     var coverImageUri by remember { mutableStateOf<Uri?>(null) }
     var inviteEmails by remember { mutableStateOf<List<String>>(emptyList()) }
     var emailInput by remember { mutableStateOf("") }
+
     val isLoading by viewModel.isLoading.collectAsState()
     var feedbackVisible by remember { mutableStateOf(false) }
     var feedbackMessage by remember { mutableStateOf("") }
     var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
+    var attemptedSubmit by remember { mutableStateOf(false) }
+
+    fun tryAddInviteEmailFromField() {
+        val email = emailInput.trim().lowercase()
+        if (email.isBlank()) return
+        when {
+            !FormValidators.isValidEmail(email) -> {
+                feedbackMessage = UserMessages.INVALID_INVITE_EMAIL
+                feedbackType = NonnaFeedbackType.Error
+                feedbackVisible = true
+            }
+            inviteEmails.any { it.equals(email, ignoreCase = true) } -> {
+                feedbackMessage = UserMessages.DUPLICATE_EMAIL
+                feedbackType = NonnaFeedbackType.Error
+                feedbackVisible = true
+            }
+            else -> {
+                inviteEmails = inviteEmails + email
+                emailInput = ""
+            }
+        }
+    }
 
     val cropLauncher = rememberLauncherForActivityResult(
         contract = NonnaCropContract()
@@ -98,15 +134,19 @@ fun CreateCofreScreen(
                 NonnaCropRequest(
                     sourceUri = uri,
                     aspectRatio = 16f / 9f,
-                    title = "Editar portada del cofre"
+                    title = context.getString(R.string.chest_cover_edit_title)
                 )
             )
         }
     }
 
-    val finalRelation = customRelation.trim().ifBlank { selectedRelationOption.orEmpty() }
+    val normalizedName = name.trim()
+    val normalizedDescription = description.trim()
+    val finalRelation = customRelation.trim().ifBlank { selectedRelationOption.orEmpty() }.trim()
     val canSelectPresetRelation = customRelation.isBlank()
-    val canWriteCustomRelation = selectedRelationOption == null
+    val nameError = attemptedSubmit && !FormValidators.hasMinLength(normalizedName, 2)
+    val relationError = attemptedSubmit && !FormValidators.hasMinLength(finalRelation, 2)
+    val descriptionError = attemptedSubmit && !FormValidators.hasMinLength(normalizedDescription, 3)
 
     LaunchedEffect(Unit) {
         viewModel.created.collectLatest { _ ->
@@ -117,9 +157,9 @@ fun CreateCofreScreen(
             feedbackVisible = false
             onCreate(
                 NewCofre(
-                    name = name,
+                    name = normalizedName,
                     relation = finalRelation,
-                    description = description,
+                    description = normalizedDescription,
                     coverImageUrl = coverImageUri?.toString()
                 )
             )
@@ -138,7 +178,10 @@ fun CreateCofreScreen(
         }
     }
 
-    val canSubmit = name.isNotBlank() && finalRelation.isNotBlank() && description.isNotBlank() && !isLoading
+    val canSubmit = FormValidators.hasMinLength(normalizedName, 2) &&
+        FormValidators.hasMinLength(finalRelation, 2) &&
+        FormValidators.hasMinLength(normalizedDescription, 3) &&
+        !isLoading
     
     NonnaDetailScaffold {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -146,8 +189,8 @@ fun CreateCofreScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
         PageHeader(
-            title = "Nuevo Cofre",
-            subtitle = "Creá un espacio para preservar memorias",
+            title = stringResource(R.string.create_chest_title),
+            subtitle = stringResource(R.string.create_chest_subtitle),
             onBack = onBack
         )
         
@@ -162,7 +205,7 @@ fun CreateCofreScreen(
             
             // Cover image upload
             Text(
-                text = "Imagen de portada (opcional)",
+                text = stringResource(R.string.chest_cover_optional_label),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -179,7 +222,7 @@ fun CreateCofreScreen(
                 ) {
                     AsyncImage(
                         model = coverImageUri,
-                        contentDescription = "Imagen de portada",
+                        contentDescription = stringResource(R.string.chest_cover_image_cd),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -196,7 +239,7 @@ fun CreateCofreScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Close,
-                            contentDescription = "Eliminar imagen",
+                            contentDescription = stringResource(R.string.common_remove_image_cd),
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -226,12 +269,12 @@ fun CreateCofreScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Subir imagen",
+                            text = stringResource(R.string.common_upload_image),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "o arrastrá una imagen aquí",
+                            text = stringResource(R.string.common_upload_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -245,8 +288,10 @@ fun CreateCofreScreen(
             NonnaTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = "Nombre del cofre *",
-                placeholder = "Ej: Nonna Rosa, Abuelo Juan...",
+                label = stringResource(R.string.create_chest_name_required),
+                placeholder = stringResource(R.string.onboarding_chest_name_placeholder),
+                isError = nameError,
+                errorMessage = if (nameError) UserMessages.INVALID_NAME_MIN_2 else null,
                 modifier = Modifier.fillMaxWidth()
             )
             
@@ -254,7 +299,7 @@ fun CreateCofreScreen(
             
             // Relation
             Text(
-                text = "Parentesco",
+                text = stringResource(R.string.common_relation),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -263,7 +308,7 @@ fun CreateCofreScreen(
             
             relationOptionsByCategory.forEach { (category, options) ->
                 Text(
-                    text = category,
+                    text = relationCategoryLabel(category),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -276,8 +321,12 @@ fun CreateCofreScreen(
                     options.forEach { option ->
                         Surface(
                             onClick = {
-                                selectedRelationOption = option
-                                customRelation = ""
+                                if (selectedRelationOption == option) {
+                                    selectedRelationOption = null
+                                } else {
+                                    selectedRelationOption = option
+                                    customRelation = ""
+                                }
                             },
                             enabled = canSelectPresetRelation,
                             shape = NonnaCorners.Medium,
@@ -288,7 +337,7 @@ fun CreateCofreScreen(
                             }
                         ) {
                             Text(
-                                text = option,
+                                text = relationOptionLabel(option),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = if (selectedRelationOption == option) {
                                     MaterialTheme.colorScheme.onPrimary
@@ -304,7 +353,7 @@ fun CreateCofreScreen(
             }
             if (!canSelectPresetRelation) {
                 Text(
-                    text = "Las opciones sugeridas se desactivan mientras escribís un parentesco personalizado.",
+                    text = stringResource(R.string.relation_presets_disabled_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -319,18 +368,11 @@ fun CreateCofreScreen(
                     customRelation = it
                     if (it.isNotBlank()) selectedRelationOption = null
                 },
-                placeholder = "O escribí otro...",
-                enabled = canWriteCustomRelation,
+                placeholder = stringResource(R.string.relation_custom_placeholder),
+                isError = relationError,
+                errorMessage = if (relationError) UserMessages.INVALID_RELATION else null,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (!canWriteCustomRelation) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "El campo personalizado se habilita al deseleccionar el parentesco sugerido.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
             
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -338,9 +380,11 @@ fun CreateCofreScreen(
             NonnaTextArea(
                 value = description,
                 onValueChange = { description = it },
-                label = "Una frase que la/lo describe *",
-                placeholder = "Ej: La mejor cocinera del mundo, Siempre con una sonrisa...",
+                label = stringResource(R.string.create_chest_description_required),
+                placeholder = stringResource(R.string.onboarding_description_placeholder),
                 minLines = 4,
+                isError = descriptionError,
+                errorMessage = if (descriptionError) UserMessages.INVALID_SHORT_DESCRIPTION else null,
                 modifier = Modifier.fillMaxWidth()
             )
             
@@ -357,7 +401,7 @@ fun CreateCofreScreen(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "Este cofre es privado por defecto. Solo las personas que invites podrán verlo.",
+                    text = stringResource(R.string.chest_privacy_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -367,41 +411,36 @@ fun CreateCofreScreen(
             
             // Invitar familiares (opcional)
             Text(
-                text = "Invitar familiares (opcional)",
+                text = stringResource(R.string.chest_invite_optional_title),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Agregá emails para que puedan ver y colaborar. También podés invitar después desde el cofre.",
+                text = stringResource(R.string.chest_invite_optional_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Row(
+            NonnaTextField(
+                value = emailInput,
+                onValueChange = { emailInput = it.filterNot(Char::isWhitespace) },
+                placeholder = stringResource(R.string.invite_email_placeholder),
+                leadingIcon = Icons.Outlined.Email,
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                NonnaTextField(
-                    value = emailInput,
-                    onValueChange = { emailInput = it },
-                    placeholder = "email@ejemplo.com",
-                    modifier = Modifier.weight(1f)
-                )
-                NonnaButton(
-                    text = "Agregar",
-                    onClick = {
-                        val email = emailInput.trim()
-                        if (email.isNotBlank() && email.contains("@") && email !in inviteEmails) {
-                            inviteEmails = inviteEmails + email
+                trailingIconContent = {
+                    InviteEmailTrailingAddPill(
+                        emailInput = emailInput,
+                        existingEmails = inviteEmails,
+                        onAdded = { normalized ->
+                            inviteEmails = inviteEmails + normalized
                             emailInput = ""
                         }
-                    },
-                    style = NonnaButtonStyle.Outline,
-                    size = com.cocido.nonna.ui.components.NonnaButtonSize.Small
-                )
-            }
+                    )
+                },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { tryAddInviteEmailFromField() })
+            )
             if (inviteEmails.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 FlowRow(
@@ -430,7 +469,7 @@ fun CreateCofreScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.Close,
-                                        contentDescription = "Quitar",
+                                        contentDescription = stringResource(R.string.common_remove),
                                         modifier = Modifier.size(14.dp)
                                     )
                                 }
@@ -448,12 +487,19 @@ fun CreateCofreScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 NonnaButton(
-                    text = if (isLoading) "Creando..." else "Crear cofre",
+                    text = if (isLoading) stringResource(R.string.common_creating) else stringResource(R.string.onboarding_create_chest),
                     onClick = {
+                        attemptedSubmit = true
+                        if (!canSubmit) {
+                            feedbackMessage = UserMessages.FIELD_REVIEW_REQUIRED
+                            feedbackType = NonnaFeedbackType.Error
+                            feedbackVisible = true
+                            return@NonnaButton
+                        }
                         viewModel.create(
-                            name = name,
+                            name = normalizedName,
                             relation = finalRelation,
-                            description = description.trim(),
+                            description = normalizedDescription,
                             coverImageUri = coverImageUri,
                             inviteEmails = inviteEmails
                         )
@@ -464,7 +510,7 @@ fun CreateCofreScreen(
                 )
                 
                 NonnaButton(
-                    text = "Cancelar",
+                    text = stringResource(R.string.common_cancel),
                     onClick = onBack,
                     style = NonnaButtonStyle.Outline,
                     fullWidth = true

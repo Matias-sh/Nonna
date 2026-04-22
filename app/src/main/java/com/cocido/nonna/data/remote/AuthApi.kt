@@ -2,8 +2,12 @@ package com.cocido.nonna.data.remote
 
 import com.cocido.nonna.data.remote.dto.AuthResponse
 import com.cocido.nonna.data.remote.dto.ChangePasswordRequest
+import com.cocido.nonna.data.remote.dto.GenericMessageResponse
 import com.cocido.nonna.data.remote.dto.LoginRequest
+import com.cocido.nonna.data.remote.dto.RefreshTokenRequest
 import com.cocido.nonna.data.remote.dto.UserDto
+import com.cocido.nonna.data.remote.dto.VerificationResponse
+import com.cocido.nonna.data.remote.dto.VerifyEmailRequest
 import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -45,4 +49,13 @@ interface AuthApi {
 
     @PATCH("auth/change-password")
     suspend fun changePassword(@Body request: ChangePasswordRequest): Response<Unit>
+
+    @POST("auth/verify-email")
+    suspend fun verifyEmail(@Body request: VerifyEmailRequest): Response<VerificationResponse>
+
+    @POST("auth/send-verification-email")
+    suspend fun sendVerificationEmail(): Response<GenericMessageResponse>
+
+    @POST("auth/refresh")
+    suspend fun refresh(@Body request: RefreshTokenRequest): Response<AuthResponse>
 }

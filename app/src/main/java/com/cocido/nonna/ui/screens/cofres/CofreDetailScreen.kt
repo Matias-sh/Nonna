@@ -67,9 +67,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.FilterChipsRow
 import com.cocido.nonna.ui.components.HeaderAction
+import com.cocido.nonna.ui.components.localizedMemoryFilters
 import com.cocido.nonna.ui.components.MemoryCard
 import com.cocido.nonna.ui.components.MemoryCardViewMode
 import com.cocido.nonna.ui.components.MemoryFilters
@@ -86,6 +89,7 @@ import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.PrimaryGradientEnd
 import com.cocido.nonna.ui.theme.PrimaryGradientStart
 import com.cocido.nonna.ui.components.InviteFamilyModal
+import com.cocido.nonna.ui.components.relationValueLabel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -118,7 +122,7 @@ fun CofreDetailScreen(
 
     LaunchedEffect(Unit) {
         viewModel.deleteSuccess.collectLatest {
-            feedbackMessage = "Cofre eliminado correctamente"
+            feedbackMessage = context.getString(R.string.chest_deleted_success)
             feedbackType = NonnaFeedbackType.Success
             feedbackVisible = true
             delay(1200)
@@ -128,7 +132,7 @@ fun CofreDetailScreen(
     }
     LaunchedEffect(Unit) {
         viewModel.inviteSuccess.collectLatest {
-            feedbackMessage = "Invitación enviada"
+            feedbackMessage = context.getString(R.string.chest_invite_sent)
             feedbackType = NonnaFeedbackType.Success
             feedbackVisible = true
             delay(1400)
@@ -173,10 +177,10 @@ fun CofreDetailScreen(
     ) {
         PageHeader(
             title = cofre?.name ?: "",
-            subtitle = cofre?.relation ?: "",
+            subtitle = cofre?.relation?.let { relationValueLabel(it) } ?: "",
             onBack = onBack,
             action = HeaderAction(
-                label = "Agregar",
+                label = stringResource(R.string.common_add),
                 icon = Icons.Default.Add,
                 onClick = onAddMemory
             )
@@ -197,7 +201,7 @@ fun CofreDetailScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     androidx.compose.material3.Text(
-                        "Cofre no encontrado",
+                        stringResource(R.string.chest_not_found),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -260,7 +264,7 @@ fun CofreDetailScreen(
                     color = Color.White
                 )
                 Text(
-                    text = cofre.relation,
+                    text = relationValueLabel(cofre.relation),
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color.White.copy(alpha = 0.9f)
                 )
@@ -286,22 +290,22 @@ fun CofreDetailScreen(
                 StatItem(
                     icon = Icons.Outlined.Image,
                     count = realPhotoCount,
-                    label = if (realPhotoCount == 1) "foto" else "fotos"
+                    label = if (realPhotoCount == 1) stringResource(R.string.stat_photo_singular) else stringResource(R.string.stat_photo_plural)
                 )
                 StatItem(
                     icon = Icons.Outlined.AudioFile,
                     count = realAudioCount,
-                    label = if (realAudioCount == 1) "audio" else "audios"
+                    label = if (realAudioCount == 1) stringResource(R.string.stat_audio_singular) else stringResource(R.string.stat_audio_plural)
                 )
                 StatItem(
                     icon = Icons.Outlined.Description,
                     count = realTextCount,
-                    label = if (realTextCount == 1) "texto" else "textos"
+                    label = if (realTextCount == 1) stringResource(R.string.stat_text_singular) else stringResource(R.string.stat_text_plural)
                 )
                 StatItem(
                     icon = Icons.Outlined.People,
                     count = cofre.memberCount,
-                    label = if (cofre.memberCount == 1) "miembro" else "miembros"
+                    label = if (cofre.memberCount == 1) stringResource(R.string.stat_member_singular) else stringResource(R.string.stat_member_plural)
                 )
             }
             }
@@ -313,7 +317,11 @@ fun CofreDetailScreen(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.primary
         ) {
-            listOf("Recuerdos", "Familia", "Detalles").forEachIndexed { index, title ->
+            listOf(
+                stringResource(R.string.chest_tab_memories),
+                stringResource(R.string.chest_tab_family),
+                stringResource(R.string.chest_tab_details)
+            ).forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTabIndex == index,
                     onClick = { selectedTabIndex = index },
@@ -336,6 +344,7 @@ fun CofreDetailScreen(
             )
             1 -> FamiliaTab(
                 members = buildFamiliaMembers(cofre, currentUser),
+                canInvite = cofre?.isOwner == true,
                 onInvite = { showInviteModal = true }
             )
             2 -> DetallesTab(
@@ -353,7 +362,7 @@ fun CofreDetailScreen(
             cofreName = cofre.name,
             onDismiss = { showInviteModal = false },
             onInvite = { data ->
-                viewModel.invitar(listOf(data.email))
+                viewModel.invitar(data.emails)
                 showInviteModal = false
             }
         )
@@ -362,19 +371,19 @@ fun CofreDetailScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Eliminar cofre") },
-            text = { Text("¿Estás seguro? Se eliminará el cofre y su información. Esta acción no se puede deshacer.") },
+            title = { Text(stringResource(R.string.common_delete_chest)) },
+            text = { Text(stringResource(R.string.chest_delete_confirm_text)) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
                     viewModel.deleteCofre()
                 }) {
-                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.common_cancel))
                 }
             }
         )
@@ -404,7 +413,7 @@ private fun StatItem(
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
-            text = "$count $label",
+            text = "$count $label", // i18n-ignore dynamic count + localized label
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -434,9 +443,9 @@ private fun RecuerdosTab(
             ) {
                 EmptyStateWithButton(
                     icon = Icons.Outlined.Favorite,
-                    title = "Todavía no hay recuerdos",
-                    description = "Empecemos con el primero. Puede ser una foto, un audio o una historia.",
-                    buttonText = "Agregar primer recuerdo",
+                    title = stringResource(R.string.memories_empty_title),
+                    description = stringResource(R.string.memories_empty_description),
+                    buttonText = stringResource(R.string.memories_add_first_button),
                     onButtonClick = onAddMemory
                 )
             }
@@ -450,7 +459,7 @@ private fun RecuerdosTab(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FilterChipsRow(
-                    chips = MemoryFilters.all,
+                    chips = localizedMemoryFilters(),
                     selectedChipId = memoryFilter,
                     onChipSelected = onFilterChange,
                     scrollable = false
@@ -476,7 +485,7 @@ private fun RecuerdosTab(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.GridView,
-                                contentDescription = "Vista grilla",
+                                contentDescription = stringResource(R.string.view_grid_cd),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -495,7 +504,7 @@ private fun RecuerdosTab(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Outlined.List,
-                                contentDescription = "Vista lista",
+                                contentDescription = stringResource(R.string.view_list_cd),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -512,7 +521,7 @@ private fun RecuerdosTab(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No hay recuerdos de este tipo",
+                        text = stringResource(R.string.memories_no_filter_results),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -568,11 +577,10 @@ private fun buildFamiliaMembers(
     currentUser: com.cocido.nonna.data.remote.dto.UserDto?
 ): List<CofreMemberDisplay> {
     if (cofre == null || currentUser == null) return emptyList()
-    if (!cofre.isOwner) return emptyList()
     val fullName = currentUser.displayName()
     val username = currentUser.nombreUsuario
     val avatar = currentUser.profileImageUrl()
-    return listOf(
+    val baseMembers = mutableListOf(
         CofreMemberDisplay(
             fullName = fullName,
             username = username,
@@ -581,11 +589,27 @@ private fun buildFamiliaMembers(
             role = com.cocido.nonna.ui.components.CofreRole.Creador
         )
     )
+    cofre.invited.forEach { invitee ->
+        if (invitee.email.equals(currentUser.email, ignoreCase = true)) return@forEach
+        baseMembers += CofreMemberDisplay(
+            fullName = invitee.fullName ?: invitee.email,
+            username = null,
+            email = invitee.email,
+            avatarUrl = null,
+            role = if (invitee.accepted) {
+                com.cocido.nonna.ui.components.CofreRole.Colaborador
+            } else {
+                com.cocido.nonna.ui.components.CofreRole.Invitado
+            }
+        )
+    }
+    return baseMembers.distinctBy { it.email.lowercase() }
 }
 
 @Composable
 private fun FamiliaTab(
     members: List<CofreMemberDisplay>,
+    canInvite: Boolean,
     onInvite: () -> Unit
 ) {
     Column(
@@ -602,21 +626,23 @@ private fun FamiliaTab(
         ) {
             Column {
                 Text(
-                    text = "Miembros del cofre",
+                    text = stringResource(R.string.chest_members_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Personas que pueden ver y contribuir a este cofre",
+                    text = stringResource(R.string.chest_members_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            NonnaButton(
-                text = "Invitar",
-                onClick = onInvite,
-                size = com.cocido.nonna.ui.components.NonnaButtonSize.Small
-            )
+            if (canInvite) {
+                NonnaButton(
+                    text = stringResource(R.string.common_invite),
+                    onClick = onInvite,
+                    size = com.cocido.nonna.ui.components.NonnaButtonSize.Small
+                )
+            }
         }
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -633,12 +659,12 @@ private fun FamiliaTab(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Aún no hay miembros en este cofre",
+                        text = stringResource(R.string.chest_members_empty_title),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Usá Invitar para sumar familiares. Ellos podrán ver y colaborar.",
+                        text = stringResource(R.string.chest_members_empty_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -706,7 +732,7 @@ private fun FamiliaTab(
                                 )
                                 if (!member.username.isNullOrBlank()) {
                                     Text(
-                                        text = "@${member.username}",
+                                        text = "@${member.username}", // i18n-ignore username handle format
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -753,18 +779,18 @@ private fun DetallesTab(
                 modifier = Modifier.padding(NonnaDimens.cardPaddingLarge)
             ) {
                 Text(
-                    text = "Información del cofre",
+                    text = stringResource(R.string.chest_info_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                DetailItem(label = "Nombre", value = cofre.name)
+                DetailItem(label = stringResource(R.string.common_name), value = cofre.name)
                 Spacer(modifier = Modifier.height(12.dp))
-                DetailItem(label = "Parentesco", value = cofre.relation)
+                DetailItem(label = stringResource(R.string.common_relation), value = relationValueLabel(cofre.relation))
                 Spacer(modifier = Modifier.height(12.dp))
-                DetailItem(label = "Privacidad", value = "Solo invitados")
+                DetailItem(label = stringResource(R.string.common_privacy), value = stringResource(R.string.chest_privacy_invited_only))
             }
         }
         
@@ -782,7 +808,7 @@ private fun DetallesTab(
                     modifier = Modifier.padding(NonnaDimens.cardPaddingLarge)
                 ) {
                     Text(
-                        text = "Acciones del creador",
+                        text = stringResource(R.string.chest_creator_actions),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -790,14 +816,14 @@ private fun DetallesTab(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     NonnaButton(
-                        text = "Editar información del cofre",
+                        text = stringResource(R.string.chest_edit_info),
                         onClick = onEdit,
                         style = NonnaButtonStyle.Ghost,
                         fullWidth = true
                     )
                     
                     NonnaButton(
-                        text = "Eliminar cofre",
+                        text = stringResource(R.string.common_delete_chest),
                         onClick = onDelete,
                         style = NonnaButtonStyle.Destructive,
                         fullWidth = true

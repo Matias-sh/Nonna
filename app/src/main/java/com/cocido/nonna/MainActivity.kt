@@ -62,10 +62,17 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         else -> {
+                            val startDestination = when (authState) {
+                                is AuthState.LoggedInVerified -> "home"
+                                is AuthState.LoggedInUnverified -> "verify-email"
+                                else -> "welcome"
+                            }
                             key(authState) {
                                 NonnaNavHost(
-                                    isLoggedIn = (authState is AuthState.LoggedIn),
-                                    onLogout = { mainViewModel.logout() }
+                                    isLoggedIn = authState is AuthState.LoggedInVerified || authState is AuthState.LoggedInUnverified,
+                                    onLogout = { mainViewModel.logout() },
+                                    startDestination = startDestination,
+                                    onEmailVerified = { mainViewModel.onEmailVerified() }
                                 )
                             }
                         }

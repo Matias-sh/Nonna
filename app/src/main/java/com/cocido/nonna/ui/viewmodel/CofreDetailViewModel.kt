@@ -101,7 +101,13 @@ class CofreDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _errorMessage.value = null
             when (val result = cofreRepository.invitar(cofreId, emails)) {
-                is ApiResult.Success -> _inviteSuccess.emit(Unit)
+                is ApiResult.Success -> {
+                    when (val cofreResult = cofreRepository.getCofre(cofreId)) {
+                        is ApiResult.Success -> _cofre.value = cofreResult.data
+                        else -> Unit
+                    }
+                    _inviteSuccess.emit(Unit)
+                }
                 is ApiResult.Error -> _errorMessage.value = result.message
                 else -> { }
             }

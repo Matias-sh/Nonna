@@ -5,7 +5,10 @@ import com.cocido.nonna.data.remote.CofreRecuerdosApi
 import com.cocido.nonna.data.remote.dto.CofreCreateRequest
 import com.cocido.nonna.data.remote.dto.CofreDto
 import com.cocido.nonna.data.remote.dto.CofreInviteRequest
+import com.cocido.nonna.data.remote.dto.CofreInvitationDto
 import com.cocido.nonna.ui.components.CofreUiModel
+import com.cocido.nonna.ui.components.CofreInvitationUiModel
+import com.cocido.nonna.ui.components.CofreInviteeUiModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -26,8 +29,13 @@ class CofreRepository @Inject constructor(
         try {
             val response = api.misCofres()
             if (response.isSuccessful) {
-                val list = response.body()?.cofres?.map { it.toUiModel() } ?: emptyList()
-                emit(ApiResult.Success(list))
+                val body = response.body()
+                val owned = body?.cofres.orEmpty().map { it.toUiModel() }
+                val invited = body?.cofresInvitado.orEmpty().map { it.toUiModel(forceNotOwner = true) }
+                val merged = LinkedHashMap<String, CofreUiModel>()
+                owned.forEach { merged[it.id] = it }
+                invited.forEach { if (!merged.containsKey(it.id)) merged[it.id] = it }
+                emit(ApiResult.Success(merged.values.toList()))
             } else {
                 emit(ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code()))
             }
@@ -77,10 +85,9 @@ class CofreRepository @Inject constructor(
                     coverImageFile.name,
                     coverImageFile.asRequestBody("image/*".toMediaTypeOrNull())
                 )
-                val invitadosBody = if (validEmails.isEmpty()) null
-                else """["${validEmails.joinToString("\",\"") { it.replace("\\", "\\\\").replace("\"", "\\\"") }}"]"""
-                    .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-                api.createFull(nombre, parentesco, fraseDescripcion, fotoPart, invitadosBody)
+                // Evitamos enviar invitados en multipart porque el backend valida ese campo
+                // de forma estricta y puede rechazar valores válidos por formato de serialización.
+                api.createFull(nombre, parentesco, fraseDescripcion, fotoPart, null)
             } else {
                 api.create(
                     CofreCreateRequest(
@@ -92,7 +99,7 @@ class CofreRepository @Inject constructor(
             }
             if (response.isSuccessful) {
                 val cofre = response.body()?.toUiModel() ?: return ApiResult.Error("Error al crear cofre")
-                if (coverImageFile == null && validEmails.isNotEmpty()) {
+                if (validEmails.isNotEmpty()) {
                     val inviteResult = invitar(cofre.id, validEmails)
                     if (inviteResult is ApiResult.Error) {
                         return inviteResult
@@ -100,10 +107,17 @@ class CofreRepository @Inject constructor(
                 }
                 ApiResult.Success(cofre)
             } else {
-                ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+                val raw = response.errorBody()?.string()
+                ApiResult.Error(
+                    NetworkErrorParser.parse(raw) ?: "No se pudo crear el cofre",
+                    response.code()
+                )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
@@ -145,10 +159,16 @@ class CofreRepository @Inject constructor(
                 response.body()?.let { ApiResult.Success(it.toUiModel()) }
                     ?: ApiResult.Error("Error al actualizar")
             } else {
-                ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+                ApiResult.Error(
+                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudo actualizar el cofre",
+                    response.code()
+                )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
@@ -181,9 +201,89 @@ class CofreRepository @Inject constructor(
                 )
             )
             if (response.isSuccessful) ApiResult.Success(Unit)
-            else ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+            else ApiResult.Error(
+                NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudo enviar la invitación",
+                response.code()
+            )
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                e.code()
+            )
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error("Sin conexión. Revisá tu internet.")
+        }
+    }
+
+    suspend fun getPendingInvitations(): ApiResult<List<CofreInvitationUiModel>> {
+        return try {
+            val response = api.misInvitacionesPendientes()
+            if (response.isSuccessful) {
+                ApiResult.Success(response.body().toInvitationsUi())
+            } else {
+                ApiResult.Error(
+                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudieron cargar tus invitaciones",
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error("Sin conexión. Revisá tu internet.")
+        }
+    }
+
+    suspend fun getSentInvitations(): ApiResult<List<CofreInvitationUiModel>> {
+        return try {
+            val response = api.misInvitacionesEnviadas()
+            if (response.isSuccessful) {
+                ApiResult.Success(response.body().toInvitationsUi())
+            } else {
+                ApiResult.Error(
+                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudieron cargar las invitaciones enviadas",
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error("Sin conexión. Revisá tu internet.")
+        }
+    }
+
+    suspend fun acceptInvitation(invitationId: String): ApiResult<Unit> = performInvitationAction {
+        api.aceptarInvitacion(invitationId)
+    }
+
+    suspend fun rejectInvitation(invitationId: String): ApiResult<Unit> = performInvitationAction {
+        api.rechazarInvitacion(invitationId)
+    }
+
+    suspend fun cancelInvitation(invitationId: String): ApiResult<Unit> = performInvitationAction {
+        api.cancelarInvitacion(invitationId)
+    }
+
+    private suspend fun performInvitationAction(
+        block: suspend () -> retrofit2.Response<Unit>
+    ): ApiResult<Unit> {
+        return try {
+            val response = block()
+            if (response.isSuccessful) {
+                ApiResult.Success(Unit)
+            } else {
+                ApiResult.Error(
+                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudo completar la acción",
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
@@ -192,7 +292,7 @@ class CofreRepository @Inject constructor(
     }
 }
 
-private fun CofreDto.toUiModel(): CofreUiModel = CofreUiModel(
+private fun CofreDto.toUiModel(forceNotOwner: Boolean = false): CofreUiModel = CofreUiModel(
     id = idValue(),
     name = displayName(),
     relation = displayRelation(),
@@ -201,8 +301,19 @@ private fun CofreDto.toUiModel(): CofreUiModel = CofreUiModel(
     textCount = textCount ?: 0,
     memberCount = memberCount ?: 1,
     lastUpdated = formatLastUpdated(updatedAt ?: updated_at),
+    updatedAtIso = updatedAt ?: updated_at,
     coverImageUrl = coverUrl(),
-    isOwner = isOwnerValue()
+    isOwner = if (forceNotOwner) false else isOwnerValue(),
+    invited = invitedList().map { invite ->
+        CofreInviteeUiModel(
+            id = invite.idValue(),
+            email = invite.email.orEmpty(),
+            accepted = invite.invitacionAceptada == true,
+            fullName = listOfNotNull(invite.persona?.nombre, invite.persona?.apellido)
+                .joinToString(" ")
+                .ifBlank { null }
+        )
+    }
 )
 
 private fun formatLastUpdated(iso: String?): String {
@@ -220,4 +331,35 @@ private fun formatLastUpdated(iso: String?): String {
     } catch (_: Exception) {
         iso
     }
+}
+
+private fun com.cocido.nonna.data.remote.dto.PagedResponse<CofreInvitationDto>?.toInvitationsUi(): List<CofreInvitationUiModel> {
+    return this?.list()?.map { it.toUiModel() } ?: emptyList()
+}
+
+private fun CofreInvitationDto.toUiModel(): CofreInvitationUiModel {
+    val cofre = cofreDisplay()
+    val inviter = cofre?.usuario
+    val inviterDisplayName = listOfNotNull(inviter?.persona?.nombre, inviter?.persona?.apellido)
+        .joinToString(" ")
+        .ifBlank { inviter?.nombreUsuario ?: inviter?.email }
+    val stateSignature = listOf(
+        updatedAt.orEmpty(),
+        createdAt.orEmpty(),
+        (invitacionAceptada == true).toString(),
+        (expirada == true).toString()
+    ).joinToString("|")
+    return CofreInvitationUiModel(
+        id = idValue(),
+        cofreId = cofre?.idValue().orEmpty(),
+        cofreName = cofre?.displayName().orEmpty(),
+        inviteeEmail = email.orEmpty(),
+        inviterName = inviterDisplayName,
+        inviterEmail = inviter?.email,
+        cofreCoverImageUrl = cofre?.coverUrl(),
+        cofreDescription = cofre?.fraseDescripcion ?: cofre?.descripcion ?: cofre?.description,
+        accepted = invitacionAceptada == true,
+        expired = expirada == true,
+        stateSignature = stateSignature
+    )
 }

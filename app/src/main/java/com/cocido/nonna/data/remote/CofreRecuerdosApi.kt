@@ -3,6 +3,7 @@ package com.cocido.nonna.data.remote
 import com.cocido.nonna.data.remote.dto.CofreCreateRequest
 import com.cocido.nonna.data.remote.dto.CofreDto
 import com.cocido.nonna.data.remote.dto.CofreInviteRequest
+import com.cocido.nonna.data.remote.dto.CofreInvitationDto
 import com.cocido.nonna.data.remote.dto.MisCofresResponse
 import com.cocido.nonna.data.remote.dto.PagedResponse
 import okhttp3.MultipartBody
@@ -68,4 +69,19 @@ interface CofreRecuerdosApi {
 
     @POST("cofre-recuerdos/invitar")
     suspend fun invitar(@Body request: CofreInviteRequest): Response<Unit>
+
+    @GET("cofre-recuerdos/mis-invitaciones-pendientes")
+    suspend fun misInvitacionesPendientes(): Response<PagedResponse<CofreInvitationDto>>
+
+    @GET("cofre-recuerdos/mis-invitaciones-enviadas")
+    suspend fun misInvitacionesEnviadas(): Response<PagedResponse<CofreInvitationDto>>
+
+    @POST("cofre-recuerdos/invitaciones/{id}/aceptar")
+    suspend fun aceptarInvitacion(@Path("id") invitationId: String): Response<Unit>
+
+    @POST("cofre-recuerdos/invitaciones/{id}/rechazar")
+    suspend fun rechazarInvitacion(@Path("id") invitationId: String): Response<Unit>
+
+    @DELETE("cofre-recuerdos/invitaciones/{id}")
+    suspend fun cancelarInvitacion(@Path("id") invitationId: String): Response<Unit>
 }

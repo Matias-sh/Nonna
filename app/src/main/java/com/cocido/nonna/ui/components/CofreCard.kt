@@ -26,13 +26,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import androidx.compose.ui.tooling.preview.Preview
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.NonnaTheme
@@ -48,8 +51,17 @@ data class CofreUiModel(
     val textCount: Int = 0,
     val memberCount: Int = 1,
     val lastUpdated: String = "",
+    val updatedAtIso: String? = null,
     val coverImageUrl: String? = null,
-    val isOwner: Boolean = true
+    val isOwner: Boolean = true,
+    val invited: List<CofreInviteeUiModel> = emptyList()
+)
+
+data class CofreInviteeUiModel(
+    val id: String,
+    val email: String,
+    val accepted: Boolean,
+    val fullName: String?
 )
 
 @Composable
@@ -70,9 +82,9 @@ fun CofreCard(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp,
-            hoveredElevation = 8.dp,
-            pressedElevation = 8.dp
+            defaultElevation = 4.dp,
+            hoveredElevation = 10.dp,
+            pressedElevation = 10.dp
         )
     ) {
         Column {
@@ -81,7 +93,14 @@ fun CofreCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(NonnaDimens.cofreCardCoverHeight)
-                    .clip(NonnaCorners.ImageMedium)
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 12.dp,
+                            topEnd = 12.dp,
+                            bottomStart = 0.dp,
+                            bottomEnd = 0.dp
+                        )
+                    )
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
@@ -139,7 +158,7 @@ fun CofreCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 
                 Text(
-                    text = cofre.relation,
+                    text = relationValueLabel(cofre.relation),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -180,7 +199,7 @@ fun CofreCard(
                 if (cofre.lastUpdated.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Actualizado ${cofre.lastUpdated}",
+                        text = stringResource(R.string.cofre_updated_at, cofre.lastUpdated),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

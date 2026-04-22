@@ -38,18 +38,22 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.viewmodel.CofresListViewModel
 import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.CofreCard
 import com.cocido.nonna.ui.components.CofreFilters
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.FilterChipsRow
+import com.cocido.nonna.ui.components.localizedCofreFilters
 import com.cocido.nonna.ui.components.NonnaTab
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.components.NonnaStaggerItem
 import com.cocido.nonna.ui.components.NonnaMotion
 import com.cocido.nonna.ui.components.SimpleHeader
 import com.cocido.nonna.ui.components.rememberMotionInteractionSource
+import com.cocido.nonna.ui.components.relationValueLabel
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaTheme
 import androidx.compose.ui.tooling.preview.Preview
@@ -78,9 +82,11 @@ fun CofresListScreen(
     }
 
     val filteredCofres = cofres.filter { cofre ->
+        val localizedRelation = relationValueLabel(cofre.relation)
         // Apply search
         val matchesSearch = cofre.name.contains(searchQuery, ignoreCase = true) ||
-                cofre.relation.contains(searchQuery, ignoreCase = true)
+                cofre.relation.contains(searchQuery, ignoreCase = true) ||
+                localizedRelation.contains(searchQuery, ignoreCase = true)
         
         if (!matchesSearch) return@filter false
         
@@ -101,8 +107,8 @@ fun CofresListScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 SimpleHeader(
-                    title = "Cofres",
-                    subtitle = "Tus espacios de memoria familiar"
+                    title = stringResource(R.string.chests_title),
+                    subtitle = stringResource(R.string.chests_subtitle)
                 )
                 
                 if (isLoading && cofres.isEmpty()) {
@@ -123,9 +129,9 @@ fun CofresListScreen(
                     ) {
                         EmptyStateWithButton(
                             icon = Icons.Outlined.Inventory2,
-                            title = "Todavía no tenés cofres",
-                            description = "Creá tu primer cofre para empezar a guardar las memorias que importan",
-                            buttonText = "Crear primer cofre",
+                            title = stringResource(R.string.chests_empty_title),
+                            description = stringResource(R.string.chests_empty_description),
+                            buttonText = stringResource(R.string.select_chest_empty_button),
                             onButtonClick = onCreateCofre
                         )
                     }
@@ -133,7 +139,7 @@ fun CofresListScreen(
                     NonnaTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = "Buscar cofres...",
+                        placeholder = stringResource(R.string.chests_search_placeholder),
                         leadingIcon = Icons.Outlined.Search,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -144,7 +150,7 @@ fun CofresListScreen(
                     
                     // Filter chips
                     FilterChipsRow(
-                        chips = CofreFilters.all,
+                        chips = localizedCofreFilters(),
                         selectedChipId = activeFilter,
                         onChipSelected = { activeFilter = it },
                         modifier = Modifier.padding(horizontal = NonnaDimens.screenPaddingHorizontal)
@@ -161,7 +167,7 @@ fun CofresListScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "No se encontraron cofres con ese criterio",
+                                text = stringResource(R.string.chests_no_results),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -223,7 +229,7 @@ fun CofresListScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Nuevo cofre"
+                            contentDescription = stringResource(R.string.chests_new_chest_cd)
                         )
                     }
                 }

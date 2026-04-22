@@ -5,7 +5,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -41,6 +40,7 @@ import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
+import com.cocido.nonna.ui.components.NonnaLogo
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.NonnaTheme
@@ -79,24 +79,20 @@ fun WelcomeScreen(
             visible = logoVisible,
             enter = scaleIn(initialScale = 0.8f, animationSpec = spring())
         ) {
-            Image(
-                painter = painterResource(id = R.mipmap.ic_launcher_foreground),
-                contentDescription = "Logo de NONNA",
-                modifier = Modifier.size(160.dp)
-            )
+            NonnaLogo(modifier = Modifier.size(160.dp))
         }
         
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "NONNA",
+            text = stringResource(R.string.welcome_brand),
             style = MaterialTheme.typography.displayLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
         
         AnimatedVisibility(visible = descriptionVisible, enter = fadeIn(animationSpec = spring())) {
             Text(
-                text = "El cofre donde la memoria vive para siempre",
+                text = stringResource(R.string.welcome_tagline),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -138,7 +134,7 @@ fun WelcomeScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Un lugar privado y cálido para preservar\nlas historias que nos conectan",
+                    text = stringResource(R.string.welcome_illustration_text),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -158,14 +154,14 @@ fun WelcomeScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 NonnaButton(
-                    text = "Crear mi primer cofre",
+                    text = stringResource(R.string.home_empty_button),
                     onClick = onCreateCofre,
                     style = NonnaButtonStyle.Primary,
                     fullWidth = true
                 )
 
                 NonnaButton(
-                    text = "Ingresar",
+                    text = stringResource(R.string.auth_login_button),
                     onClick = onLogin,
                     style = NonnaButtonStyle.Outline,
                     fullWidth = true
@@ -187,7 +183,7 @@ fun WelcomeScreen(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "Tu privacidad es sagrada. NONNA es un espacio privado, solo para tu familia.",
+                    text = stringResource(R.string.welcome_privacy_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

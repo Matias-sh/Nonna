@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.CofreCard
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.PageHeader
@@ -58,8 +60,8 @@ fun SelectCofreScreen(
             .navigationBarsPadding()
     ) {
         PageHeader(
-            title = "Agregar recuerdo",
-            subtitle = "¿De quién es este recuerdo?",
+            title = stringResource(R.string.select_chest_title),
+            subtitle = stringResource(R.string.select_chest_subtitle),
             onBack = onBack
         )
         
@@ -81,9 +83,9 @@ fun SelectCofreScreen(
             ) {
                 EmptyStateWithButton(
                     icon = Icons.Outlined.Favorite,
-                    title = "Todavía no hay cofres",
-                    description = "Creá el primer cofre para empezar a guardar recuerdos de tu familia",
-                    buttonText = "Crear primer cofre",
+                    title = stringResource(R.string.select_chest_empty_title),
+                    description = stringResource(R.string.select_chest_empty_description),
+                    buttonText = stringResource(R.string.select_chest_empty_button),
                     onButtonClick = onCreateCofre
                 )
             }
@@ -113,7 +115,7 @@ fun SelectCofreScreen(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = "Seleccioná el cofre donde querés guardar este recuerdo. Cada cofre representa a una persona especial de tu familia.",
+                            text = stringResource(R.string.select_chest_info_text),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -165,12 +167,12 @@ fun SelectCofreScreen(
                             
                             Column {
                                 Text(
-                                    text = "Crear nuevo cofre",
+                                    text = stringResource(R.string.select_chest_create_new_title),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Para otra persona de tu familia",
+                                    text = stringResource(R.string.select_chest_create_new_subtitle),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

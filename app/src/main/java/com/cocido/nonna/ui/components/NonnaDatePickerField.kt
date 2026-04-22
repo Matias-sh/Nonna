@@ -15,6 +15,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.cocido.nonna.R
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -30,9 +32,10 @@ fun NonnaDatePickerField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
-    placeholder: String = "Seleccioná una fecha",
+    placeholder: String? = null,
     disallowFutureDates: Boolean = false
 ) {
+    val resolvedPlaceholder = placeholder ?: stringResource(R.string.date_picker_placeholder)
     var showDatePicker by remember { mutableStateOf(false) }
     val initialDateMillis = remember(value) { parseDateToUtcMillis(value) }
     val todayUtcMillis = remember {
@@ -46,7 +49,7 @@ fun NonnaDatePickerField(
         value = value,
         onValueChange = {},
         label = label,
-        placeholder = placeholder,
+        placeholder = resolvedPlaceholder,
         readOnly = true,
         trailingIcon = Icons.Outlined.CalendarMonth,
         onClick = { showDatePicker = true },
@@ -74,12 +77,12 @@ fun NonnaDatePickerField(
                         showDatePicker = false
                     }
                 ) {
-                    Text("Aceptar")
+                    Text(stringResource(R.string.common_accept))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.common_cancel))
                 }
             }
         ) {

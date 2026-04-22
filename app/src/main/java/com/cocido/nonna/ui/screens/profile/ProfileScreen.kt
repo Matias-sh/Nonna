@@ -17,13 +17,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +42,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.cocido.nonna.R
 import com.cocido.nonna.BuildConfig
 import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.NonnaTab
@@ -55,7 +57,8 @@ import androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun ProfileScreen(
     onTabSelected: (NonnaTab) -> Unit,
-    onOpenSettings: () -> Unit,
+    onEditProfile: () -> Unit,
+    onOpenInvitations: () -> Unit,
     onLogout: () -> Unit,
     viewModel: com.cocido.nonna.ui.viewmodel.ProfileViewModel = hiltViewModel()
 ) {
@@ -80,8 +83,8 @@ fun ProfileScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             SimpleHeader(
-                title = "Perfil",
-                subtitle = "Tu cuenta y configuración"
+                title = stringResource(R.string.profile_title),
+                subtitle = stringResource(R.string.profile_subtitle)
             )
             
             Column(
@@ -93,7 +96,8 @@ fun ProfileScreen(
                     shape = NonnaCorners.Card,
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
-                    )
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -119,7 +123,7 @@ fun ProfileScreen(
                             if (avatarUrl != null) {
                                 AsyncImage(
                                     model = avatarUrl,
-                                    contentDescription = "Foto de perfil",
+                                    contentDescription = stringResource(R.string.profile_photo_desc),
                                     modifier = Modifier
                                         .size(80.dp)
                                         .clip(CircleShape),
@@ -156,33 +160,35 @@ fun ProfileScreen(
                                 androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.size(24.dp))
                             }
                         }
-                        
-                        IconButton(onClick = onOpenSettings) {
-                            Icon(
-                                imageVector = Icons.Outlined.Settings,
-                                contentDescription = "Configuración"
-                            )
-                        }
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
-                
-                // Options
+
                 Text(
-                    text = "Opciones",
+                    text = stringResource(R.string.profile_options),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 OptionCard(
-                    icon = Icons.Outlined.Settings,
-                    title = "Configuración",
-                    onClick = onOpenSettings
+                    icon = Icons.Outlined.Edit,
+                    title = stringResource(R.string.profile_edit_title),
+                    onClick = onEditProfile,
+                    subtitle = stringResource(R.string.profile_edit_subtitle)
                 )
-                
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OptionCard(
+                    icon = Icons.Outlined.MailOutline,
+                    title = stringResource(R.string.invites_title),
+                    onClick = onOpenInvitations,
+                    subtitle = stringResource(R.string.invites_profile_subtitle)
+                )
+
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 // Logout
@@ -210,7 +216,7 @@ fun ProfileScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Cerrar sesión",
+                            text = stringResource(R.string.profile_logout),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -225,14 +231,18 @@ fun ProfileScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = if (joinedDate.isNotBlank()) "Miembro desde $joinedDate" else "",
+                        text = if (joinedDate.isNotBlank()) {
+                            stringResource(R.string.profile_member_since, joinedDate)
+                        } else {
+                            ""
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Versión ${BuildConfig.VERSION_NAME}",
+                        text = stringResource(R.string.profile_version, BuildConfig.VERSION_NAME),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -250,8 +260,7 @@ private fun OptionCard(
     icon: ImageVector,
     title: String,
     onClick: () -> Unit,
-    subtitle: String? = null,
-    badge: String? = null
+    subtitle: String? = null
 ) {
     Card(
         onClick = onClick,
@@ -259,6 +268,10 @@ private fun OptionCard(
         shape = NonnaCorners.Card,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 8.dp
         )
     ) {
         Row(
@@ -273,9 +286,9 @@ private fun OptionCard(
                 modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -287,20 +300,6 @@ private fun OptionCard(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            if (badge != null) {
-                Surface(
-                    shape = NonnaCorners.Full,
-                    color = MaterialTheme.colorScheme.secondaryContainer
-                ) {
-                    Text(
-                        text = badge,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -316,7 +315,8 @@ private fun ProfileScreenPreview() {
     NonnaTheme {
         ProfileScreen(
             onTabSelected = {},
-            onOpenSettings = {},
+            onEditProfile = {},
+            onOpenInvitations = {},
             onLogout = {}
         )
     }

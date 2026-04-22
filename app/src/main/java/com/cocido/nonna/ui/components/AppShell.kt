@@ -39,20 +39,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
 
 enum class NonnaTab(
     val route: String,
-    val label: String,
+    val labelRes: Int,
     val icon: ImageVector
 ) {
-    Inicio("inicio", "Inicio", Icons.Outlined.Home),
-    Cofres("cofres", "Cofres", Icons.Outlined.Inventory2),
-    Perfil("perfil", "Perfil", Icons.Outlined.AccountCircle)
+    Inicio("inicio", R.string.nav_home, Icons.Outlined.Home),
+    Cofres("cofres", R.string.nav_chests, Icons.Outlined.Inventory2),
+    Perfil("perfil", R.string.nav_profile, Icons.Outlined.AccountCircle)
 }
 
 @Composable
@@ -95,7 +98,7 @@ fun NonnaBottomNavigation(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.background,
         shadowElevation = 16.dp,
         tonalElevation = 3.dp
     ) {
@@ -138,6 +141,7 @@ private fun NavItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val label = stringResource(tab.labelRes)
     val interactionSource = rememberMotionInteractionSource()
     val iconScale by animateFloatAsState(
         targetValue = if (selected) 1.1f else 1f,
@@ -179,7 +183,7 @@ private fun NavItem(
             }
             Icon(
                 imageVector = tab.icon,
-                contentDescription = tab.label,
+                contentDescription = label,
                 modifier = Modifier
                     .size(24.dp)
                     .scale(iconScale),
@@ -191,7 +195,7 @@ private fun NavItem(
         
         // Label
         Text(
-            text = tab.label,
+            text = label,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             color = color,
@@ -216,11 +220,12 @@ fun NonnaSidebar(
         Column(
             modifier = Modifier.padding(NonnaDimens.spacing24)
         ) {
-            // Logo
-            Text(
-                text = "NONNA",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface
+            // Logo oficial definido en Image Asset del proyecto
+            NonnaLogo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                contentScale = ContentScale.Fit
             )
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -244,6 +249,7 @@ private fun SidebarNavItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val label = stringResource(tab.labelRes)
     val interactionSource = rememberMotionInteractionSource()
     val offsetX by animateFloatAsState(
         targetValue = if (isSelected) 4f else 0f,
@@ -279,7 +285,7 @@ private fun SidebarNavItem(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = tab.label,
+                text = label,
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (isSelected) {
                     MaterialTheme.colorScheme.onPrimary

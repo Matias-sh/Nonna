@@ -7,7 +7,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.RoleAbueloBackground
 import com.cocido.nonna.ui.theme.RoleAbueloText
@@ -40,10 +42,20 @@ fun PermissionBadge(
         color = role.backgroundColor
     ) {
         Text(
-            text = role.displayName,
+            text = role.localizedLabel(),
             style = MaterialTheme.typography.labelSmall,
             color = role.textColor,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
         )
+    }
+}
+
+@Composable
+fun CofreRole.localizedLabel(): String {
+    return when (this) {
+        CofreRole.Creador -> stringResource(R.string.role_creator)
+        CofreRole.Colaborador -> stringResource(R.string.role_collaborator)
+        CofreRole.Invitado -> stringResource(R.string.role_guest)
+        CofreRole.Abuelo -> stringResource(R.string.role_living_legacy)
     }
 }

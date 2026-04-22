@@ -32,14 +32,24 @@ class MainViewModel @Inject constructor(
                     _authState.update { AuthState.LoggedOut }
                 } else {
                     _authState.update { AuthState.Loading }
-                    when (authRepository.getMe()) {
-                        is ApiResult.Success -> _authState.update { AuthState.LoggedIn }
+                    when (val meResult = authRepository.getMe()) {
+                        is ApiResult.Success -> {
+                            val user = meResult.data
+                            _authState.update {
+                                if (user.isEmailVerified()) AuthState.LoggedInVerified
+                                else AuthState.LoggedInUnverified
+                            }
+                        }
                         is ApiResult.Error -> _authState.update { AuthState.LoggedOut }
                         else -> _authState.update { AuthState.LoggedOut }
                     }
                 }
             }
         }
+    }
+
+    fun onEmailVerified() {
+        _authState.update { AuthState.LoggedInVerified }
     }
 
     fun logout() {
@@ -51,6 +61,7 @@ class MainViewModel @Inject constructor(
 
 sealed class AuthState {
     data object Loading : AuthState()
-    data object LoggedIn : AuthState()
+    data object LoggedInUnverified : AuthState()
+    data object LoggedInVerified : AuthState()
     data object LoggedOut : AuthState()
 }

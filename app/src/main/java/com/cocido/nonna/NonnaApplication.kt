@@ -1,6 +1,7 @@
 package com.cocido.nonna
 
 import android.app.Application
+import com.cocido.nonna.util.AppContextProvider
 import dagger.hilt.android.HiltAndroidApp
 
 /**
@@ -12,6 +13,7 @@ class NonnaApplication : Application() {
     
     override fun onCreate() {
         super.onCreate()
+        AppContextProvider.init(this)
         // Inicialización global de la aplicación
     }
 }

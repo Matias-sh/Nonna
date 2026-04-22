@@ -45,9 +45,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaCorners
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -76,7 +78,7 @@ fun NonnaImageEditorDialog(
         },
         confirmButton = {
             NonnaButton(
-                text = if (isProcessing) "Aplicando..." else "Aplicar",
+                text = if (isProcessing) stringResource(R.string.common_applying) else stringResource(R.string.common_apply),
                 onClick = {
                     if (isProcessing) return@NonnaButton
                     isProcessing = true
@@ -97,7 +99,7 @@ fun NonnaImageEditorDialog(
         },
         dismissButton = {
             NonnaButton(
-                text = "Cancelar",
+                text = stringResource(R.string.common_cancel),
                 onClick = onDismiss,
                 style = NonnaButtonStyle.Outline,
                 enabled = !isProcessing
@@ -143,7 +145,7 @@ fun NonnaImageEditorDialog(
                         ) {
                             AsyncImage(
                                 model = sourceUri,
-                                contentDescription = "Vista previa",
+                                contentDescription = stringResource(R.string.common_preview),
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .graphicsLayer {
@@ -167,7 +169,7 @@ fun NonnaImageEditorDialog(
                 }
 
                 Text(
-                    text = "Zoom",
+                    text = stringResource(R.string.common_zoom),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -180,7 +182,7 @@ fun NonnaImageEditorDialog(
                     valueRange = 1f..4f
                 )
                 Text(
-                    text = "Arrastrá para encuadrar y usá zoom para recortar.",
+                    text = stringResource(R.string.image_editor_drag_zoom_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

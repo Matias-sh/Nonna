@@ -35,7 +35,9 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
@@ -44,6 +46,8 @@ import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.NonnaTheme
+import com.cocido.nonna.util.FormValidators
+import com.cocido.nonna.util.UserMessages
 
 @Composable
 fun AddPersonScreen(
@@ -58,6 +62,10 @@ fun AddPersonScreen(
     var notes by remember { mutableStateOf("") }
     var createCofre by remember { mutableStateOf(false) }
     var showRelationDropdown by remember { mutableStateOf(false) }
+    var attemptedSubmit by remember { mutableStateOf(false) }
+    val normalizedFullName = fullName.trim()
+    val fullNameError = attemptedSubmit && !FormValidators.hasMinLength(normalizedFullName, 2)
+    val invalidDateRange = attemptedSubmit && FormValidators.isBirthAfterDeath(birthDate, deathDate)
     
     NonnaDetailScaffold {
         Column(
@@ -73,19 +81,19 @@ fun AddPersonScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Volver",
+                    contentDescription = stringResource(R.string.common_back),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
             
             Column(modifier = Modifier.padding(start = 8.dp)) {
                 Text(
-                    text = "Agregar persona",
+                    text = stringResource(R.string.add_person_title),
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "Sumá un familiar al árbol",
+                    text = stringResource(R.string.add_person_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -104,7 +112,7 @@ fun AddPersonScreen(
             // Nombre completo
             Text(
                 text = buildAnnotatedString {
-                    append("Nombre completo ")
+                    append(stringResource(R.string.add_person_full_name_required))
                     withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.error)) {
                         append("*")
                     }
@@ -116,7 +124,9 @@ fun AddPersonScreen(
             NonnaTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
-                placeholder = "Ej: Rosa García",
+                placeholder = stringResource(R.string.add_person_name_placeholder),
+                isError = fullNameError,
+                errorMessage = if (fullNameError) UserMessages.INVALID_NAME_MIN_2 else null,
                 modifier = Modifier.fillMaxWidth()
             )
             
@@ -124,7 +134,7 @@ fun AddPersonScreen(
             
             // Relación con familiar existente
             Text(
-                text = "¿Cómo se conecta al árbol?",
+                text = stringResource(R.string.add_person_relation_question),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -149,7 +159,7 @@ fun AddPersonScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = selectedRelation ?: "Seleccionar familiar existente (opcional)",
+                            text = selectedRelation ?: stringResource(R.string.add_person_select_existing_optional),
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (selectedRelation != null) {
                                 MaterialTheme.colorScheme.onSurface
@@ -170,7 +180,7 @@ fun AddPersonScreen(
                     onDismissRequest = { showRelationDropdown = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Sin conexión directa") },
+                        text = { Text(stringResource(R.string.add_person_no_direct_connection)) },
                         onClick = {
                             selectedRelation = null
                             showRelationDropdown = false
@@ -193,7 +203,7 @@ fun AddPersonScreen(
             NonnaDatePickerField(
                 value = birthDate,
                 onValueChange = { birthDate = it },
-                label = "Fecha de nacimiento",
+                label = stringResource(R.string.add_person_birth_date_label),
                 disallowFutureDates = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -203,16 +213,24 @@ fun AddPersonScreen(
             NonnaDatePickerField(
                 value = deathDate,
                 onValueChange = { deathDate = it },
-                label = "Fecha de fallecimiento (opcional)",
+                label = stringResource(R.string.add_person_death_date_optional_label),
                 disallowFutureDates = true,
                 modifier = Modifier.fillMaxWidth()
             )
+            if (invalidDateRange) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.add_person_invalid_date_range),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
             
             Spacer(modifier = Modifier.height(24.dp))
             
             // Notas personales
             Text(
-                text = "Notas personales",
+                text = stringResource(R.string.add_person_notes_label),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -220,7 +238,7 @@ fun AddPersonScreen(
             NonnaTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                placeholder = "Ej: Vivió en Italia hasta los 30 años...",
+                placeholder = stringResource(R.string.add_person_notes_placeholder),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = false,
                 maxLines = 3
@@ -250,12 +268,12 @@ fun AddPersonScreen(
                     )
                     Column(modifier = Modifier.padding(start = 8.dp)) {
                         Text(
-                            text = "Crear cofre para esta persona",
+                            text = stringResource(R.string.add_person_create_chest_label),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Podrás empezar a guardar recuerdos inmediatamente",
+                            text = stringResource(R.string.add_person_create_chest_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -278,16 +296,20 @@ fun AddPersonScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 NonnaButton(
-                    text = "Cancelar",
+                    text = stringResource(R.string.common_cancel),
                     onClick = onBack,
                     style = NonnaButtonStyle.Outline,
                     modifier = Modifier.weight(1f)
                 )
                 NonnaButton(
-                    text = "Agregar persona",
+                    text = stringResource(R.string.add_person_button),
                     onClick = {
+                        attemptedSubmit = true
+                        if (!FormValidators.hasMinLength(normalizedFullName, 2) || FormValidators.isBirthAfterDeath(birthDate, deathDate)) {
+                            return@NonnaButton
+                        }
                         onAddPerson(
-                            fullName,
+                            normalizedFullName,
                             selectedRelation,
                             birthDate.ifBlank { null },
                             deathDate.ifBlank { null },
@@ -296,7 +318,7 @@ fun AddPersonScreen(
                         )
                     },
                     style = NonnaButtonStyle.Primary,
-                    enabled = fullName.isNotBlank(),
+                    enabled = normalizedFullName.isNotBlank(),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -317,9 +339,9 @@ fun AddPersonScreen(
                     Text(
                         text = buildAnnotatedString {
                             withStyle(style = SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)) {
-                                append("Consejo: ")
+                                append(stringResource(R.string.common_tip_prefix))
                             }
-                            append("Podés agregar personas de cualquier generación. Si no sabés todas las fechas, no te preocupes, podés completarlas después.")
+                            append(stringResource(R.string.add_person_tip_text))
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface

@@ -222,8 +222,7 @@ val relationOptions = listOf(
     "Ahijada",
     "Amigo",
     "Amiga",
-    "Pareja",
-    "Otro"
+    "Pareja"
 )
 
 val relationOptionsByCategory: Map<String, List<String>> = mapOf(
@@ -237,7 +236,7 @@ val relationOptionsByCategory: Map<String, List<String>> = mapOf(
     "Relaciones especiales" to listOf(
         "Suegro", "Suegra", "Yerno", "Nuera", "Cuñado", "Cuñada",
         "Padrino", "Madrina", "Ahijado", "Ahijada",
-        "Amigo", "Amiga", "Pareja", "Otro"
+        "Amigo", "Amiga", "Pareja"
     )
 )
 

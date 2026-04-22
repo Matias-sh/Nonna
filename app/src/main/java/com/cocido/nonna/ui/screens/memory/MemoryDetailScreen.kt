@@ -64,6 +64,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -78,6 +79,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.ui.components.MemoryType
+import com.cocido.nonna.ui.components.emotionalTagLabel
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.PrimaryGradientEnd
@@ -119,7 +122,7 @@ fun MemoryDetailScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Recuerdo no encontrado",
+                    text = stringResource(R.string.memory_not_found),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -201,13 +204,13 @@ private fun MemoryDetailContent(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Volver",
+                    contentDescription = stringResource(R.string.common_back),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
             
             Text(
-                text = "Recuerdo",
+                text = stringResource(R.string.memory_detail_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f),
@@ -218,7 +221,7 @@ private fun MemoryDetailContent(
                 IconButton(onClick = { onShowMenuChange(true) }) {
                     Icon(
                         imageVector = Icons.Outlined.MoreVert,
-                        contentDescription = "Más opciones",
+                        contentDescription = stringResource(R.string.memory_more_options_cd),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -228,7 +231,7 @@ private fun MemoryDetailContent(
                     onDismissRequest = { onShowMenuChange(false) }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Editar") },
+                        text = { Text(stringResource(R.string.common_edit)) },
                         onClick = {
                             onShowMenuChange(false)
                             onEdit()
@@ -238,7 +241,7 @@ private fun MemoryDetailContent(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Eliminar") },
+                        text = { Text(stringResource(R.string.common_delete)) },
                         onClick = {
                             onShowMenuChange(false)
                             onDelete()
@@ -263,7 +266,7 @@ private fun MemoryDetailContent(
                 SpotifyStyleAudioPlayer(
                     audioUrl = memory.audioUrl,
                     title = memory.title.ifBlank { "Audio del recuerdo" },
-                    subtitle = memory.description ?: "Recuerdo de audio",
+                    subtitle = memory.description ?: stringResource(R.string.memory_audio_fallback_subtitle),
                     coverUrl = memory.thumbnailUrl?.takeIf { isLikelyImageUrl(it) }
                 )
             } else {
@@ -293,7 +296,7 @@ private fun MemoryDetailContent(
                                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.86f)
                                 ) {
                                     Text(
-                                        text = "Tocá para ampliar",
+                                        text = stringResource(R.string.memory_tap_to_expand),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -336,7 +339,7 @@ private fun MemoryDetailContent(
 
             if (memory.type == MemoryType.Photo && photoUrls.size > 1) {
                 Text(
-                    text = "Fotos del recuerdo",
+                    text = stringResource(R.string.memory_photos_title),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -355,7 +358,7 @@ private fun MemoryDetailContent(
                         ) {
                             AsyncImage(
                                 model = url,
-                                contentDescription = "Foto del recuerdo",
+                                contentDescription = stringResource(R.string.memory_photo_cd),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
@@ -406,7 +409,8 @@ private fun MemoryDetailContent(
                         }
                     ) {
                         Text(
-                            text = memory.emotionalTag?.label ?: memory.emotionalCustomLabel.orEmpty(),
+                            text = memory.emotionalTag?.let { emotionalTagLabel(it) }
+                                ?: memory.emotionalCustomLabel.orEmpty(),
                             style = MaterialTheme.typography.labelMedium,
                             color = if (memory.emotionalTag != null) {
                                 MaterialTheme.colorScheme.onTertiaryContainer
@@ -434,7 +438,7 @@ private fun MemoryDetailContent(
                         modifier = Modifier.padding(NonnaDimens.cardPaddingLarge)
                     ) {
                         Text(
-                            text = "Descripción",
+                            text = stringResource(R.string.common_description),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -467,7 +471,7 @@ private fun MemoryDetailContent(
                         modifier = Modifier.padding(NonnaDimens.cardPaddingLarge)
                     ) {
                         Text(
-                            text = "Contenido",
+                            text = stringResource(R.string.common_content),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -478,7 +482,7 @@ private fun MemoryDetailContent(
                             text = when {
                                 !textContent.isNullOrBlank() -> textContent
                                 isLoadingFallbackText -> "Cargando contenido del archivo..."
-                                else -> "Este recuerdo de texto no tiene contenido visible todavía."
+                                else -> stringResource(R.string.memory_text_no_visible_content)
                             },
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
@@ -506,7 +510,7 @@ private fun MemoryDetailContent(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "Este recuerdo fue guardado para preservar la memoria familiar. Podés editarlo o compartirlo con tu familia.",
+                    text = stringResource(R.string.memory_detail_info_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -550,7 +554,7 @@ private fun PhotoFullScreenViewer(
         ) {
             AsyncImage(
                 model = imageUrl,
-                contentDescription = "Imagen en pantalla completa",
+                contentDescription = stringResource(R.string.memory_fullscreen_image_cd),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(enabled = false) {}
@@ -575,7 +579,7 @@ private fun PhotoFullScreenViewer(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Close,
-                    contentDescription = "Cerrar visor",
+                    contentDescription = stringResource(R.string.common_close_viewer),
                     tint = Color.White
                 )
             }
@@ -703,7 +707,7 @@ private fun SpotifyStyleAudioPlayer(
                     if (!coverUrl.isNullOrBlank()) {
                         AsyncImage(
                             model = coverUrl,
-                            contentDescription = "Portada del audio",
+                            contentDescription = stringResource(R.string.memory_audio_cover_cd),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
@@ -762,7 +766,7 @@ private fun SpotifyStyleAudioPlayer(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { exoPlayer.seekTo((exoPlayer.currentPosition - 15000L).coerceAtLeast(0L)) }) {
-                        Icon(Icons.Outlined.SkipPrevious, contentDescription = "Retroceder 15s")
+                        Icon(Icons.Outlined.SkipPrevious, contentDescription = stringResource(R.string.memory_rewind_15_cd))
                     }
                     Surface(
                         shape = CircleShape,
@@ -783,7 +787,7 @@ private fun SpotifyStyleAudioPlayer(
                         }
                     }
                     IconButton(onClick = { exoPlayer.seekTo((exoPlayer.currentPosition + 15000L).coerceAtMost(totalDurationMs)) }) {
-                        Icon(Icons.Outlined.SkipNext, contentDescription = "Adelantar 15s")
+                        Icon(Icons.Outlined.SkipNext, contentDescription = stringResource(R.string.memory_forward_15_cd))
                     }
                 }
 

@@ -33,15 +33,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Alignment
+import com.cocido.nonna.data.remote.dto.UserDto
 import com.cocido.nonna.ui.viewmodel.AuthViewModel
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
@@ -52,13 +55,15 @@ import com.cocido.nonna.ui.navigation.AuthMode
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.NonnaTheme
+import com.cocido.nonna.util.FormValidators
+import com.cocido.nonna.util.UserMessages
 import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun AuthScreen(
     mode: AuthMode,
     onBack: () -> Unit,
-    onAuth: (email: String, password: String) -> Unit,
+    onAuth: (user: UserDto) -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     var email by remember { mutableStateOf("") }
@@ -69,13 +74,45 @@ fun AuthScreen(
     var nombreUsuario by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+    var attemptedSubmit by remember { mutableStateOf(false) }
     val isLoading by viewModel.isLoading.collectAsState()
     var feedbackVisible by remember { mutableStateOf(false) }
     var feedbackMessage by remember { mutableStateOf("") }
+    val normalizedEmail = email.trim()
+    val normalizedNombre = nombre.trim()
+    val normalizedApellido = apellido.trim()
+    val normalizedNombreUsuario = nombreUsuario.trim()
+    val isSignup = mode == AuthMode.Signup
+
+    val hasValidEmail = FormValidators.isValidEmail(normalizedEmail)
+    val hasValidPassword = password.length >= 8
+    val matchesConfirmPassword = password == confirmPassword
+    val hasValidNombre = FormValidators.hasMinLength(normalizedNombre, 2)
+    val hasValidApellido = FormValidators.hasMinLength(normalizedApellido, 2)
+    val hasValidNombreUsuario = FormValidators.isValidUsername(normalizedNombreUsuario)
+
+    val emailError = attemptedSubmit && !hasValidEmail
+    val passwordError = attemptedSubmit && !hasValidPassword
+    val nombreError = attemptedSubmit && isSignup && !hasValidNombre
+    val apellidoError = attemptedSubmit && isSignup && !hasValidApellido
+    val usuarioError = attemptedSubmit && isSignup && !hasValidNombreUsuario
+    val confirmError = attemptedSubmit && isSignup && !matchesConfirmPassword
+
+    val canSubmit = if (isSignup) {
+        hasValidEmail &&
+            hasValidPassword &&
+            hasValidNombre &&
+            hasValidApellido &&
+            hasValidNombreUsuario &&
+            matchesConfirmPassword
+    } else {
+        hasValidEmail && hasValidPassword
+    }
 
     LaunchedEffect(Unit) {
-        viewModel.authSuccess.collectLatest { _ ->
-            onAuth(email, password)
+        viewModel.authSuccess.collectLatest { user ->
+            attemptedSubmit = false
+            onAuth(user)
         }
     }
     LaunchedEffect(Unit) {
@@ -105,12 +142,12 @@ fun AuthScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver",
+                            contentDescription = stringResource(R.string.auth_back),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Text(
-                        text = "Volver",
+                        text = stringResource(R.string.auth_back),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -126,7 +163,11 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.height(32.dp))
                     
                     Text(
-                        text = if (mode == AuthMode.Login) "Bienvenido de nuevo" else "Crear cuenta",
+                        text = if (mode == AuthMode.Login) {
+                            stringResource(R.string.auth_welcome_back)
+                        } else {
+                            stringResource(R.string.auth_create_account)
+                        },
                         style = MaterialTheme.typography.headlineLarge,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -135,9 +176,9 @@ fun AuthScreen(
                     
                     Text(
                         text = if (mode == AuthMode.Login) {
-                            "Ingresá a tu espacio de memorias"
+                            stringResource(R.string.auth_login_subtitle)
                         } else {
-                            "Empezá a preservar las historias que importan"
+                            stringResource(R.string.auth_signup_subtitle)
                         },
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -150,27 +191,35 @@ fun AuthScreen(
                         NonnaTextField(
                             value = nombre,
                             onValueChange = { nombre = it },
-                            label = "Nombre",
-                            placeholder = "Juan",
+                            label = stringResource(R.string.auth_name_label),
+                            placeholder = stringResource(R.string.auth_name_placeholder),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            isError = nombreError,
+                            errorMessage = if (nombreError) UserMessages.INVALID_NAME_MIN_2 else null,
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         NonnaTextField(
                             value = apellido,
                             onValueChange = { apellido = it },
-                            label = "Apellido",
-                            placeholder = "Pérez",
+                            label = stringResource(R.string.auth_lastname_label),
+                            placeholder = stringResource(R.string.auth_lastname_placeholder),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            isError = apellidoError,
+                            errorMessage = if (apellidoError) UserMessages.INVALID_LASTNAME_MIN_2 else null,
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         NonnaTextField(
                             value = nombreUsuario,
-                            onValueChange = { nombreUsuario = it },
-                            label = "Nombre de usuario",
-                            placeholder = "juanperez123",
+                            onValueChange = { nombreUsuario = it.filter { ch -> !ch.isWhitespace() } },
+                            label = stringResource(R.string.auth_username_label),
+                            placeholder = stringResource(R.string.auth_username_placeholder),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            isError = usuarioError,
+                            errorMessage = if (usuarioError) {
+                                stringResource(R.string.auth_username_error)
+                            } else null,
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -179,14 +228,16 @@ fun AuthScreen(
                     // Email field
                     NonnaTextField(
                 value = email,
-                onValueChange = { email = it },
-                label = "Email",
-                placeholder = "tu@email.com",
+                onValueChange = { email = it.filter { ch -> !ch.isWhitespace() } },
+                label = stringResource(R.string.auth_email_label),
+                placeholder = stringResource(R.string.auth_email_placeholder),
                 leadingIcon = Icons.Outlined.Email,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
                 ),
+                        isError = emailError,
+                        errorMessage = if (emailError) UserMessages.INVALID_EMAIL else null,
                         modifier = Modifier.fillMaxWidth()
                     )
                     
@@ -196,8 +247,8 @@ fun AuthScreen(
                     NonnaTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = "Contraseña",
-                placeholder = "••••••••",
+                label = stringResource(R.string.auth_password_label),
+                placeholder = stringResource(R.string.auth_password_placeholder),
                 leadingIcon = Icons.Outlined.Lock,
                 visualTransformation = if (passwordVisible) {
                     VisualTransformation.None
@@ -213,9 +264,9 @@ fun AuthScreen(
                                 Icons.Outlined.Visibility
                             },
                             contentDescription = if (passwordVisible) {
-                                "Ocultar contraseña"
+                                stringResource(R.string.auth_hide_password)
                             } else {
-                                "Mostrar contraseña"
+                                stringResource(R.string.auth_show_password)
                             },
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -225,6 +276,8 @@ fun AuthScreen(
                     keyboardType = KeyboardType.Password,
                     imeAction = if (mode == AuthMode.Signup) ImeAction.Next else ImeAction.Done
                 ),
+                        isError = passwordError,
+                        errorMessage = if (passwordError) stringResource(R.string.auth_password_min_error) else null,
                         modifier = Modifier.fillMaxWidth()
                     )
                     
@@ -235,8 +288,8 @@ fun AuthScreen(
                 NonnaTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
-                    label = "Confirmar contraseña",
-                    placeholder = "••••••••",
+                    label = stringResource(R.string.auth_confirm_password_label),
+                    placeholder = stringResource(R.string.auth_password_placeholder),
                     leadingIcon = Icons.Outlined.Lock,
                     visualTransformation = if (confirmPasswordVisible) {
                         VisualTransformation.None
@@ -252,9 +305,9 @@ fun AuthScreen(
                                     Icons.Outlined.Visibility
                                 },
                                 contentDescription = if (confirmPasswordVisible) {
-                                    "Ocultar contraseña"
+                                    stringResource(R.string.auth_hide_password)
                                 } else {
-                                    "Mostrar contraseña"
+                                    stringResource(R.string.auth_show_password)
                                 },
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -264,9 +317,9 @@ fun AuthScreen(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done
                     ),
-                    isError = confirmPassword.isNotEmpty() && password != confirmPassword,
-                    errorMessage = if (confirmPassword.isNotEmpty() && password != confirmPassword) {
-                        "Las contraseñas no coinciden"
+                    isError = confirmError,
+                    errorMessage = if (confirmError) {
+                        UserMessages.PASSWORD_MISMATCH
                     } else null,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -277,21 +330,33 @@ fun AuthScreen(
                     // Submit button
                     NonnaButton(
                 text = when {
-                    isLoading -> "Esperá..."
-                    mode == AuthMode.Login -> "Ingresar"
-                    else -> "Crear cuenta"
+                    isLoading -> stringResource(R.string.auth_wait)
+                    mode == AuthMode.Login -> stringResource(R.string.auth_login_button)
+                    else -> stringResource(R.string.auth_signup_button)
                 },
                 onClick = {
+                    attemptedSubmit = true
+                    if (!canSubmit) {
+                        feedbackMessage = UserMessages.FORM_REVIEW_REQUIRED
+                        feedbackVisible = true
+                        return@NonnaButton
+                    }
+
                     if (mode == AuthMode.Login) {
-                        viewModel.login(email, password)
+                        viewModel.login(normalizedEmail, password)
                     } else {
-                        viewModel.signup(email, password, nombre, apellido, nombreUsuario)
+                        viewModel.signup(
+                            email = normalizedEmail,
+                            password = password,
+                            nombre = normalizedNombre,
+                            apellido = normalizedApellido,
+                            nombreUsuario = normalizedNombreUsuario
+                        )
                     }
                 },
                 style = NonnaButtonStyle.Primary,
                 fullWidth = true,
-                enabled = !isLoading && email.isNotBlank() && password.isNotBlank() &&
-                        (mode == AuthMode.Login || (password == confirmPassword && nombre.isNotBlank() && apellido.isNotBlank() && nombreUsuario.isNotBlank()))
+                enabled = !isLoading
                     )
                     
                     Spacer(modifier = Modifier.height(32.dp))
@@ -307,7 +372,7 @@ fun AuthScreen(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = "Al continuar, aceptás que este es un espacio privado y seguro para tu familia. Tus datos son solo tuyos.",
+                            text = stringResource(R.string.auth_privacy_note),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
@@ -335,7 +400,7 @@ private fun AuthScreenLoginPreview() {
         AuthScreen(
             mode = AuthMode.Login,
             onBack = {},
-            onAuth = { _, _ -> }
+            onAuth = { }
         )
     }
 }
@@ -347,7 +412,7 @@ private fun AuthScreenSignupPreview() {
         AuthScreen(
             mode = AuthMode.Signup,
             onBack = {},
-            onAuth = { _, _ -> }
+            onAuth = { }
         )
     }
 }

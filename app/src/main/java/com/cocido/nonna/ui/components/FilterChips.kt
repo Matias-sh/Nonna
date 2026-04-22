@@ -16,7 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaCorners
 
 data class FilterChip(
@@ -166,3 +168,18 @@ object MemoryFilters {
     
     val all = listOf(todos, fotos, audios, textos)
 }
+
+@Composable
+fun localizedCofreFilters(): List<FilterChip> = listOf(
+    FilterChip(CofreFilters.todos.id, stringResource(R.string.filter_all)),
+    FilterChip(CofreFilters.mios.id, stringResource(R.string.filter_mine)),
+    FilterChip(CofreFilters.compartidos.id, stringResource(R.string.filter_shared))
+)
+
+@Composable
+fun localizedMemoryFilters(): List<FilterChip> = listOf(
+    FilterChip(MemoryFilters.todos.id, stringResource(R.string.filter_all)),
+    FilterChip(MemoryFilters.fotos.id, stringResource(R.string.filter_photos)),
+    FilterChip(MemoryFilters.audios.id, stringResource(R.string.filter_audios)),
+    FilterChip(MemoryFilters.textos.id, stringResource(R.string.filter_texts))
+)

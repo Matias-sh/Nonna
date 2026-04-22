@@ -41,8 +41,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
@@ -100,7 +102,7 @@ fun OnboardingScreen(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Paso $currentStep de 3",
+                    text = stringResource(R.string.onboarding_step_of, currentStep),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -150,7 +152,7 @@ fun OnboardingScreen(
                     }
                 }) {
                     Text(
-                        text = "Saltar por ahora",
+                        text = stringResource(R.string.onboarding_skip_now),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -159,7 +161,7 @@ fun OnboardingScreen(
             }
             
             NonnaButton(
-                text = if (currentStep == 3) "Crear cofre" else "Continuar",
+                text = if (currentStep == 3) stringResource(R.string.onboarding_create_chest) else stringResource(R.string.onboarding_continue),
                 onClick = {
                     if (currentStep < 3) {
                         currentStep++
@@ -214,7 +216,7 @@ private fun OnboardingStep1(
         Spacer(modifier = Modifier.height(24.dp))
         
         Text(
-            text = "¿A quién vamos a honrar?",
+            text = stringResource(R.string.onboarding_step1_title),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
@@ -223,7 +225,7 @@ private fun OnboardingStep1(
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = "Creá el primer cofre para preservar sus memorias",
+            text = stringResource(R.string.onboarding_step1_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -234,8 +236,8 @@ private fun OnboardingStep1(
         NonnaTextField(
             value = cofreName,
             onValueChange = onCofreNameChange,
-            label = "Nombre del cofre",
-            placeholder = "Ej: Nonna Rosa, Abuelo Juan...",
+            label = stringResource(R.string.onboarding_chest_name_label),
+            placeholder = stringResource(R.string.onboarding_chest_name_placeholder),
             modifier = Modifier.fillMaxWidth()
         )
         
@@ -244,8 +246,8 @@ private fun OnboardingStep1(
         NonnaTextField(
             value = relation,
             onValueChange = onRelationChange,
-            label = "Parentesco",
-            placeholder = "Ej: Abuela, Abuelo, Tío, Tía...",
+            label = stringResource(R.string.onboarding_relation_label),
+            placeholder = stringResource(R.string.onboarding_relation_placeholder),
             modifier = Modifier.fillMaxWidth()
         )
         
@@ -254,8 +256,8 @@ private fun OnboardingStep1(
         NonnaTextArea(
             value = description,
             onValueChange = onDescriptionChange,
-            label = "Una frase que la/lo describe (opcional)",
-            placeholder = "Ej: La mejor cocinera del mundo, Siempre con una sonrisa...",
+            label = stringResource(R.string.onboarding_description_label),
+            placeholder = stringResource(R.string.onboarding_description_placeholder),
             minLines = 3,
             modifier = Modifier.fillMaxWidth()
         )
@@ -296,7 +298,7 @@ private fun OnboardingStep2(
         Spacer(modifier = Modifier.height(24.dp))
         
         Text(
-            text = "Invitá a tu familia",
+            text = stringResource(R.string.onboarding_step2_title),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
@@ -305,7 +307,7 @@ private fun OnboardingStep2(
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = "Este cofre es para construirlo juntos. Podés invitar a más personas después.",
+            text = stringResource(R.string.onboarding_step2_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -316,10 +318,10 @@ private fun OnboardingStep2(
         NonnaTextArea(
             value = inviteEmails,
             onValueChange = onInviteEmailsChange,
-            label = "Emails (separados por coma)",
-            placeholder = "mama@email.com, hermana@email.com",
+            label = stringResource(R.string.onboarding_emails_label),
+            placeholder = stringResource(R.string.onboarding_emails_placeholder),
             minLines = 4,
-            helperText = "Les enviaremos una invitación cálida para unirse al cofre",
+            helperText = stringResource(R.string.onboarding_emails_helper),
             modifier = Modifier.fillMaxWidth()
         )
         
@@ -335,7 +337,7 @@ private fun OnboardingStep2(
                 .padding(16.dp)
         ) {
             Text(
-                text = "Cada persona que invites podrá agregar sus propios recuerdos y fotos",
+                text = stringResource(R.string.onboarding_step2_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -377,7 +379,7 @@ private fun OnboardingStep3(
         Spacer(modifier = Modifier.height(24.dp))
         
         Text(
-            text = "Guardá tu primer recuerdo",
+            text = stringResource(R.string.onboarding_step3_title),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
@@ -386,7 +388,7 @@ private fun OnboardingStep3(
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = "Empecemos con algo simple. Podés agregar más después.",
+            text = stringResource(R.string.onboarding_step3_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -400,8 +402,8 @@ private fun OnboardingStep3(
         ) {
             MemoryTypeOption(
                 icon = Icons.Outlined.Image,
-                title = "Foto",
-                description = "Una imagen especial",
+                title = stringResource(R.string.memory_type_photo),
+                description = stringResource(R.string.onboarding_photo_desc),
                 isSelected = selectedType == MemoryType.Photo,
                 onClick = { onTypeSelected(MemoryType.Photo) },
                 modifier = Modifier.weight(1f)
@@ -409,8 +411,8 @@ private fun OnboardingStep3(
             
             MemoryTypeOption(
                 icon = Icons.Outlined.AudioFile,
-                title = "Audio",
-                description = "Su voz o una historia",
+                title = stringResource(R.string.memory_type_audio),
+                description = stringResource(R.string.onboarding_audio_desc),
                 isSelected = selectedType == MemoryType.Audio,
                 onClick = { onTypeSelected(MemoryType.Audio) },
                 modifier = Modifier.weight(1f)
@@ -418,8 +420,8 @@ private fun OnboardingStep3(
             
             MemoryTypeOption(
                 icon = Icons.Outlined.Description,
-                title = "Texto",
-                description = "Una anécdota o receta",
+                title = stringResource(R.string.memory_type_text),
+                description = stringResource(R.string.onboarding_text_desc),
                 isSelected = selectedType == MemoryType.Text,
                 onClick = { onTypeSelected(MemoryType.Text) },
                 modifier = Modifier.weight(1f)
@@ -439,7 +441,7 @@ private fun OnboardingStep3(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "Perfecto. Vamos a crear tu cofre y después te ayudamos a subir tu primer recuerdo.",
+                    text = stringResource(R.string.onboarding_step3_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

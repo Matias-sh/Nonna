@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AudioFile
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -41,6 +42,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -64,6 +66,7 @@ import com.cocido.nonna.ui.theme.TagNostalgicoBackground
 import com.cocido.nonna.ui.theme.TagNostalgicoText
 import androidx.compose.ui.tooling.preview.Preview
 import com.cocido.nonna.ui.theme.NonnaTheme
+import com.cocido.nonna.R
 
 enum class MemoryType {
     Photo, Audio, Text
@@ -130,7 +133,7 @@ private fun MemoryCardGrid(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp, hoveredElevation = 8.dp, pressedElevation = 8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp, hoveredElevation = 10.dp, pressedElevation = 10.dp)
     ) {
         Column {
             // Thumbnail
@@ -138,7 +141,14 @@ private fun MemoryCardGrid(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(NonnaDimens.memoryCardHeight)
-                    .clip(NonnaCorners.ImageMedium)
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 12.dp,
+                            topEnd = 12.dp,
+                            bottomStart = 0.dp,
+                            bottomEnd = 0.dp
+                        )
+                    )
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
@@ -194,7 +204,7 @@ private fun MemoryCardGrid(
                     text = memory.title,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 
@@ -209,10 +219,9 @@ private fun MemoryCardGrid(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -228,7 +237,7 @@ private fun MemoryCardGrid(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    
+
                     if (memory.emotionalTag != null) {
                         EmotionalTagBadge(tag = memory.emotionalTag)
                     } else if (!memory.emotionalCustomLabel.isNullOrBlank()) {
@@ -258,7 +267,7 @@ private fun MemoryCardList(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp, hoveredElevation = 8.dp, pressedElevation = 8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp, hoveredElevation = 10.dp, pressedElevation = 10.dp)
     ) {
         Row(
             modifier = Modifier
@@ -336,7 +345,7 @@ private fun MemoryCardList(
                     )
                     if (memory.duration != null) {
                         Text(
-                            text = " • ${memory.duration}",
+                            text = " • ${memory.duration}", // i18n-ignore dynamic separator
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -366,10 +375,10 @@ fun EmotionalTagBadge(
         color = tag.backgroundColor
     ) {
         Text(
-            text = tag.label,
+            text = emotionalTagLabel(tag),
             style = MaterialTheme.typography.labelSmall,
             color = tag.textColor,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
@@ -390,7 +399,7 @@ fun CustomEmotionBadge(
             text = text,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
@@ -750,5 +759,15 @@ private fun EmotionalTagsPreview() {
                 EmotionalTagBadge(tag = tag)
             }
         }
+    }
+}
+
+@Composable
+fun emotionalTagLabel(tag: EmotionalTag): String {
+    return when (tag) {
+        EmotionalTag.Alegre -> stringResource(R.string.emotion_alegre)
+        EmotionalTag.Nostalgico -> stringResource(R.string.emotion_nostalgico)
+        EmotionalTag.Calmo -> stringResource(R.string.emotion_calmo)
+        EmotionalTag.Familiar -> stringResource(R.string.emotion_familiar)
     }
 }

@@ -23,13 +23,41 @@ data class CofreDto(
     @SerializedName("updatedAt") val updatedAt: String? = null,
     @SerializedName("updated_at") val updated_at: String? = null,
     @SerializedName("isOwner") val isOwner: Boolean? = null,
-    @SerializedName("esPropietario") val esPropietario: Boolean? = null
+    @SerializedName("esPropietario") val esPropietario: Boolean? = null,
+    @SerializedName("usuario") val usuario: UsuarioDto? = null,
+    @SerializedName("invitadosEmails") val invitadosEmails: List<InvitadoCofreDto>? = null,
+    @SerializedName("invitados") val invitados: List<InvitadoCofreDto>? = null
 ) {
     fun idValue(): String = idRaw.primitiveIdString()
     fun displayName(): String = nombre ?: name ?: ""
     fun displayRelation(): String = parentesco ?: relation ?: ""
     fun coverUrl(): String? = imagenPortada ?: imagenUrl ?: coverImageUrl ?: urlPortada
     fun isOwnerValue(): Boolean = isOwner ?: esPropietario ?: true
+    fun invitedList(): List<InvitadoCofreDto> = invitadosEmails ?: invitados ?: emptyList()
+}
+
+data class InvitadoCofreDto(
+    @SerializedName("id") private val idRaw: JsonElement? = null,
+    @SerializedName("email") val email: String? = null,
+    @SerializedName("invitacionAceptada") val invitacionAceptada: Boolean? = null,
+    @SerializedName("persona") val persona: PersonaDto? = null
+) {
+    fun idValue(): String = idRaw.primitiveIdString()
+}
+
+data class CofreInvitationDto(
+    @SerializedName("id") private val idRaw: JsonElement? = null,
+    @SerializedName("email") val email: String? = null,
+    @SerializedName("invitacionAceptada") val invitacionAceptada: Boolean? = null,
+    @SerializedName("persona") val persona: PersonaDto? = null,
+    @SerializedName("cofreRecuerdos") val cofreRecuerdos: CofreDto? = null,
+    @SerializedName("cofre") val cofre: CofreDto? = null,
+    @SerializedName("expirada") val expirada: Boolean? = null,
+    @SerializedName("createdAt") val createdAt: String? = null,
+    @SerializedName("updatedAt") val updatedAt: String? = null
+) {
+    fun idValue(): String = idRaw.primitiveIdString()
+    fun cofreDisplay(): CofreDto? = cofreRecuerdos ?: cofre
 }
 
 data class CofreCreateRequest(
@@ -48,8 +76,9 @@ data class CofreInviteRequest(
     @SerializedName("emailsUsuariosInvitados") val emailsUsuariosInvitados: List<String>
 )
 
-/** Respuesta de GET cofre-recuerdos/mis-cofres: objeto con usuario + cofres (no array directo). */
+/** Respuesta de GET cofre-recuerdos/mis-cofres: propios + aceptados como invitado (OpenAPI: cofresInvitado). */
 data class MisCofresResponse(
     @SerializedName("usuario") val usuario: UsuarioDto? = null,
-    @SerializedName("cofres") val cofres: List<CofreDto>? = null
+    @SerializedName("cofres") val cofres: List<CofreDto>? = null,
+    @SerializedName("cofresInvitado") val cofresInvitado: List<CofreDto>? = null
 )

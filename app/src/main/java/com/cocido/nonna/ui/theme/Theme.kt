@@ -14,10 +14,10 @@ import androidx.core.view.WindowCompat
 // Light Color Scheme - NONNA warm palette
 private val NonnaLightColorScheme = lightColorScheme(
     // Primary colors
-    primary = Terracotta,
+    primary = Caramel,
     onPrimary = Color.White,
-    primaryContainer = Color(0x1AC66B4E), // 10% opacity
-    onPrimaryContainer = Terracotta,
+    primaryContainer = Caramel.copy(alpha = 0.1f),
+    onPrimaryContainer = Caramel,
     
     // Secondary colors
     secondary = Olive,
@@ -33,19 +33,19 @@ private val NonnaLightColorScheme = lightColorScheme(
     
     // Background
     background = Cream,
-    onBackground = Sepia,
+    onBackground = Caramel,
     
     // Surface
     surface = CardWhite,
-    onSurface = Sepia,
+    onSurface = Caramel,
     surfaceVariant = Muted,
     onSurfaceVariant = MutedForeground,
-    surfaceTint = Terracotta,
+    surfaceTint = Caramel,
     
     // Inverse
     inverseSurface = Sepia,
     inverseOnSurface = Cream,
-    inversePrimary = TerracottaDark,
+    inversePrimary = CaramelDark,
     
     // Error
     error = Destructive,
@@ -64,10 +64,10 @@ private val NonnaLightColorScheme = lightColorScheme(
 // Dark Color Scheme
 private val NonnaDarkColorScheme = darkColorScheme(
     // Primary colors
-    primary = TerracottaDark,
+    primary = CaramelDark,
     onPrimary = Color.White,
     primaryContainer = Color(0x33D88A71),
-    onPrimaryContainer = TerracottaDark,
+    onPrimaryContainer = CaramelDark,
     
     // Secondary colors
     secondary = OliveDark,
@@ -90,12 +90,12 @@ private val NonnaDarkColorScheme = darkColorScheme(
     onSurface = SepiaDark,
     surfaceVariant = MutedDark,
     onSurfaceVariant = MutedForegroundDark,
-    surfaceTint = TerracottaDark,
+    surfaceTint = CaramelDark,
     
     // Inverse
     inverseSurface = SepiaDark,
     inverseOnSurface = CreamDark,
-    inversePrimary = Terracotta,
+    inversePrimary = Caramel,
     
     // Error
     error = DestructiveDark,

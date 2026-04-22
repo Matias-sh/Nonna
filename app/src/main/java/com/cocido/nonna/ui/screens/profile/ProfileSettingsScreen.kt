@@ -40,9 +40,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
@@ -57,6 +60,7 @@ fun ProfileSettingsScreen(
     onBack: () -> Unit,
     viewModel: com.cocido.nonna.ui.viewmodel.ProfileViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val user by viewModel.user.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
@@ -86,7 +90,7 @@ fun ProfileSettingsScreen(
                 NonnaCropRequest(
                     sourceUri = uri,
                     aspectRatio = 1f,
-                    title = "Editar foto de perfil"
+                    title = context.getString(R.string.profile_edit_photo_title)
                 )
             )
         }
@@ -130,8 +134,8 @@ fun ProfileSettingsScreen(
                 .fillMaxSize()
         ) {
             PageHeader(
-                title = "Editar perfil",
-                subtitle = "Personalizá cómo te ve tu familia",
+                title = stringResource(R.string.profile_edit_title),
+                subtitle = stringResource(R.string.profile_edit_subtitle),
                 onBack = onBack
             )
             Column(
@@ -160,7 +164,7 @@ fun ProfileSettingsScreen(
                     if (model != null) {
                         AsyncImage(
                             model = model,
-                            contentDescription = "Foto de perfil",
+                            contentDescription = stringResource(R.string.profile_photo_label),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
@@ -178,13 +182,13 @@ fun ProfileSettingsScreen(
 
                 Column {
                     Text(
-                        text = "Foto de perfil",
+                        text = stringResource(R.string.profile_photo_label),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Tocá para cambiar tu foto",
+                        text = stringResource(R.string.profile_photo_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -194,7 +198,7 @@ fun ProfileSettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Nombre",
+                text = stringResource(R.string.auth_name_label),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -204,13 +208,13 @@ fun ProfileSettingsScreen(
                 onValueChange = { firstName = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("Ej: Juan") }
+                placeholder = { Text(stringResource(R.string.profile_first_name_placeholder)) }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Apellido",
+                text = stringResource(R.string.auth_lastname_label),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -220,13 +224,13 @@ fun ProfileSettingsScreen(
                 onValueChange = { lastName = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("Ej: Pérez") }
+                placeholder = { Text(stringResource(R.string.profile_last_name_placeholder)) }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Nombre de usuario (opcional)",
+                text = stringResource(R.string.profile_username_optional_label),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -236,13 +240,13 @@ fun ProfileSettingsScreen(
                 onValueChange = { username = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("Ej: juanperez") }
+                placeholder = { Text(stringResource(R.string.profile_username_placeholder)) }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             NonnaButton(
-                text = "Guardar cambios",
+                text = stringResource(R.string.common_save_changes),
                 onClick = {
                     viewModel.updateProfile(
                         firstName = firstName,
@@ -259,7 +263,7 @@ fun ProfileSettingsScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             NonnaButton(
-                text = "Cancelar",
+                text = stringResource(R.string.common_cancel),
                 onClick = onBack,
                 style = NonnaButtonStyle.Secondary,
                 modifier = Modifier.fillMaxWidth()

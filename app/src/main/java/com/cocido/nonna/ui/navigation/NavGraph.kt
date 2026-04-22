@@ -15,9 +15,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.ui.platform.LocalContext
 import com.cocido.nonna.ui.components.NonnaMotion
 import com.cocido.nonna.ui.components.NonnaTab
 import com.cocido.nonna.ui.screens.auth.AuthScreen
+import com.cocido.nonna.ui.screens.auth.VerifyEmailScreen
 import com.cocido.nonna.ui.screens.cofres.CofreDetailScreen
 import com.cocido.nonna.ui.screens.cofres.CofresListScreen
 import com.cocido.nonna.ui.screens.cofres.CreateCofreScreen
@@ -30,6 +32,7 @@ import com.cocido.nonna.ui.screens.memory.SelectCofreScreen
 import com.cocido.nonna.ui.screens.onboarding.OnboardingScreen
 import com.cocido.nonna.ui.screens.profile.ProfileScreen
 import com.cocido.nonna.ui.screens.profile.ProfileSettingsScreen
+import com.cocido.nonna.ui.screens.profile.InvitationsScreen
 import com.cocido.nonna.ui.screens.tree.AddPersonScreen
 import com.cocido.nonna.ui.screens.tree.FamilyTreeScreen
 import com.cocido.nonna.ui.screens.welcome.WelcomeScreen
@@ -43,6 +46,7 @@ sealed class Screen(val route: String) {
     data object Auth : Screen("auth/{mode}") {
         fun createRoute(mode: String) = "auth/$mode"
     }
+    data object VerifyEmail : Screen("verify-email")
     data object Onboarding : Screen("onboarding")
     
     // Main tabs
@@ -51,6 +55,8 @@ sealed class Screen(val route: String) {
     data object FamilyTree : Screen("tree")
     data object Profile : Screen("profile")
     data object ProfileSettings : Screen("profile/settings")
+    data object ProfileEdit : Screen("profile/edit")
+    data object Invitations : Screen("profile/invitations")
     
     // Detail screens
     data object CofreDetail : Screen("cofre/{cofreId}") {
@@ -84,8 +90,18 @@ fun NonnaNavHost(
     navController: NavHostController = rememberNavController(),
     isLoggedIn: Boolean = false,
     onLogout: () -> Unit = {},
-    startDestination: String? = null
+    startDestination: String? = null,
+    onEmailVerified: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val homePrefs = remember(context) {
+        context.getSharedPreferences("nonna_home_hints", android.content.Context.MODE_PRIVATE)
+    }
+    val navigateToCofreDetail: (String) -> Unit = { cofreId ->
+        homePrefs.edit().putString("last_viewed_cofre_id", cofreId).apply()
+        navController.navigate(Screen.CofreDetail.createRoute(cofreId))
+    }
+
     val effectiveStartDestination = startDestination ?: if (isLoggedIn) Screen.Home.route else Screen.Welcome.route
 
     NavHost(
@@ -139,11 +155,25 @@ fun NonnaNavHost(
             AuthScreen(
                 mode = if (mode == "login") AuthMode.Login else AuthMode.Signup,
                 onBack = { navController.popBackStack() },
-                onAuth = { _, _ ->
-                    // Entrar a la app (Home) y limpiar pila para no volver a Welcome/Auth
-                    navController.navigate(Screen.Home.route) {
+                onAuth = { user ->
+                    val route = if (user.isEmailVerified()) Screen.Home.route else Screen.VerifyEmail.route
+                    navController.navigate(route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
+                }
+            )
+        }
+
+        composable(Screen.VerifyEmail.route) {
+            VerifyEmailScreen(
+                onVerified = {
+                    onEmailVerified()
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.VerifyEmail.route) { inclusive = true }
+                    }
+                },
+                onLogout = {
+                    onLogout()
                 }
             )
         }
@@ -172,8 +202,9 @@ fun NonnaNavHost(
                 onCreateCofre = { navController.navigate(Screen.CreateCofre.route) },
                 onAddMemory = { navController.navigate(Screen.SelectCofre.route) },
                 onContinueCofre = { cofreId ->
-                    navController.navigate(Screen.CofreDetail.createRoute(cofreId))
-                }
+                    navigateToCofreDetail(cofreId)
+                },
+                onOpenInvitations = { navController.navigate(Screen.Invitations.route) }
             )
         }
         
@@ -188,7 +219,7 @@ fun NonnaNavHost(
                     }
                 },
                 onCofreClick = { cofreId ->
-                    navController.navigate(Screen.CofreDetail.createRoute(cofreId))
+                    navigateToCofreDetail(cofreId)
                 },
                 onCreateCofre = { navController.navigate(Screen.CreateCofre.route) }
             )
@@ -209,7 +240,7 @@ fun NonnaNavHost(
                 },
                 onNodeClick = { nodeId, cofreId ->
                     if (cofreId != null) {
-                        navController.navigate(Screen.CofreDetail.createRoute(cofreId))
+                        navigateToCofreDetail(cofreId)
                     }
                 },
                 onAddNode = { navController.navigate(Screen.AddPerson.route) },
@@ -260,7 +291,8 @@ fun NonnaNavHost(
                         NonnaTab.Perfil -> { /* Already here */ }
                     }
                 },
-                onOpenSettings = { navController.navigate(Screen.ProfileSettings.route) },
+                onEditProfile = { navController.navigate(Screen.ProfileEdit.route) },
+                onOpenInvitations = { navController.navigate(Screen.Invitations.route) },
                 onLogout = {
                     onLogout()
                     // key(authState) en MainActivity recrea el NavHost con startDestination=Welcome
@@ -268,8 +300,14 @@ fun NonnaNavHost(
             )
         }
 
-        // Profile Settings Screen
-        composable(Screen.ProfileSettings.route) {
+        composable(Screen.Invitations.route) {
+            InvitationsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // Profile Edit Screen
+        composable(Screen.ProfileEdit.route) {
             ProfileSettingsScreen(
                 onBack = { navController.popBackStack() }
             )

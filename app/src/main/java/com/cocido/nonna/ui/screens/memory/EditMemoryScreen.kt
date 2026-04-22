@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -48,8 +49,12 @@ import com.cocido.nonna.ui.components.NonnaDatePickerField
 import com.cocido.nonna.ui.components.NonnaTextArea
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.emotionalTagLabel
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.util.ImageCompressor
+import com.cocido.nonna.util.FormValidators
+import com.cocido.nonna.util.UserMessages
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -82,6 +87,7 @@ fun EditMemoryScreen(
     var replacementUri by remember { mutableStateOf<Uri?>(null) }
     var isPreparingReplacement by remember { mutableStateOf(false) }
     var resolvedTextContent by remember { mutableStateOf<String?>(null) }
+    var attemptedSave by remember { mutableStateOf(false) }
 
     val cropLauncher = rememberLauncherForActivityResult(
         contract = NonnaCropContract()
@@ -98,7 +104,7 @@ fun EditMemoryScreen(
                 NonnaCropRequest(
                     sourceUri = uri,
                     aspectRatio = 4f / 5f,
-                    title = "Editar nueva imagen",
+                    title = context.getString(R.string.memory_edit_new_image_title),
                     lockAspectRatio = false
                 )
             )
@@ -133,8 +139,8 @@ fun EditMemoryScreen(
             .navigationBarsPadding()
     ) {
         PageHeader(
-            title = "Editar recuerdo",
-            subtitle = if (isLoading) "Cargando..." else "Actualizá los datos",
+            title = stringResource(R.string.edit_memory_title),
+            subtitle = if (isLoading) stringResource(R.string.common_loading) else stringResource(R.string.edit_memory_subtitle),
             onBack = onBack
         )
 
@@ -159,7 +165,7 @@ fun EditMemoryScreen(
             val currentMemory = memory
             if (currentMemory != null) {
                 Text(
-                    text = "Archivo",
+                    text = stringResource(R.string.common_file),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -177,7 +183,7 @@ fun EditMemoryScreen(
                         if (previewModel != null) {
                             AsyncImage(
                                 model = previewModel,
-                                contentDescription = "Foto del recuerdo",
+                                contentDescription = stringResource(R.string.memory_photo_cd),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(220.dp),
@@ -191,7 +197,7 @@ fun EditMemoryScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "No hay foto cargada",
+                                    text = stringResource(R.string.memory_no_photo_loaded),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -202,7 +208,7 @@ fun EditMemoryScreen(
                 }
 
                 NonnaButton(
-                    text = "Subir archivo",
+                    text = stringResource(R.string.common_upload_file),
                     onClick = {
                         val mime = when (currentMemory.type) {
                             MemoryType.Photo -> "image/*"
@@ -216,7 +222,7 @@ fun EditMemoryScreen(
                 if (replacementUri != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Nuevo archivo seleccionado.",
+                        text = stringResource(R.string.memory_new_file_selected),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -227,7 +233,13 @@ fun EditMemoryScreen(
             NonnaTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = "Título *",
+                label = stringResource(R.string.memory_title_required),
+                isError = attemptedSave && !FormValidators.hasMinLength(title, 2),
+                errorMessage = if (attemptedSave && !FormValidators.hasMinLength(title, 2)) {
+                    UserMessages.INVALID_TITLE_MIN_2
+                } else {
+                    null
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -236,7 +248,7 @@ fun EditMemoryScreen(
             NonnaTextArea(
                 value = description,
                 onValueChange = { description = it },
-                label = if (isTextMemory) "Contenido" else "Descripción",
+                label = if (isTextMemory) stringResource(R.string.common_content) else stringResource(R.string.common_description),
                 minLines = 4,
                 maxLines = 8,
                 helperText = if (isTextMemory) null else "${description.length}/$MAX_MEMORY_DESCRIPTION_LENGTH",
@@ -254,14 +266,14 @@ fun EditMemoryScreen(
             NonnaDatePickerField(
                 value = date,
                 onValueChange = { date = it },
-                label = "Fecha",
+                label = stringResource(R.string.common_date),
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Emoción",
+                text = stringResource(R.string.common_emotion),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -272,7 +284,7 @@ fun EditMemoryScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 NonnaButton(
-                    text = "Sin emoción",
+                    text = stringResource(R.string.memory_no_emotion),
                     onClick = { emotionalTag = null },
                     style = if (emotionalTag == null && customEmotion.isBlank()) {
                         NonnaButtonStyle.Primary
@@ -282,7 +294,7 @@ fun EditMemoryScreen(
                 )
                 EmotionalTag.entries.forEach { tag ->
                     NonnaButton(
-                        text = tag.label,
+                        text = emotionalTagLabel(tag),
                         onClick = {
                             emotionalTag = tag
                             customEmotion = ""
@@ -295,7 +307,7 @@ fun EditMemoryScreen(
             if (!canSelectPresetEmotion) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Las emociones sugeridas se desactivan mientras escribís una emoción personalizada.",
+                    text = stringResource(R.string.emotion_presets_disabled_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -307,8 +319,8 @@ fun EditMemoryScreen(
                     customEmotion = it
                     if (it.isNotBlank()) emotionalTag = null
                 },
-                label = "O escribí una emoción personalizada",
-                placeholder = "Ej: Agradecido, Orgullosa, Melancólico",
+                label = stringResource(R.string.emotion_custom_label),
+                placeholder = stringResource(R.string.emotion_custom_placeholder),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -319,14 +331,18 @@ fun EditMemoryScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 NonnaButton(
-                    text = "Cancelar",
+                    text = stringResource(R.string.common_cancel),
                     onClick = onBack,
                     style = NonnaButtonStyle.Outline,
                     modifier = Modifier.weight(1f)
                 )
                 NonnaButton(
-                    text = if (isSaving) "Guardando..." else "Guardar cambios",
+                    text = if (isSaving) stringResource(R.string.common_saving) else stringResource(R.string.common_save_changes),
                     onClick = {
+                        attemptedSave = true
+                        if (!FormValidators.hasMinLength(title, 2) || !FormValidators.isValidIsoDate(date)) {
+                            return@NonnaButton
+                        }
                         val current = memory ?: return@NonnaButton
                         scope.launch {
                             isPreparingReplacement = true
@@ -353,7 +369,7 @@ fun EditMemoryScreen(
                             }
                             isPreparingReplacement = false
                             viewModel.save(
-                                title = title,
+                                title = title.trim(),
                                 description = if (current.type == MemoryType.Text) null else description,
                                 date = date,
                                 emotionalTag = emotionalTag,
@@ -365,7 +381,9 @@ fun EditMemoryScreen(
                     enabled = title.isNotBlank() &&
                         !isSaving &&
                         !isPreparingReplacement &&
-                        (isTextMemory || description.length <= MAX_MEMORY_DESCRIPTION_LENGTH),
+                        (isTextMemory || description.length <= MAX_MEMORY_DESCRIPTION_LENGTH) &&
+                        FormValidators.hasMinLength(title, 2) &&
+                        FormValidators.isValidIsoDate(date),
                     modifier = Modifier.weight(1f)
                 )
             }

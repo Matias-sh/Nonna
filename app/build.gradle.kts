@@ -124,7 +124,7 @@ dependencies {
     implementation(libs.compose.hilt.navigation)
     implementation(libs.coil.compose)
     implementation("com.vanniktech:android-image-cropper:4.6.0")
-    implementation("androidx.compose.ui:ui-text-google-fonts:1.7.6")
+    implementation("androidx.compose.ui:ui-text-google-fonts")
     debugImplementation(libs.compose.ui.tooling)
     
     // Layout

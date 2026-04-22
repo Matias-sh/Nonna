@@ -54,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
@@ -68,6 +69,9 @@ import com.cocido.nonna.ui.components.AudioRecorderComponent
 import com.cocido.nonna.ui.components.EmotionalTag
 import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.util.ImageCompressor
+import com.cocido.nonna.util.FormValidators
+import com.cocido.nonna.util.UserMessages
+import com.cocido.nonna.ui.components.emotionalTagLabel
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
@@ -78,6 +82,7 @@ import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTextArea
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import coil.compose.AsyncImage
@@ -132,6 +137,7 @@ fun AddMemoryScreen(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var recordedAudioFile by remember { mutableStateOf<File?>(null) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
+    var attemptedSave by remember { mutableStateOf(false) }
     val cropLauncher = rememberLauncherForActivityResult(
         contract = NonnaCropContract()
     ) { result ->
@@ -149,7 +155,7 @@ fun AddMemoryScreen(
                 NonnaCropRequest(
                     sourceUri = it,
                     aspectRatio = 4f / 5f,
-                    title = "Editar imagen del recuerdo",
+                    title = context.getString(R.string.memory_edit_image_title),
                     lockAspectRatio = false
                 )
             )
@@ -167,7 +173,7 @@ fun AddMemoryScreen(
                 NonnaCropRequest(
                     sourceUri = Uri.fromFile(imageFile),
                     aspectRatio = 4f / 5f,
-                    title = "Editar imagen del recuerdo",
+                    title = context.getString(R.string.memory_edit_image_title),
                     lockAspectRatio = false
                 )
             )
@@ -207,9 +213,9 @@ fun AddMemoryScreen(
     }
 
     val stepTitle = when (step) {
-        AddMemoryStep.Type -> "Elegí el tipo de recuerdo"
-        AddMemoryStep.Content -> "Subí o creá el contenido"
-        AddMemoryStep.Details -> "Agregá los detalles"
+        AddMemoryStep.Type -> stringResource(R.string.add_memory_step_type)
+        AddMemoryStep.Content -> stringResource(R.string.add_memory_step_content)
+        AddMemoryStep.Details -> stringResource(R.string.add_memory_step_details)
     }
     
     Box(
@@ -222,8 +228,8 @@ fun AddMemoryScreen(
         if (showCameraSettingsDialog) {
             AlertDialog(
                 onDismissRequest = { showCameraSettingsDialog = false },
-                title = { Text("Permiso de cámara bloqueado") },
-                text = { Text("Para usar la cámara, activá el permiso desde Ajustes de la app.") },
+                title = { Text(stringResource(R.string.camera_permission_blocked_title)) },
+                text = { Text(stringResource(R.string.camera_permission_blocked_text)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -234,18 +240,18 @@ fun AddMemoryScreen(
                             )
                             context.startActivity(intent)
                         }
-                    ) { Text("Abrir ajustes") }
+                    ) { Text(stringResource(R.string.open_settings)) }
                 },
                 dismissButton = {
                     TextButton(onClick = { showCameraSettingsDialog = false }) {
-                        Text("Cancelar")
+                        Text(stringResource(R.string.common_cancel))
                     }
                 }
             )
         }
 
         PageHeader(
-            title = "Agregar Recuerdo",
+            title = stringResource(R.string.add_memory_title),
             subtitle = stepTitle,
             onBack = {
                 when (step) {
@@ -327,6 +333,28 @@ fun AddMemoryScreen(
                     },
                     onBack = { step = AddMemoryStep.Content },
                     onSave = {
+                        attemptedSave = true
+                        val normalizedTitle = title.trim()
+                        if (!FormValidators.hasMinLength(normalizedTitle, 2)) {
+                            feedbackMessage = UserMessages.INVALID_TITLE_MIN_2
+                            feedbackType = NonnaFeedbackType.Error
+                            feedbackVisible = true
+                            scope.launch {
+                                delay(1800)
+                                feedbackVisible = false
+                            }
+                            return@DetailsStep
+                        }
+                        if (!FormValidators.isValidIsoDate(date)) {
+                            feedbackMessage = UserMessages.INVALID_DATE
+                            feedbackType = NonnaFeedbackType.Error
+                            feedbackVisible = true
+                            scope.launch {
+                                delay(1800)
+                                feedbackVisible = false
+                            }
+                            return@DetailsStep
+                        }
                         if (description.length > MAX_MEMORY_DESCRIPTION_LENGTH) {
                             feedbackMessage = "La descripción es muy larga (máximo $MAX_MEMORY_DESCRIPTION_LENGTH caracteres)."
                             feedbackType = NonnaFeedbackType.Error
@@ -362,7 +390,7 @@ fun AddMemoryScreen(
                                 val (emotionId, emotionCustomFromTag) = viewModel.resolveEmotionPayload(emotionalTag)
                                 viewModel.save(
                                     cofreRecuerdosId = cid,
-                                    titulo = title,
+                                    titulo = normalizedTitle,
                                     file = file,
                                     descripcion = description.ifBlank { null },
                                     fecha = date,
@@ -381,7 +409,10 @@ fun AddMemoryScreen(
                             onSave()
                         }
                     },
-                    canSave = title.isNotBlank() && !isLoading,
+                    canSave = FormValidators.hasMinLength(title, 2) &&
+                        FormValidators.isValidIsoDate(date) &&
+                        !isLoading,
+                    attemptedSave = attemptedSave,
                     isLoading = isLoading
                 )
             }
@@ -404,7 +435,7 @@ private fun TypeSelectionStep(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "¿Qué tipo de recuerdo querés guardar?",
+            text = stringResource(R.string.add_memory_type_question),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -415,24 +446,24 @@ private fun TypeSelectionStep(
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TypeOption(
                 icon = Icons.Outlined.Image,
-                title = "Foto",
-                description = "Una imagen especial o documento",
+                title = stringResource(R.string.memory_type_photo),
+                description = stringResource(R.string.add_memory_type_photo_desc),
                 onClick = { onTypeSelected(MemoryType.Photo) },
                 modifier = Modifier.fillMaxWidth()
             )
 
             TypeOption(
                 icon = Icons.Outlined.AudioFile,
-                title = "Audio",
-                description = "Su voz, una canción o historia",
+                title = stringResource(R.string.memory_type_audio),
+                description = stringResource(R.string.add_memory_type_audio_desc),
                 onClick = { onTypeSelected(MemoryType.Audio) },
                 modifier = Modifier.fillMaxWidth()
             )
 
             TypeOption(
                 icon = Icons.Outlined.Description,
-                title = "Texto",
-                description = "Una anécdota, receta o carta",
+                title = stringResource(R.string.memory_type_text),
+                description = stringResource(R.string.add_memory_type_text_desc),
                 onClick = { onTypeSelected(MemoryType.Text) },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -536,13 +567,13 @@ private fun ContentStep(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 NonnaButton(
-                    text = "Volver",
+                    text = stringResource(R.string.common_back),
                     onClick = onBackToType,
                     style = NonnaButtonStyle.Outline,
                     modifier = Modifier.weight(1f)
                 )
                 NonnaButton(
-                    text = "Continuar",
+                    text = stringResource(R.string.onboarding_continue),
                     onClick = onContinue,
                     modifier = Modifier.weight(1f)
                 )
@@ -577,7 +608,7 @@ private fun PhotoContent(
             if (hasImage && selectedImageUri != null) {
                 AsyncImage(
                     model = selectedImageUri,
-                    contentDescription = "Imagen seleccionada",
+                    contentDescription = stringResource(R.string.memory_selected_image_cd),
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(NonnaCorners.Large)
@@ -596,7 +627,7 @@ private fun PhotoContent(
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
                 ) {
                     Text(
-                        text = "Tocá la imagen para cambiarla",
+                        text = stringResource(R.string.memory_tap_image_change),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -614,12 +645,12 @@ private fun PhotoContent(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Subir foto",
+                        text = stringResource(R.string.memory_upload_photo),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Tocá aquí para elegir desde galería",
+                        text = stringResource(R.string.memory_tap_choose_gallery),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -636,7 +667,7 @@ private fun PhotoContent(
                 text = if (hasImage) "Cambiar imagen" else "Galería",
                 onClick = onPickImageClick
             )
-            NonnaButton(text = "Cámara", onClick = onCaptureImageClick, style = NonnaButtonStyle.Outline)
+            NonnaButton(text = stringResource(R.string.common_camera), onClick = onCaptureImageClick, style = NonnaButtonStyle.Outline)
         }
     }
 }
@@ -660,15 +691,15 @@ private fun TextContent(
         NonnaTextArea(
             value = content,
             onValueChange = onContentChange,
-            label = "Escribí el recuerdo",
-            placeholder = "Contá la historia, la receta, la anécdota...",
+            label = stringResource(R.string.memory_write_label),
+            placeholder = stringResource(R.string.memory_write_placeholder),
             minLines = 12,
             maxLines = 12,
             helperText = "Escribí con calma o dictalo con el micrófono.",
             modifier = Modifier.fillMaxWidth()
         )
         NonnaButton(
-            text = "Dictar con micrófono",
+            text = stringResource(R.string.memory_dictate_button),
             onClick = onRequestDictation,
             style = NonnaButtonStyle.Outline,
             icon = Icons.Outlined.Mic
@@ -694,8 +725,11 @@ private fun DetailsStep(
     onBack: () -> Unit,
     onSave: () -> Unit,
     canSave: Boolean,
+    attemptedSave: Boolean,
     isLoading: Boolean = false
 ) {
+    val titleError = attemptedSave && !FormValidators.hasMinLength(title, 2)
+    val dateError = attemptedSave && !FormValidators.isValidIsoDate(date)
     val descriptionLength = description.length
     val descriptionIsTooLong = descriptionLength > MAX_MEMORY_DESCRIPTION_LENGTH
     val canSelectPresetEmotion = customEmotion.isBlank()
@@ -721,7 +755,7 @@ private fun DetailsStep(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Foto seleccionada",
+                            text = stringResource(R.string.memory_photo_selected),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -736,7 +770,7 @@ private fun DetailsStep(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Audio grabado",
+                            text = stringResource(R.string.memory_audio_recorded),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -759,8 +793,10 @@ private fun DetailsStep(
         NonnaTextField(
             value = title,
             onValueChange = onTitleChange,
-            label = "Título *",
-            placeholder = "Ej: Cumpleaños de los 80, Receta de fideos...",
+            label = stringResource(R.string.memory_title_required),
+            placeholder = stringResource(R.string.memory_title_placeholder),
+            isError = titleError,
+            errorMessage = if (titleError) UserMessages.INVALID_TITLE_MIN_2 else null,
             modifier = Modifier.fillMaxWidth()
         )
         
@@ -771,8 +807,8 @@ private fun DetailsStep(
             NonnaTextArea(
                 value = description,
                 onValueChange = onDescriptionChange,
-                label = "Contexto o historia (opcional)",
-                placeholder = "Contá algo sobre este recuerdo...",
+                label = stringResource(R.string.memory_context_optional_label),
+                placeholder = stringResource(R.string.memory_context_optional_placeholder),
                 minLines = 4,
                 helperText = "$descriptionLength/$MAX_MEMORY_DESCRIPTION_LENGTH",
                 isError = descriptionIsTooLong,
@@ -791,7 +827,7 @@ private fun DetailsStep(
         NonnaDatePickerField(
             value = date,
             onValueChange = onDateChange,
-            label = "Fecha (aproximada)",
+            label = stringResource(R.string.memory_date_approx_label),
             modifier = Modifier.fillMaxWidth()
         )
         
@@ -799,7 +835,7 @@ private fun DetailsStep(
         
         // Emotional tag
         Text(
-            text = "¿Cómo te hace sentir? (opcional)",
+            text = stringResource(R.string.memory_emotion_optional_question),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -839,7 +875,7 @@ private fun DetailsStep(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = tag.label,
+                            text = emotionalTagLabel(tag),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -850,7 +886,7 @@ private fun DetailsStep(
         if (!canSelectPresetEmotion) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Las emociones sugeridas se desactivan mientras escribís una emoción personalizada.",
+                text = stringResource(R.string.emotion_presets_disabled_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -861,15 +897,15 @@ private fun DetailsStep(
         NonnaTextField(
             value = customEmotion,
             onValueChange = onCustomEmotionChange,
-            label = "O escribí una emoción personalizada",
-            placeholder = "Ej: Agradecido, Orgullosa, Melancólico",
+            label = stringResource(R.string.emotion_custom_label),
+            placeholder = stringResource(R.string.emotion_custom_placeholder),
             enabled = canWriteCustomEmotion,
             modifier = Modifier.fillMaxWidth()
         )
         if (!canWriteCustomEmotion) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "El campo personalizado se habilita al deseleccionar la emoción sugerida.",
+                text = stringResource(R.string.emotion_custom_enabled_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -883,13 +919,13 @@ private fun DetailsStep(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             NonnaButton(
-                text = "Volver",
+                text = stringResource(R.string.common_back),
                 onClick = onBack,
                 style = NonnaButtonStyle.Outline,
                 modifier = Modifier.weight(1f)
             )
             NonnaButton(
-                text = if (isLoading) "Guardando..." else "Guardar recuerdo",
+                text = if (isLoading) stringResource(R.string.common_saving) else stringResource(R.string.memory_save_button),
                 onClick = onSave,
                 enabled = canSave && !isLoading && !descriptionIsTooLong,
                 modifier = Modifier.weight(1f)

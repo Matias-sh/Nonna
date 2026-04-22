@@ -56,4 +56,7 @@
 
     <!-- Colores adicionales -->
     <color name="accent">#FFDAA520</color>               <!-- Acento (dorado) -->
+
+    <!-- Icono del sistema (adaptive launcher): tono del logo con fondo marrón -->
+    <color name="nonna_launcher_background">#FF9E774B</color>
 </resources>

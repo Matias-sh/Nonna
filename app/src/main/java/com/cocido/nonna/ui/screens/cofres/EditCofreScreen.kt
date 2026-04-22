@@ -39,6 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -53,8 +55,13 @@ import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTextArea
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.relationCategoryLabel
+import com.cocido.nonna.ui.components.relationOptionLabel
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
+import com.cocido.nonna.util.FormValidators
+import com.cocido.nonna.util.UserMessages
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.delay
 
@@ -66,6 +73,7 @@ fun EditCofreScreen(
     onUpdated: () -> Unit = {},
     viewModel: com.cocido.nonna.ui.viewmodel.EditCofreViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val cofre by viewModel.cofre.collectAsState()
     var name by remember { mutableStateOf("") }
     var selectedRelationOption by remember { mutableStateOf<String?>(null) }
@@ -76,6 +84,7 @@ fun EditCofreScreen(
     var feedbackVisible by remember { mutableStateOf(false) }
     var feedbackMessage by remember { mutableStateOf("") }
     var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
+    var attemptedSubmit by remember { mutableStateOf(false) }
 
     var hasInitialized by remember { mutableStateOf(false) }
     LaunchedEffect(cofre) {
@@ -94,9 +103,11 @@ fun EditCofreScreen(
         }
     }
 
-    val finalRelation = customRelation.trim().ifBlank { selectedRelationOption.orEmpty() }
+    val normalizedName = name.trim()
+    val finalRelation = customRelation.trim().ifBlank { selectedRelationOption.orEmpty() }.trim()
     val canSelectPresetRelation = customRelation.isBlank()
-    val canWriteCustomRelation = selectedRelationOption == null
+    val nameError = attemptedSubmit && !FormValidators.hasMinLength(normalizedName, 2)
+    val relationError = attemptedSubmit && !FormValidators.hasMinLength(finalRelation, 2)
 
     val cropLauncher = rememberLauncherForActivityResult(
         contract = NonnaCropContract()
@@ -111,7 +122,7 @@ fun EditCofreScreen(
                 NonnaCropRequest(
                     sourceUri = uri,
                     aspectRatio = 16f / 9f,
-                    title = "Editar portada del cofre"
+                    title = context.getString(R.string.chest_cover_edit_title)
                 )
             )
         }
@@ -141,14 +152,16 @@ fun EditCofreScreen(
         }
     }
 
-    val canSubmit = name.isNotBlank() && finalRelation.isNotBlank() && !isLoading
+    val canSubmit = FormValidators.hasMinLength(normalizedName, 2) &&
+        FormValidators.hasMinLength(finalRelation, 2) &&
+        !isLoading
 
     NonnaDetailScaffold {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
                 PageHeader(
-                    title = "Editar cofre",
-                    subtitle = "Modificá la información del cofre",
+                    title = stringResource(R.string.edit_chest_title),
+                    subtitle = stringResource(R.string.edit_chest_subtitle),
                     onBack = onBack
                 )
 
@@ -162,7 +175,7 @@ fun EditCofreScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = "Imagen de portada (opcional)",
+                        text = stringResource(R.string.chest_cover_optional_label),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -178,7 +191,7 @@ fun EditCofreScreen(
                         ) {
                             AsyncImage(
                                 model = coverImageUri,
-                                contentDescription = "Nueva imagen de portada",
+                                contentDescription = stringResource(R.string.chest_cover_new_cd),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
@@ -195,7 +208,7 @@ fun EditCofreScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Close,
-                                    contentDescription = "Quitar imagen",
+                                    contentDescription = stringResource(R.string.common_remove_image_cd),
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
@@ -217,7 +230,7 @@ fun EditCofreScreen(
                             if (cofre?.coverImageUrl != null) {
                                 AsyncImage(
                                     model = cofre?.coverImageUrl,
-                                    contentDescription = "Imagen actual",
+                                    contentDescription = stringResource(R.string.chest_cover_current_cd),
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
                                 )
@@ -231,7 +244,7 @@ fun EditCofreScreen(
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "Subir imagen",
+                                        text = stringResource(R.string.common_upload_image),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -245,21 +258,23 @@ fun EditCofreScreen(
                     NonnaTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = "Nombre del cofre *",
-                        placeholder = "Ej: Nonna Rosa, Abuelo Juan...",
+                        label = stringResource(R.string.create_chest_name_required),
+                        placeholder = stringResource(R.string.onboarding_chest_name_placeholder),
+                        isError = nameError,
+                        errorMessage = if (nameError) UserMessages.INVALID_NAME_MIN_2 else null,
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = "Parentesco",
+                        text = stringResource(R.string.common_relation),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     relationOptionsByCategory.forEach { (category, options) ->
                         Text(
-                            text = category,
+                            text = relationCategoryLabel(category),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -272,8 +287,12 @@ fun EditCofreScreen(
                             options.forEach { option ->
                                 Surface(
                                     onClick = {
-                                        selectedRelationOption = option
-                                        customRelation = ""
+                                        if (selectedRelationOption == option) {
+                                            selectedRelationOption = null
+                                        } else {
+                                            selectedRelationOption = option
+                                            customRelation = ""
+                                        }
                                     },
                                     enabled = canSelectPresetRelation,
                                     shape = NonnaCorners.Medium,
@@ -284,7 +303,7 @@ fun EditCofreScreen(
                                     }
                                 ) {
                                     Text(
-                                        text = option,
+                                        text = relationOptionLabel(option),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = if (selectedRelationOption == option) {
                                             MaterialTheme.colorScheme.onPrimary
@@ -300,7 +319,7 @@ fun EditCofreScreen(
                     }
                     if (!canSelectPresetRelation) {
                         Text(
-                            text = "Las opciones sugeridas se desactivan mientras escribís un parentesco personalizado.",
+                            text = stringResource(R.string.relation_presets_disabled_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -313,25 +332,18 @@ fun EditCofreScreen(
                             customRelation = it
                             if (it.isNotBlank()) selectedRelationOption = null
                         },
-                        placeholder = "O escribí otro...",
-                        enabled = canWriteCustomRelation,
+                        placeholder = stringResource(R.string.relation_custom_placeholder),
+                        isError = relationError,
+                        errorMessage = if (relationError) UserMessages.INVALID_RELATION else null,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    if (!canWriteCustomRelation) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "El campo personalizado se habilita al deseleccionar el parentesco sugerido.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                     Spacer(modifier = Modifier.height(24.dp))
 
                     NonnaTextArea(
                         value = description,
                         onValueChange = { description = it },
-                        label = "Una frase que la/lo describe (opcional)",
-                        placeholder = "Ej: La mejor cocinera del mundo...",
+                        label = stringResource(R.string.edit_chest_description_optional),
+                        placeholder = stringResource(R.string.edit_chest_description_placeholder),
                         minLines = 4,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -342,10 +354,17 @@ fun EditCofreScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         NonnaButton(
-                            text = if (isLoading) "Guardando..." else "Guardar cambios",
+                            text = if (isLoading) stringResource(R.string.common_saving) else stringResource(R.string.common_save_changes),
                             onClick = {
+                                attemptedSubmit = true
+                                if (!canSubmit) {
+                                    feedbackMessage = UserMessages.FIELD_REVIEW_REQUIRED
+                                    feedbackType = NonnaFeedbackType.Error
+                                    feedbackVisible = true
+                                    return@NonnaButton
+                                }
                                 viewModel.update(
-                                    name = name,
+                                    name = normalizedName,
                                     relation = finalRelation,
                                     description = description.ifBlank { null },
                                     coverImageUri = coverImageUri
@@ -356,7 +375,7 @@ fun EditCofreScreen(
                             enabled = canSubmit
                         )
                         NonnaButton(
-                            text = "Cancelar",
+                            text = stringResource(R.string.common_cancel),
                             onClick = onBack,
                             style = NonnaButtonStyle.Outline,
                             fullWidth = true

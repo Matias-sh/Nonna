@@ -50,7 +50,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.cocido.nonna.R
 import com.cocido.nonna.data.mock.TreeNode
 import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.EmptyStateWithButton
@@ -83,8 +85,8 @@ fun FamilyTreeScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 SimpleHeader(
-                    title = "Árbol Familiar",
-                    subtitle = "Conectá a tu familia y sus historias"
+                    title = stringResource(R.string.family_tree_title),
+                    subtitle = stringResource(R.string.family_tree_subtitle)
                 )
 
                 Box(
@@ -95,9 +97,9 @@ fun FamilyTreeScreen(
                 ) {
                     EmptyStateWithButton(
                         icon = Icons.Outlined.AccountTree,
-                        title = "Cargando tu árbol...",
-                        description = "Aguantá un segundo mientras traemos a tu familia",
-                        buttonText = "Crear primer cofre",
+                        title = stringResource(R.string.family_tree_loading_title),
+                        description = stringResource(R.string.family_tree_loading_description),
+                        buttonText = stringResource(R.string.home_empty_button),
                         onButtonClick = onAddNode
                     )
                 }
@@ -107,8 +109,8 @@ fun FamilyTreeScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 SimpleHeader(
-                    title = "Árbol Familiar",
-                    subtitle = "Conectá a tu familia y sus historias"
+                    title = stringResource(R.string.family_tree_title),
+                    subtitle = stringResource(R.string.family_tree_subtitle)
                 )
                 
                 Box(
@@ -119,9 +121,9 @@ fun FamilyTreeScreen(
                 ) {
                     EmptyStateWithButton(
                         icon = Icons.Outlined.AccountTree,
-                        title = "Tu árbol empieza aquí",
-                        description = "Creá un cofre y sumá a tu familia para empezar a construir el árbol genealógico",
-                        buttonText = "Crear primer cofre",
+                        title = stringResource(R.string.family_tree_empty_title),
+                        description = stringResource(R.string.family_tree_empty_description),
+                        buttonText = stringResource(R.string.home_empty_button),
                         onButtonClick = onAddNode
                     )
                 }
@@ -147,12 +149,12 @@ fun FamilyTreeScreen(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    text = "Árbol Familiar",
+                                    text = stringResource(R.string.family_tree_title),
                                     style = MaterialTheme.typography.headlineMedium,
                                     color = MaterialTheme.colorScheme.onBackground
                                 )
                                 Text(
-                                    text = "Conectá a tu familia y sus historias",
+                                    text = stringResource(R.string.family_tree_subtitle),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -229,7 +231,7 @@ fun FamilyTreeScreen(
                             .padding(12.dp)
                     ) {
                         Text(
-                            text = "Tocá una persona para ver su cofre (si tiene uno) o crear uno nuevo",
+                            text = stringResource(R.string.family_tree_info_note),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -251,7 +253,7 @@ fun FamilyTreeScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Agregar persona"
+                            contentDescription = stringResource(R.string.family_tree_add_person_cd)
                         )
                     }
                 }
@@ -282,7 +284,7 @@ private fun ZoomControls(
             ) {
                 Icon(
                     imageVector = Icons.Default.Remove,
-                    contentDescription = "Zoom out",
+                    contentDescription = stringResource(R.string.family_tree_zoom_out_cd),
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
@@ -302,7 +304,7 @@ private fun ZoomControls(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Zoom in",
+                    contentDescription = stringResource(R.string.family_tree_zoom_in_cd),
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
@@ -390,7 +392,7 @@ private fun TreeNodeView(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Inventory2,
-                                contentDescription = "Tiene cofre",
+                                contentDescription = stringResource(R.string.family_tree_has_chest_cd),
                                 modifier = Modifier.size(10.dp),
                                 tint = MaterialTheme.colorScheme.onPrimary
                             )

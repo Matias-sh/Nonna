@@ -3,8 +3,12 @@ package com.cocido.nonna.data.repository
 import com.cocido.nonna.data.local.TokenManager
 import com.cocido.nonna.data.remote.AuthApi
 import com.cocido.nonna.data.remote.dto.LoginRequest
+import com.cocido.nonna.data.remote.dto.RefreshTokenRequest
 import com.cocido.nonna.data.remote.dto.UserDto
+import com.cocido.nonna.data.remote.dto.VerifyEmailRequest
+import com.cocido.nonna.util.UserMessages
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.flow.map
@@ -18,6 +22,7 @@ class AuthRepository @Inject constructor(
     private val tokenManager: TokenManager
 ) {
     val token: Flow<String?> = tokenManager.token
+    val refreshToken: Flow<String?> = tokenManager.refreshToken
     val isLoggedIn: Flow<Boolean> = tokenManager.token.map { !it.isNullOrBlank() }
 
     suspend fun login(email: String, password: String): ApiResult<UserDto> {
@@ -28,6 +33,7 @@ class AuthRepository @Inject constructor(
                 val tokenValue = body?.tokenValue
                 if (!tokenValue.isNullOrBlank()) {
                     tokenManager.saveToken(tokenValue)
+                    body?.refreshTokenValue?.takeIf { it.isNotBlank() }?.let { tokenManager.saveRefreshToken(it) }
                     val meUser = runCatching { authApi.getMe().body() }.getOrNull()
                     val user = meUser ?: body?.user ?: body?.usuario?.toUserDto()
                     user?.id?.let { tokenManager.saveUserId(it) }
@@ -79,6 +85,7 @@ class AuthRepository @Inject constructor(
                 val tokenValue = body?.tokenValue
                 if (!tokenValue.isNullOrBlank()) {
                     tokenManager.saveToken(tokenValue)
+                    body?.refreshTokenValue?.takeIf { it.isNotBlank() }?.let { tokenManager.saveRefreshToken(it) }
                     val meUser = runCatching { authApi.getMe().body() }.getOrNull()
                     val user = meUser ?: body?.user ?: body?.usuario?.toUserDto()
                     user?.id?.let { tokenManager.saveUserId(it) }
@@ -128,5 +135,130 @@ class AuthRepository @Inject constructor(
 
     suspend fun logout() {
         tokenManager.clear()
+    }
+
+    suspend fun sendVerificationEmail(): ApiResult<String> {
+        return try {
+            val response = authApi.sendVerificationEmail()
+            if (response.isSuccessful) {
+                val message = response.body()?.message ?: UserMessages.GENERIC_REQUEST_ERROR
+                ApiResult.Success(message)
+            } else {
+                ApiResult.Error(
+                    NetworkErrorParser.parse(response.errorBody()?.string())
+                        ?: UserMessages.GENERIC_REQUEST_ERROR,
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            ApiResult.Error(
+                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: UserMessages.GENERIC_REQUEST_ERROR,
+                e.code()
+            )
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error(UserMessages.NO_INTERNET)
+        } catch (e: Exception) {
+            ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
+        }
+    }
+
+    suspend fun verifyEmail(code: String): ApiResult<UserDto> {
+        return try {
+            val response = authApi.verifyEmail(VerifyEmailRequest(codigo = code.trim()))
+            if (response.isSuccessful) {
+                val body = response.body()
+                val user = body?.userDtoOrNull()
+                if (user != null) {
+                    ApiResult.Success(user)
+                } else {
+                    when (val meResult = getMe()) {
+                        is ApiResult.Success -> ApiResult.Success(meResult.data)
+                        is ApiResult.Error -> meResult
+                        ApiResult.Loading -> ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
+                    }
+                }
+            } else {
+                val rawError = response.errorBody()?.string()
+                mapVerifyEmailError(response.code(), rawError)?.let { mapped ->
+                    return ApiResult.Error(mapped, response.code())
+                }
+                ApiResult.Error(
+                    NetworkErrorParser.parse(rawError)
+                        ?: UserMessages.GENERIC_REQUEST_ERROR,
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            val rawError = e.response()?.errorBody()?.string()
+            mapVerifyEmailError(e.code(), rawError)?.let { mapped ->
+                return ApiResult.Error(mapped, e.code())
+            }
+            ApiResult.Error(
+                NetworkErrorParser.parse(rawError) ?: UserMessages.GENERIC_REQUEST_ERROR,
+                e.code()
+            )
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error(UserMessages.NO_INTERNET)
+        } catch (e: Exception) {
+            ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
+        }
+    }
+
+    private fun mapVerifyEmailError(code: Int, rawError: String?): String? {
+        if (code != 400 && code != 401 && code != 422) return null
+        val lower = rawError?.lowercase().orEmpty()
+        return when {
+            "expir" in lower || "expired" in lower || "venc" in lower -> UserMessages.EXPIRED_VERIFICATION_CODE
+            "invalido" in lower || "inválido" in lower || "incorrect" in lower || "invalid" in lower ->
+                UserMessages.WRONG_VERIFICATION_CODE
+            else -> UserMessages.WRONG_VERIFICATION_CODE
+        }
+    }
+
+    suspend fun refreshSession(): ApiResult<UserDto> {
+        return try {
+            val refreshToken = tokenManager.refreshToken.firstOrNull()?.takeIf { it.isNotBlank() }
+                ?: return ApiResult.Error(UserMessages.INVALID_CREDENTIALS)
+            val response = authApi.refresh(RefreshTokenRequest(refreshToken))
+            if (!response.isSuccessful) {
+                if (response.code() == 401) tokenManager.clear()
+                return ApiResult.Error(
+                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: UserMessages.GENERIC_REQUEST_ERROR,
+                    response.code()
+                )
+            }
+            val body = response.body()
+            val newAccess = body?.tokenValue
+            if (!newAccess.isNullOrBlank()) {
+                tokenManager.saveToken(newAccess)
+            }
+            body?.refreshTokenValue?.takeIf { it.isNotBlank() }?.let { tokenManager.saveRefreshToken(it) }
+            val user = body?.user ?: body?.usuario?.toUserDto() ?: run {
+                val me = getMe()
+                if (me is ApiResult.Success) me.data else null
+            }
+            if (user != null) {
+                user.id.takeIf { it.isNotBlank() }?.let { tokenManager.saveUserId(it) }
+                ApiResult.Success(user)
+            } else {
+                ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
+            }
+        } catch (e: HttpException) {
+            if (e.code() == 401) tokenManager.clear()
+            ApiResult.Error(
+                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: UserMessages.GENERIC_REQUEST_ERROR,
+                e.code()
+            )
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error(UserMessages.NO_INTERNET)
+        } catch (e: Exception) {
+            ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
+        }
     }
 }

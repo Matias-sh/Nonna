@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 // NONNA Warm Color Palette - Light Mode
 val Cream = Color(0xFFFAF7F0)          // Background
-val Terracotta = Color(0xFFC66B4E)     // Primary
+val Caramel = Color(0xFFAE7C4B)        // Primary
 val Olive = Color(0xFF8B9556)          // Secondary
 val Sepia = Color(0xFF4A4238)          // Foreground/Text
 val Muted = Color(0xFFE8E3DA)          // Muted background
@@ -19,7 +19,7 @@ val BorderLight = Color(0x264A4238)    // 15% opacity of Sepia
 
 // Dark Mode Colors
 val CreamDark = Color(0xFF2B2520)
-val TerracottaDark = Color(0xFFD88A71)
+val CaramelDark = Color(0xFFC99766)
 val OliveDark = Color(0xFFA3B06C)
 val SepiaDark = Color(0xFFF5F1E8)
 val MutedDark = Color(0xFF3D3731)
@@ -47,8 +47,8 @@ val TagFamiliarText = Color(0xFFBE123C)
 val TagFamiliarBorder = Color(0xFFFECDD3)
 
 // Role Badge Colors
-val RoleCreadorBackground = Color(0x1AC66B4E)
-val RoleCreadorText = Terracotta
+val RoleCreadorBackground = Caramel.copy(alpha = 0.1f)
+val RoleCreadorText = Caramel
 val RoleColaboradorBackground = Color(0x1A8B9556)
 val RoleColaboradorText = Olive
 val RoleInvitadoBackground = Muted
@@ -57,5 +57,5 @@ val RoleAbueloBackground = Color(0x1AF59E0B)
 val RoleAbueloText = Color(0xFFD97706)
 
 // Gradients (for use with Brush)
-val PrimaryGradientStart = Terracotta
+val PrimaryGradientStart = Caramel
 val PrimaryGradientEnd = Olive

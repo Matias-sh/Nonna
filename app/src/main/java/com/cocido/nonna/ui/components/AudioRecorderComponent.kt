@@ -46,7 +46,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.PrimaryGradientEnd
@@ -158,7 +160,7 @@ fun AudioRecorderComponent(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Audio grabado",
+                                text = stringResource(R.string.memory_audio_recorded),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -176,7 +178,7 @@ fun AudioRecorderComponent(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Listo para grabar",
+                                text = stringResource(R.string.audio_recorder_ready),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -197,14 +199,14 @@ fun AudioRecorderComponent(
             if (state == RecorderState.Recording) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Grabando...",
+                    text = stringResource(R.string.audio_recorder_recording),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else if (state == RecorderState.Paused) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Pausado",
+                    text = stringResource(R.string.audio_recorder_paused),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -241,7 +243,7 @@ fun AudioRecorderComponent(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Mic,
-                                contentDescription = "Grabar",
+                                contentDescription = stringResource(R.string.common_record),
                                 modifier = Modifier.size(28.dp),
                                 tint = MaterialTheme.colorScheme.onPrimary
                             )
@@ -264,7 +266,7 @@ fun AudioRecorderComponent(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Pause,
-                                contentDescription = "Pausar",
+                                contentDescription = stringResource(R.string.common_pause),
                                 modifier = Modifier.size(24.dp),
                                 tint = MaterialTheme.colorScheme.onSecondary
                             )
@@ -289,7 +291,7 @@ fun AudioRecorderComponent(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Stop,
-                                contentDescription = "Detener",
+                                contentDescription = stringResource(R.string.common_stop),
                                 modifier = Modifier.size(28.dp),
                                 tint = MaterialTheme.colorScheme.onError
                             )
@@ -312,7 +314,7 @@ fun AudioRecorderComponent(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
-                                contentDescription = "Reanudar",
+                                contentDescription = stringResource(R.string.common_resume),
                                 modifier = Modifier.size(24.dp),
                                 tint = MaterialTheme.colorScheme.onSecondary
                             )
@@ -337,7 +339,7 @@ fun AudioRecorderComponent(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Stop,
-                                contentDescription = "Detener",
+                                contentDescription = stringResource(R.string.common_stop),
                                 modifier = Modifier.size(28.dp),
                                 tint = MaterialTheme.colorScheme.onError
                             )
@@ -382,7 +384,11 @@ fun AudioRecorderComponent(
                                 } else {
                                     Icons.Default.PlayArrow
                                 },
-                                contentDescription = if (state == RecorderState.Playing) "Pausar" else "Reproducir",
+                                contentDescription = if (state == RecorderState.Playing) {
+                                    stringResource(R.string.common_pause)
+                                } else {
+                                    stringResource(R.string.common_play)
+                                },
                                 modifier = Modifier.size(24.dp),
                                 tint = MaterialTheme.colorScheme.onSecondary
                             )
@@ -411,7 +417,7 @@ fun AudioRecorderComponent(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Eliminar",
+                                contentDescription = stringResource(R.string.common_delete),
                                 modifier = Modifier.size(24.dp),
                                 tint = MaterialTheme.colorScheme.error
                             )
@@ -419,7 +425,7 @@ fun AudioRecorderComponent(
                         
                         // Save button
                         NonnaButton(
-                            text = "Guardar audio",
+                            text = stringResource(R.string.audio_recorder_save_audio),
                             onClick = {
                                 recordedFile?.let { file ->
                                     onRecordingComplete(file, durationSeconds)

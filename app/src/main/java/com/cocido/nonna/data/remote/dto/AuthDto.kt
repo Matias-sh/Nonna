@@ -49,11 +49,14 @@ data class AuthResponse(
     @SerializedName("token") val token: String? = null,
     @SerializedName("accessToken") val accessToken: String? = null,
     @SerializedName("access_token") val accessTokenField: String? = null,
+    @SerializedName("refreshToken") val refreshToken: String? = null,
+    @SerializedName("refresh_token") val refreshTokenField: String? = null,
     @SerializedName("user") val user: UserDto? = null,
     @SerializedName("usuario") val usuario: UsuarioDto? = null
 ) {
     /** Token usable: backend devuelve access_token; también soportamos token/accessToken. */
     val tokenValue: String? get() = token ?: accessToken ?: accessTokenField
+    val refreshTokenValue: String? get() = refreshToken ?: refreshTokenField
 }
 
 /** Backend espera email, contrasena (nueva), confirmarContrasena. */
@@ -61,4 +64,24 @@ data class ChangePasswordRequest(
     @SerializedName("email") val email: String,
     @SerializedName("contrasena") val newPassword: String,
     @SerializedName("confirmarContrasena") val confirmPassword: String
+)
+
+data class RefreshTokenRequest(
+    @SerializedName("refresh_token") val refreshToken: String
+)
+
+data class VerifyEmailRequest(
+    @SerializedName("codigo") val codigo: String
+)
+
+data class VerificationResponse(
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("usuario") val usuario: UsuarioDto? = null,
+    @SerializedName("user") val user: UserDto? = null
+) {
+    fun userDtoOrNull(): UserDto? = user ?: usuario?.toUserDto()
+}
+
+data class GenericMessageResponse(
+    @SerializedName("message") val message: String? = null
 )
