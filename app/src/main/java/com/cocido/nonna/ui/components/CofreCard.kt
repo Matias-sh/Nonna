@@ -54,6 +54,10 @@ data class CofreUiModel(
     val updatedAtIso: String? = null,
     val coverImageUrl: String? = null,
     val isOwner: Boolean = true,
+    val ownerName: String? = null,
+    val ownerUsername: String? = null,
+    val ownerEmail: String? = null,
+    val ownerAvatarUrl: String? = null,
     val invited: List<CofreInviteeUiModel> = emptyList()
 )
 

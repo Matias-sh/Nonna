@@ -304,6 +304,10 @@ private fun CofreDto.toUiModel(forceNotOwner: Boolean = false): CofreUiModel = C
     updatedAtIso = updatedAt ?: updated_at,
     coverImageUrl = coverUrl(),
     isOwner = if (forceNotOwner) false else isOwnerValue(),
+    ownerName = usuario?.displayNameValue(),
+    ownerUsername = usuario?.nombreUsuario,
+    ownerEmail = usuario?.email,
+    ownerAvatarUrl = usuario?.profileImageUrlValue(),
     invited = invitedList().map { invite ->
         CofreInviteeUiModel(
             id = invite.idValue(),
@@ -315,6 +319,22 @@ private fun CofreDto.toUiModel(forceNotOwner: Boolean = false): CofreUiModel = C
         )
     }
 )
+
+private fun com.cocido.nonna.data.remote.dto.UsuarioDto.displayNameValue(): String {
+    return listOfNotNull(persona?.nombre, persona?.apellido)
+        .joinToString(" ")
+        .trim()
+        .ifBlank { nombreUsuario ?: email ?: "" }
+}
+
+private fun com.cocido.nonna.data.remote.dto.UsuarioDto.profileImageUrlValue(): String? {
+    val raw = fotoPerfil?.takeIf { it.isNotBlank() && it != "string" } ?: return null
+    return when {
+        raw.startsWith("http://") || raw.startsWith("https://") -> raw
+        raw.startsWith("/") -> "https://apinonna.pushsoftware.com.ar$raw"
+        else -> "https://apinonna.pushsoftware.com.ar/$raw"
+    }
+}
 
 private fun formatLastUpdated(iso: String?): String {
     if (iso.isNullOrBlank()) return ""

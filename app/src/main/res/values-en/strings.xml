@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <string name="app_name">Nonna</string>
     <string name="msg_field_review_required">Review the required fields to continue.</string>
     <string name="msg_form_review_required">Review the highlighted fields to continue.</string>
@@ -401,6 +401,7 @@
     <string name="msg_invitation_accepted">Invitation accepted</string>
     <string name="msg_invitation_rejected">Invitation rejected</string>
     <string name="msg_invitation_cancelled">Invitation cancelled</string>
+    <string name="chest_guest_permissions_hint">You are an invited member. Only the creator can invite members, edit, or delete this chest.</string>
     <string name="msg_wrong_verification_code">The verification code is incorrect.</string>
     <string name="msg_expired_verification_code">The verification code has expired. Request a new one.</string>
 </resources>

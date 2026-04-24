@@ -10,6 +10,8 @@ import com.cocido.nonna.data.repository.RecuerdosRepository
 import com.cocido.nonna.data.remote.dto.UserDto
 import com.cocido.nonna.ui.components.CofreUiModel
 import com.cocido.nonna.ui.components.MemoryUiModel
+import com.cocido.nonna.ui.permissions.canManageCofre
+import com.cocido.nonna.ui.permissions.resolveOwnership
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,13 +61,17 @@ class CofreDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+            var me: UserDto? = null
             when (val result = authRepository.getMe()) {
-                is ApiResult.Success -> _currentUser.value = result.data
+                is ApiResult.Success -> {
+                    me = result.data
+                    _currentUser.value = result.data
+                }
                 is ApiResult.Error -> { }
                 else -> { }
             }
             when (val result = cofreRepository.getCofre(cofreId)) {
-                is ApiResult.Success -> _cofre.value = result.data
+                is ApiResult.Success -> _cofre.value = resolveOwnership(result.data, me)
                 is ApiResult.Error -> _errorMessage.value = result.message
                 else -> { }
             }
@@ -86,6 +92,10 @@ class CofreDetailViewModel @Inject constructor(
 
     fun deleteCofre() {
         viewModelScope.launch {
+            if (!canManageCofre(_cofre.value)) {
+                _errorMessage.value = "Solo el dueño puede eliminar este cofre."
+                return@launch
+            }
             _isLoading.value = true
             _errorMessage.value = null
             when (val result = cofreRepository.deleteCofre(cofreId)) {
@@ -99,11 +109,15 @@ class CofreDetailViewModel @Inject constructor(
 
     fun invitar(emails: List<String>) {
         viewModelScope.launch {
+            if (!canManageCofre(_cofre.value)) {
+                _errorMessage.value = "Solo el dueño puede invitar miembros."
+                return@launch
+            }
             _errorMessage.value = null
             when (val result = cofreRepository.invitar(cofreId, emails)) {
                 is ApiResult.Success -> {
                     when (val cofreResult = cofreRepository.getCofre(cofreId)) {
-                        is ApiResult.Success -> _cofre.value = cofreResult.data
+                        is ApiResult.Success -> _cofre.value = resolveOwnership(cofreResult.data, _currentUser.value)
                         else -> Unit
                     }
                     _inviteSuccess.emit(Unit)

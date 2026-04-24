@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <string name="app_name">Nonna</string>
     <string name="msg_field_review_required">Revisá los campos obligatorios para continuar.</string>
     <string name="msg_form_review_required">Revisá los campos marcados para continuar.</string>
@@ -401,6 +401,7 @@
     <string name="msg_invitation_accepted">Invitación aceptada</string>
     <string name="msg_invitation_rejected">Invitación rechazada</string>
     <string name="msg_invitation_cancelled">Invitación cancelada</string>
+    <string name="chest_guest_permissions_hint">Sos miembro invitado. Solo el creador puede invitar miembros, editar o eliminar este cofre.</string>
     <string name="msg_wrong_verification_code">El código de verificación es incorrecto.</string>
     <string name="msg_expired_verification_code">El código de verificación venció. Pedí uno nuevo.</string>
 </resources>

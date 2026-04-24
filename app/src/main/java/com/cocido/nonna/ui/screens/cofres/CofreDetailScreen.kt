@@ -90,6 +90,7 @@ import com.cocido.nonna.ui.theme.PrimaryGradientEnd
 import com.cocido.nonna.ui.theme.PrimaryGradientStart
 import com.cocido.nonna.ui.components.InviteFamilyModal
 import com.cocido.nonna.ui.components.relationValueLabel
+import com.cocido.nonna.ui.permissions.canManageCofre
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -344,7 +345,7 @@ fun CofreDetailScreen(
             )
             1 -> FamiliaTab(
                 members = buildFamiliaMembers(cofre, currentUser),
-                canInvite = cofre?.isOwner == true,
+                canInvite = canManageCofre(cofre),
                 onInvite = { showInviteModal = true }
             )
             2 -> DetallesTab(
@@ -357,7 +358,7 @@ fun CofreDetailScreen(
     }
     }
 
-    if (showInviteModal && cofre != null) {
+    if (showInviteModal && canManageCofre(cofre) && cofre != null) {
         InviteFamilyModal(
             cofreName = cofre.name,
             onDismiss = { showInviteModal = false },
@@ -368,7 +369,7 @@ fun CofreDetailScreen(
         )
     }
 
-    if (showDeleteConfirm) {
+    if (showDeleteConfirm && canManageCofre(cofre)) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(R.string.common_delete_chest)) },
@@ -577,26 +578,58 @@ private fun buildFamiliaMembers(
     currentUser: com.cocido.nonna.data.remote.dto.UserDto?
 ): List<CofreMemberDisplay> {
     if (cofre == null || currentUser == null) return emptyList()
-    val fullName = currentUser.displayName()
-    val username = currentUser.nombreUsuario
-    val avatar = currentUser.profileImageUrl()
-    val baseMembers = mutableListOf(
-        CofreMemberDisplay(
-            fullName = fullName,
-            username = username,
-            email = currentUser.email,
-            avatarUrl = avatar,
+    val currentEmail = currentUser.email.trim().lowercase()
+    val baseMembers = mutableListOf<CofreMemberDisplay>()
+    val currentInvite = cofre.invited.firstOrNull { it.email.trim().lowercase() == currentEmail }
+
+    val ownerEmailRaw = cofre.ownerEmail?.trim().orEmpty()
+    val ownerLooksIncorrectForGuestView = !cofre.isOwner && ownerEmailRaw.equals(currentUser.email, ignoreCase = true)
+    val ownerEmail = if (ownerLooksIncorrectForGuestView) "" else ownerEmailRaw
+    if (ownerEmail.isNotBlank()) {
+        baseMembers += CofreMemberDisplay(
+            fullName = cofre.ownerName?.ifBlank { null } ?: ownerEmail,
+            username = cofre.ownerUsername,
+            email = ownerEmail,
+            avatarUrl = cofre.ownerAvatarUrl
+                ?: if (ownerEmail.equals(currentUser.email, ignoreCase = true)) currentUser.profileImageUrl() else null,
             role = com.cocido.nonna.ui.components.CofreRole.Creador
         )
-    )
-    cofre.invited.forEach { invitee ->
-        if (invitee.email.equals(currentUser.email, ignoreCase = true)) return@forEach
+    } else if (cofre.isOwner) {
         baseMembers += CofreMemberDisplay(
-            fullName = invitee.fullName ?: invitee.email,
+            fullName = currentUser.displayName(),
+            username = currentUser.nombreUsuario,
+            email = currentUser.email,
+            avatarUrl = currentUser.profileImageUrl(),
+            role = com.cocido.nonna.ui.components.CofreRole.Creador
+        )
+    }
+
+    if (!cofre.isOwner && baseMembers.none { it.email.equals(currentUser.email, ignoreCase = true) }) {
+        baseMembers += CofreMemberDisplay(
+            fullName = currentUser.displayName(),
+            username = currentUser.nombreUsuario,
+            email = currentUser.email,
+            avatarUrl = currentUser.profileImageUrl(),
+            role = if (currentInvite == null || currentInvite.accepted) {
+                com.cocido.nonna.ui.components.CofreRole.Colaborador
+            } else {
+                com.cocido.nonna.ui.components.CofreRole.Invitado
+            }
+        )
+    }
+
+    cofre.invited.forEach { invitee ->
+        val inviteEmail = invitee.email.trim()
+        if (inviteEmail.lowercase() == currentEmail) return@forEach
+        val isOwnerByEmail = ownerEmail.isNotBlank() && inviteEmail.equals(ownerEmail, ignoreCase = true)
+        baseMembers += CofreMemberDisplay(
+            fullName = invitee.fullName ?: inviteEmail,
             username = null,
-            email = invitee.email,
-            avatarUrl = null,
-            role = if (invitee.accepted) {
+            email = inviteEmail,
+            avatarUrl = if (isOwnerByEmail) cofre.ownerAvatarUrl else null,
+            role = if (isOwnerByEmail) {
+                com.cocido.nonna.ui.components.CofreRole.Creador
+            } else if (invitee.accepted) {
                 com.cocido.nonna.ui.components.CofreRole.Colaborador
             } else {
                 com.cocido.nonna.ui.components.CofreRole.Invitado
@@ -636,13 +669,20 @@ private fun FamiliaTab(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            if (canInvite) {
-                NonnaButton(
-                    text = stringResource(R.string.common_invite),
-                    onClick = onInvite,
-                    size = com.cocido.nonna.ui.components.NonnaButtonSize.Small
-                )
-            }
+            NonnaButton(
+                text = stringResource(R.string.common_invite),
+                onClick = onInvite,
+                enabled = canInvite,
+                size = com.cocido.nonna.ui.components.NonnaButtonSize.Small
+            )
+        }
+        if (!canInvite) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.chest_guest_permissions_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -794,39 +834,47 @@ private fun DetallesTab(
             }
         }
         
-        if (cofre.isOwner) {
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = NonnaCorners.Card,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+        Spacer(modifier = Modifier.height(16.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = NonnaCorners.Card,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(NonnaDimens.cardPaddingLarge)
             ) {
-                Column(
-                    modifier = Modifier.padding(NonnaDimens.cardPaddingLarge)
-                ) {
+                Text(
+                    text = stringResource(R.string.chest_creator_actions),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                NonnaButton(
+                    text = stringResource(R.string.chest_edit_info),
+                    onClick = onEdit,
+                    enabled = cofre.isOwner,
+                    style = NonnaButtonStyle.Ghost,
+                    fullWidth = true
+                )
+
+                NonnaButton(
+                    text = stringResource(R.string.common_delete_chest),
+                    onClick = onDelete,
+                    enabled = cofre.isOwner,
+                    style = NonnaButtonStyle.Destructive,
+                    fullWidth = true
+                )
+
+                if (!cofre.isOwner) {
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = stringResource(R.string.chest_creator_actions),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    NonnaButton(
-                        text = stringResource(R.string.chest_edit_info),
-                        onClick = onEdit,
-                        style = NonnaButtonStyle.Ghost,
-                        fullWidth = true
-                    )
-                    
-                    NonnaButton(
-                        text = stringResource(R.string.common_delete_chest),
-                        onClick = onDelete,
-                        style = NonnaButtonStyle.Destructive,
-                        fullWidth = true
+                        text = stringResource(R.string.chest_guest_permissions_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
