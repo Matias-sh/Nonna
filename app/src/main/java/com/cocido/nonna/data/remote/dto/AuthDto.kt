@@ -20,8 +20,26 @@ data class SignupRequest(
 data class PersonaDto(
     @SerializedName("id") val id: Int? = null,
     @SerializedName("nombre") val nombre: String? = null,
-    @SerializedName("apellido") val apellido: String? = null
-)
+    @SerializedName("apellido") val apellido: String? = null,
+    @SerializedName("fotoPerfil") val fotoPerfil: String? = null,
+    @SerializedName("urlFotoPerfil") val urlFotoPerfil: String? = null,
+    @SerializedName("foto_perfil") val fotoPerfilSnake: String? = null,
+    @SerializedName("url_foto_perfil") val urlFotoPerfilSnake: String? = null
+) {
+    fun profileImageUrl(): String? {
+        val raw = listOfNotNull(
+            fotoPerfil,
+            urlFotoPerfil,
+            fotoPerfilSnake,
+            urlFotoPerfilSnake
+        ).firstOrNull { !it.isNullOrBlank() && it != "string" }?.trim() ?: return null
+        return when {
+            raw.startsWith("http://") || raw.startsWith("https://") -> raw
+            raw.startsWith("/") -> "https://apinonna.pushsoftware.com.ar$raw"
+            else -> "https://apinonna.pushsoftware.com.ar/$raw"
+        }
+    }
+}
 
 data class UsuarioDto(
     @SerializedName("id") val id: Int? = null,

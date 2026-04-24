@@ -1,6 +1,7 @@
 package com.cocido.nonna.ui.screens.memory
 
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -85,6 +86,7 @@ fun EditMemoryScreen(
     var emotionalTag by remember { mutableStateOf<EmotionalTag?>(null) }
     var customEmotion by remember { mutableStateOf("") }
     var replacementUri by remember { mutableStateOf<Uri?>(null) }
+    var replacementDisplayName by remember { mutableStateOf<String?>(null) }
     var isPreparingReplacement by remember { mutableStateOf(false) }
     var resolvedTextContent by remember { mutableStateOf<String?>(null) }
     var attemptedSave by remember { mutableStateOf(false) }
@@ -93,6 +95,7 @@ fun EditMemoryScreen(
         contract = NonnaCropContract()
     ) { result ->
         replacementUri = result
+        replacementDisplayName = result?.let { resolveDisplayName(context, it) }
     }
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -110,6 +113,7 @@ fun EditMemoryScreen(
             )
         } else {
             replacementUri = uri
+            replacementDisplayName = resolveDisplayName(context, uri)
         }
     }
 
@@ -203,6 +207,22 @@ fun EditMemoryScreen(
                                 )
                             }
                         }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                } else if (replacementUri != null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Text(
+                            text = replacementDisplayName ?: stringResource(R.string.memory_new_file_selected),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(12.dp)
+                        )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                 }
@@ -425,6 +445,15 @@ private fun downloadTextFromUrlIfPossible(sourceUrl: String?): String? {
                 ?.trim()
                 ?.takeIf { it.isNotBlank() }
         }
+    }.getOrNull()
+}
+
+private fun resolveDisplayName(context: android.content.Context, uri: Uri): String? {
+    return runCatching {
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            }
     }.getOrNull()
 }
 

@@ -78,6 +78,48 @@
     <string name="auth_login_button">Ingresar</string>
     <string name="auth_signup_button">Crear cuenta</string>
     <string name="auth_privacy_note">Al continuar, aceptás que este es un espacio privado y seguro para tu familia. Tus datos son solo tuyos.</string>
+    <string name="auth_forgot_password">¿Olvidaste tu contraseña?</string>
+
+    <!-- Recuperar contraseña -->
+    <string name="forgot_password_title_email">Recuperar contraseña</string>
+    <string name="forgot_password_subtitle_email">Te enviaremos un código de 6 dígitos a tu correo.</string>
+    <string name="forgot_password_send_code">Enviar código</string>
+    <string name="forgot_password_title_code">Ingresá el código</string>
+    <string name="forgot_password_subtitle_code">Revisá tu bandeja de entrada (y spam).</string>
+    <string name="forgot_password_code_label">Código</string>
+    <string name="forgot_password_code_placeholder">000000</string>
+    <string name="forgot_password_verify_code">Verificar código</string>
+    <string name="forgot_password_code_sent">Si el email está registrado, te enviamos un código.</string>
+    <string name="forgot_password_title_new">Nueva contraseña</string>
+    <string name="forgot_password_subtitle_new">Elegí una contraseña segura (mínimo 8 caracteres).</string>
+    <string name="forgot_password_save">Guardar contraseña</string>
+    <string name="forgot_password_success">Contraseña actualizada. Ya podés iniciar sesión.</string>
+
+    <!-- Suscripción / planes -->
+    <string name="subscription_section_title">Plan actual</string>
+    <string name="subscription_plan_label">Plan</string>
+    <string name="subscription_status_label">Estado</string>
+    <string name="subscription_limits_title">Qué incluye tu plan</string>
+    <string name="subscription_upsell_title">Desbloqueá más funciones</string>
+    <string name="subscription_upsell_description">Con Premium vas a poder crear cofres ilimitados, exportar fotolibros y más. Pronto vas a poder suscribirte desde la app.</string>
+    <string name="subscription_usage_title">Uso actual</string>
+    <string name="subscription_limit_cofres">Cofres propios</string>
+    <string name="subscription_limit_recuerdos">Recuerdos</string>
+    <string name="subscription_limit_miembros">Miembros por cofre</string>
+    <string name="subscription_limit_invitado_cofres">Cofres como invitado</string>
+    <string name="subscription_usage_cofres">Cofres creados</string>
+    <string name="subscription_usage_recuerdos">Recuerdos creados</string>
+    <string name="subscription_change_plan">Cambiar plan</string>
+    <string name="subscription_change_plan_title">Elegí un plan</string>
+    <string name="subscription_change_plan_message">El cambio se aplica sin pasarela de pago (según disponibilidad del servidor).</string>
+    <string name="subscription_load_error">No se pudo cargar la información del plan.</string>
+    <string name="subscription_plan_changed">Plan actualizado</string>
+
+    <!-- Abandonar cofre compartido -->
+    <string name="chest_leave_shared">Abandonar cofre</string>
+    <string name="chest_leave_shared_confirm_title">¿Abandonar este cofre?</string>
+    <string name="chest_leave_shared_confirm_text">Vas a salir como colaborador o invitado. No podrás verlo en tu lista hasta que te inviten de nuevo.</string>
+    <string name="chest_leave_shared_success">Saliste del cofre</string>
     <string name="nav_home">Inicio</string>
     <string name="nav_chests">Cofres</string>
     <string name="nav_profile">Perfil</string>
@@ -300,6 +342,24 @@
     <string name="memory_photos_title">Fotos del recuerdo</string>
     <string name="memory_text_no_visible_content">Este recuerdo de texto no tiene contenido visible todavía.</string>
     <string name="memory_detail_info_note">Este recuerdo fue guardado para preservar la memoria familiar. Podés editarlo o compartirlo con tu familia.</string>
+    <string name="memory_detail_media_photo">Fotografía</string>
+    <string name="memory_detail_media_audio">Audio</string>
+    <string name="memory_detail_media_text">Texto</string>
+    <string name="memory_family_comments_title">Comentarios familiares</string>
+    <string name="memory_family_comments_coming_soon">Próximamente podrás dejar comentarios y reacciones en los recuerdos.</string>
+    <string name="memory_share_chooser_title">Compartir recuerdo</string>
+    <string name="memory_share_cd">Compartir</string>
+    <string name="memory_share_brand_line">Recuerdo · Nonna</string>
+    <string name="memory_share_type_prefix">Tipo:</string>
+    <string name="memory_share_cofre_line">Cofre: %1$s</string>
+    <string name="memory_share_date_prefix">Fecha:</string>
+    <string name="memory_share_emotion_prefix">Emoción:</string>
+    <string name="memory_share_link_line">Enlace:</string>
+    <string name="memory_share_footer">Compartido desde Nonna</string>
+    <string name="memory_share_image_error">No se pudo preparar la imagen para compartir.</string>
+    <string name="memory_added_by">Agregado por %1$s</string>
+    <string name="memory_delete_confirm_title">¿Eliminar este recuerdo?</string>
+    <string name="memory_delete_confirm_text">Esta acción no se puede deshacer.</string>
     <string name="memory_fullscreen_image_cd">Imagen en pantalla completa</string>
     <string name="common_close_viewer">Cerrar visor</string>
     <string name="common_save_changes">Guardar cambios</string>
@@ -402,7 +462,7 @@
     <string name="msg_invitation_rejected">Invitación rechazada</string>
     <string name="msg_invitation_cancelled">Invitación cancelada</string>
     <string name="chest_guest_permissions_hint">Sos miembro invitado. Solo el creador puede invitar miembros, editar o eliminar este cofre.</string>
-    <string name="msg_wrong_verification_code">El código de verificación es incorrecto.</string>
+    <string name="msg_wrong_verification_code">Ese código no coincide con el que te enviamos. Revisalo e intentá de nuevo.</string>
     <string name="msg_expired_verification_code">El código de verificación venció. Pedí uno nuevo.</string>
 </resources>
 

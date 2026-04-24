@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.remote.UsuarioApi
 import com.cocido.nonna.data.remote.dto.UserDto
+import com.cocido.nonna.data.remote.dto.SuscripcionActualDto
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.AuthRepository
 import com.cocido.nonna.data.repository.NetworkErrorParser
+import com.cocido.nonna.data.repository.SuscripcionRepository
 import com.cocido.nonna.util.ImageCompressor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,11 +33,15 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val usuarioApi: UsuarioApi,
+    private val suscripcionRepository: SuscripcionRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _user = MutableStateFlow<UserDto?>(null)
     val user: StateFlow<UserDto?> = _user.asStateFlow()
+
+    private val _suscripcion = MutableStateFlow<SuscripcionActualDto?>(null)
+    val suscripcion: StateFlow<SuscripcionActualDto?> = _suscripcion.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -83,6 +89,16 @@ class ProfileViewModel @Inject constructor(
             }
 
             _user.value = detailedUser ?: basicUser
+
+            when (val sub = suscripcionRepository.getMiSuscripcion()) {
+                is ApiResult.Success -> _suscripcion.value = sub.data
+                is ApiResult.Error -> {
+                    // No bloqueamos el perfil si la suscripción falla (p. ej. seed de planes)
+                    _suscripcion.value = null
+                }
+                else -> { }
+            }
+
             _isLoading.value = false
         }
     }

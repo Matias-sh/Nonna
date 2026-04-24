@@ -1,6 +1,9 @@
 package com.cocido.nonna.ui.navigation
 
+import android.content.Intent
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -10,15 +13,18 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.navigation.NavHostController
+import android.net.Uri
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import androidx.compose.ui.platform.LocalContext
 import com.cocido.nonna.ui.components.NonnaMotion
 import com.cocido.nonna.ui.components.NonnaTab
 import com.cocido.nonna.ui.screens.auth.AuthScreen
+import com.cocido.nonna.ui.screens.auth.ForgotPasswordScreen
 import com.cocido.nonna.ui.screens.auth.VerifyEmailScreen
 import com.cocido.nonna.ui.screens.cofres.CofreDetailScreen
 import com.cocido.nonna.ui.screens.cofres.CofresListScreen
@@ -46,6 +52,7 @@ sealed class Screen(val route: String) {
     data object Auth : Screen("auth/{mode}") {
         fun createRoute(mode: String) = "auth/$mode"
     }
+    data object ForgotPassword : Screen("forgot-password")
     data object VerifyEmail : Screen("verify-email")
     data object Onboarding : Screen("onboarding")
     
@@ -56,14 +63,29 @@ sealed class Screen(val route: String) {
     data object Profile : Screen("profile")
     data object ProfileSettings : Screen("profile/settings")
     data object ProfileEdit : Screen("profile/edit")
-    data object Invitations : Screen("profile/invitations")
+    data object Invitations : Screen("profile/invitations?invitationId={invitationId}") {
+        fun createRoute(invitationId: String? = null): String =
+            if (invitationId.isNullOrBlank()) {
+                "profile/invitations"
+            } else {
+                "profile/invitations?invitationId=$invitationId"
+            }
+    }
     
     // Detail screens
     data object CofreDetail : Screen("cofre/{cofreId}") {
         fun createRoute(cofreId: String) = "cofre/$cofreId"
     }
-    data object MemoryDetail : Screen("memory/{memoryId}") {
-        fun createRoute(memoryId: String) = "memory/$memoryId"
+    data object MemoryDetail : Screen("memory/{memoryId}?cofreContext={cofreContext}&cofreCreator={cofreCreator}") {
+        fun createRoute(
+            memoryId: String,
+            cofreContext: String? = null,
+            cofreCreator: String? = null
+        ): String {
+            val ctx = Uri.encode(cofreContext.orEmpty())
+            val creator = Uri.encode(cofreCreator.orEmpty())
+            return "memory/$memoryId?cofreContext=$ctx&cofreCreator=$creator"
+        }
     }
     data object EditMemory : Screen("memory/{memoryId}/edit") {
         fun createRoute(memoryId: String) = "memory/$memoryId/edit"
@@ -103,6 +125,14 @@ fun NonnaNavHost(
     }
 
     val effectiveStartDestination = startDestination ?: if (isLoggedIn) Screen.Home.route else Screen.Welcome.route
+
+    val activity = LocalContext.current as? ComponentActivity
+    LaunchedEffect(navController, activity, effectiveStartDestination) {
+        val intent: Intent = activity?.intent ?: return@LaunchedEffect
+        if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
+            runCatching { navController.handleDeepLink(intent) }
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -155,12 +185,20 @@ fun NonnaNavHost(
             AuthScreen(
                 mode = if (mode == "login") AuthMode.Login else AuthMode.Signup,
                 onBack = { navController.popBackStack() },
+                onForgotPassword = { navController.navigate(Screen.ForgotPassword.route) },
                 onAuth = { user ->
                     val route = if (user.isEmailVerified()) Screen.Home.route else Screen.VerifyEmail.route
                     navController.navigate(route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(Screen.ForgotPassword.route) {
+            ForgotPasswordScreen(
+                onBack = { navController.popBackStack() },
+                onCompleted = { navController.popBackStack() }
             )
         }
 
@@ -204,7 +242,7 @@ fun NonnaNavHost(
                 onContinueCofre = { cofreId ->
                     navigateToCofreDetail(cofreId)
                 },
-                onOpenInvitations = { navController.navigate(Screen.Invitations.route) }
+                onOpenInvitations = { navController.navigate(Screen.Invitations.createRoute()) }
             )
         }
         
@@ -228,7 +266,7 @@ fun NonnaNavHost(
         // Family Tree Screen
         composable(Screen.FamilyTree.route) {
             val viewModel: FamilyTreeViewModel = hiltViewModel()
-            val uiState = viewModel.state.collectAsStateWithLifecycle().value
+            val uiState by viewModel.state.collectAsStateWithLifecycle()
 
             FamilyTreeScreen(
                 onTabSelected = { tab ->
@@ -292,7 +330,7 @@ fun NonnaNavHost(
                     }
                 },
                 onEditProfile = { navController.navigate(Screen.ProfileEdit.route) },
-                onOpenInvitations = { navController.navigate(Screen.Invitations.route) },
+                onOpenInvitations = { navController.navigate(Screen.Invitations.createRoute()) },
                 onLogout = {
                     onLogout()
                     // key(authState) en MainActivity recrea el NavHost con startDestination=Welcome
@@ -300,9 +338,28 @@ fun NonnaNavHost(
             )
         }
 
-        composable(Screen.Invitations.route) {
+        composable(
+            route = Screen.Invitations.route,
+            arguments = listOf(
+                navArgument("invitationId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            ),
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "https://apinonna.pushsoftware.com.ar/invitaciones/{invitationId}"
+                },
+                navDeepLink {
+                    uriPattern = "nonna://invitaciones/{invitationId}"
+                }
+            )
+        ) { backStackEntry ->
+            val invitationId = backStackEntry.arguments?.getString("invitationId")
             InvitationsScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                deepLinkedInvitationId = invitationId
             )
         }
 
@@ -327,8 +384,10 @@ fun NonnaNavHost(
                 onAddMemory = {
                     navController.navigate(Screen.AddMemory.createRoute(cofreId))
                 },
-                onMemoryClick = { memoryId ->
-                    navController.navigate(Screen.MemoryDetail.createRoute(memoryId))
+                onMemoryClick = { memoryId, cofreName, cofreCreator ->
+                    navController.navigate(
+                        Screen.MemoryDetail.createRoute(memoryId, cofreName, cofreCreator)
+                    )
                 },
                 onEditCofre = { id ->
                     navController.navigate(Screen.EditCofre.createRoute(id))
@@ -399,12 +458,26 @@ fun NonnaNavHost(
         composable(
             route = Screen.MemoryDetail.route,
             arguments = listOf(
-                navArgument("memoryId") { type = NavType.StringType }
+                navArgument("memoryId") { type = NavType.StringType },
+                navArgument("cofreContext") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("cofreCreator") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
             )
         ) { backStackEntry ->
             val memoryId = backStackEntry.arguments?.getString("memoryId") ?: ""
+            val cofreContext = backStackEntry.arguments?.getString("cofreContext")
+                ?.takeIf { it.isNotBlank() }
+            val cofreCreator = backStackEntry.arguments?.getString("cofreCreator")
+                ?.takeIf { it.isNotBlank() }
             MemoryDetailScreen(
                 memoryId = memoryId,
+                cofreContextName = cofreContext,
+                cofreCreatorDisplayName = cofreCreator,
                 onBack = { navController.popBackStack() },
                 onDelete = { navController.popBackStack() },
                 onEdit = { id -> navController.navigate(Screen.EditMemory.createRoute(id)) }

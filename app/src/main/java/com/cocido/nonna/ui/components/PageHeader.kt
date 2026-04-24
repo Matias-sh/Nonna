@@ -1,6 +1,7 @@
 package com.cocido.nonna.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,64 +45,81 @@ fun PageHeader(
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 1.dp
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = NonnaDimens.screenPaddingHorizontal,
-                    vertical = NonnaDimens.spacing16
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // Left side: back button + titles
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                if (onBack != null) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.common_back),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+        BoxWithConstraints {
+            val compactHeader = maxWidth < 360.dp
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = NonnaDimens.screenPaddingHorizontal,
+                        vertical = NonnaDimens.spacing16
                     )
-                    if (subtitle != null) {
-                        Text(
-                            text = subtitle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        if (onBack != null) {
+                            IconButton(
+                                onClick = onBack,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.common_back),
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (subtitle != null) {
+                                Text(
+                                    text = subtitle,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+
+                    if (action != null && !compactHeader) {
+                        Spacer(modifier = Modifier.width(12.dp))
+                        NonnaButton(
+                            text = action.label,
+                            onClick = action.onClick,
+                            icon = action.icon,
+                            size = NonnaButtonSize.Small
                         )
                     }
                 }
-            }
-            
-            // Right side: action button
-            if (action != null) {
-                Spacer(modifier = Modifier.width(16.dp))
-                NonnaButton(
-                    text = action.label,
-                    onClick = action.onClick,
-                    icon = action.icon,
-                    size = NonnaButtonSize.Small
-                )
+
+                if (action != null && compactHeader) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        NonnaButton(
+                            text = action.label,
+                            onClick = action.onClick,
+                            icon = action.icon,
+                            size = NonnaButtonSize.Small
+                        )
+                    }
+                }
             }
         }
     }

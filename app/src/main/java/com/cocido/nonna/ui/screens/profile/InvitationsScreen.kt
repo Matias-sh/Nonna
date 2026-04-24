@@ -56,6 +56,7 @@ private enum class InviteTab { Received, Sent }
 @Composable
 fun InvitationsScreen(
     onBack: () -> Unit,
+    deepLinkedInvitationId: String? = null,
     viewModel: InvitationsViewModel = hiltViewModel()
 ) {
     val isLoading by viewModel.isLoading.collectAsState()
@@ -67,6 +68,11 @@ fun InvitationsScreen(
     var feedbackMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) { viewModel.load() }
+    LaunchedEffect(deepLinkedInvitationId) {
+        if (!deepLinkedInvitationId.isNullOrBlank()) {
+            selectedTab = InviteTab.Received
+        }
+    }
     LaunchedEffect(Unit) {
         viewModel.successMessage.collectLatest { msg ->
             feedbackType = NonnaFeedbackType.Success
@@ -111,6 +117,11 @@ fun InvitationsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     val activeList = if (selectedTab == InviteTab.Received) received else sent
+                    val visibleList = if (selectedTab == InviteTab.Received && !deepLinkedInvitationId.isNullOrBlank()) {
+                        activeList.sortedByDescending { it.id == deepLinkedInvitationId }
+                    } else {
+                        activeList
+                    }
                     if (isLoading && activeList.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             androidx.compose.material3.CircularProgressIndicator()
@@ -125,11 +136,18 @@ fun InvitationsScreen(
                         }
                     } else {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(activeList, key = { it.id }) { invitation ->
+                            items(visibleList, key = { it.id }) { invitation ->
+                                val isDeepLinkedTarget = invitation.id == deepLinkedInvitationId
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = NonnaCorners.Card,
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isDeepLinkedTarget) {
+                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.22f)
+                                        } else {
+                                            MaterialTheme.colorScheme.surface
+                                        }
+                                    )
                                 ) {
                                     Column(modifier = Modifier.padding(NonnaDimens.cardPadding)) {
                                         Text(

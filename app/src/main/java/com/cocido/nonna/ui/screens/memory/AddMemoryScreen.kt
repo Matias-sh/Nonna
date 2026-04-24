@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -69,6 +70,7 @@ import com.cocido.nonna.ui.components.AudioRecorderComponent
 import com.cocido.nonna.ui.components.EmotionalTag
 import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.util.ImageCompressor
+import com.cocido.nonna.util.MemoryUploadLimits
 import com.cocido.nonna.util.FormValidators
 import com.cocido.nonna.util.UserMessages
 import com.cocido.nonna.ui.components.emotionalTagLabel
@@ -124,6 +126,15 @@ fun AddMemoryScreen(
             onSave()
         }
     }
+    LaunchedEffect(Unit) {
+        viewModel.errorMessage.collectLatest { message ->
+            feedbackMessage = message
+            feedbackType = NonnaFeedbackType.Error
+            feedbackVisible = true
+            delay(2600)
+            feedbackVisible = false
+        }
+    }
     var step by remember { mutableStateOf(AddMemoryStep.Type) }
     var selectedType by remember { mutableStateOf<MemoryType?>(null) }
     var title by remember { mutableStateOf("") }
@@ -136,6 +147,7 @@ fun AddMemoryScreen(
     var hasImageSelected by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var recordedAudioFile by remember { mutableStateOf<File?>(null) }
+    var selectedAudioLabel by remember { mutableStateOf<String?>(null) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
     var attemptedSave by remember { mutableStateOf(false) }
     val cropLauncher = rememberLauncherForActivityResult(
@@ -211,6 +223,27 @@ fun AddMemoryScreen(
             textContent = if (textContent.isBlank()) spokenText else "$textContent $spokenText"
         }
     }
+    val audioPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val copied = withContext(Dispatchers.IO) {
+                copyAudioToCache(context, uri)
+            }
+            if (copied != null) {
+                recordedAudioFile = copied
+                hasAudioRecording = true
+                selectedAudioLabel = resolveDisplayName(context, uri) ?: copied.name
+            } else {
+                feedbackMessage = "No se pudo cargar el archivo de audio."
+                feedbackType = NonnaFeedbackType.Error
+                feedbackVisible = true
+                delay(1800)
+                feedbackVisible = false
+            }
+        }
+    }
 
     val stepTitle = when (step) {
         AddMemoryStep.Type -> stringResource(R.string.add_memory_step_type)
@@ -283,6 +316,7 @@ fun AddMemoryScreen(
                     textContent = textContent,
                     onTextContentChange = { textContent = it },
                     hasAudioRecording = hasAudioRecording,
+                    selectedAudioLabel = selectedAudioLabel,
                     hasImageSelected = hasImageSelected,
                     selectedImageUri = selectedImageUri,
                     onRequestPickImage = { imagePickerLauncher.launch("image/*") },
@@ -309,11 +343,14 @@ fun AddMemoryScreen(
                     onAudioRecorded = { file ->
                         recordedAudioFile = file
                         hasAudioRecording = true
-                    }
+                        selectedAudioLabel = file.name
+                    },
+                    onPickAudioFile = { audioPickerLauncher.launch("audio/*") }
                 )
                 
                 AddMemoryStep.Details -> DetailsStep(
                     type = selectedType!!,
+                    selectedImageUri = selectedImageUri,
                     title = title,
                     onTitleChange = { title = it },
                     description = description,
@@ -365,6 +402,34 @@ fun AddMemoryScreen(
                             }
                             return@DetailsStep
                         }
+                        if (selectedType == MemoryType.Audio) {
+                            val audioFile = recordedAudioFile
+                            val maxAudioBytes = MemoryUploadLimits.maxBytesFor(MemoryType.Audio)
+                            if (audioFile == null || audioFile.length() > maxAudioBytes) {
+                                feedbackMessage = MemoryUploadLimits.exceededMessage(MemoryType.Audio, maxAudioBytes)
+                                feedbackType = NonnaFeedbackType.Error
+                                feedbackVisible = true
+                                scope.launch {
+                                    delay(2600)
+                                    feedbackVisible = false
+                                }
+                                return@DetailsStep
+                            }
+                        }
+                        if (selectedType == MemoryType.Text) {
+                            val textBytes = textContent.toByteArray(Charsets.UTF_8).size.toLong()
+                            val maxTextBytes = MemoryUploadLimits.maxBytesFor(MemoryType.Text)
+                            if (textBytes > maxTextBytes) {
+                                feedbackMessage = MemoryUploadLimits.exceededMessage(MemoryType.Text, maxTextBytes)
+                                feedbackType = NonnaFeedbackType.Error
+                                feedbackVisible = true
+                                scope.launch {
+                                    delay(2600)
+                                    feedbackVisible = false
+                                }
+                                return@DetailsStep
+                            }
+                        }
                         val cid = cofreId
                         if (cid != null) {
                         scope.launch {
@@ -374,7 +439,7 @@ fun AddMemoryScreen(
                                         ImageCompressor.compressForUpload(
                                             context = context,
                                             uri = uri,
-                                            maxBytes = 1024L * 1024L,
+                                            maxBytes = MemoryUploadLimits.maxBytesFor(MemoryType.Photo),
                                             maxLongEdge = 1600
                                         )
                                     }
@@ -386,6 +451,18 @@ fun AddMemoryScreen(
                                 }
                             }
                             if (file != null) {
+                                val chosenType = selectedType
+                                if (chosenType != null) {
+                                    val maxBytes = MemoryUploadLimits.maxBytesFor(chosenType)
+                                    if (file.length() > maxBytes) {
+                                        feedbackMessage = MemoryUploadLimits.exceededMessage(chosenType, maxBytes)
+                                        feedbackType = NonnaFeedbackType.Error
+                                        feedbackVisible = true
+                                        delay(2600)
+                                        feedbackVisible = false
+                                        return@launch
+                                    }
+                                }
                                 val customEmotionClean = customEmotion.trim().takeIf { it.isNotBlank() }
                                 val (emotionId, emotionCustomFromTag) = viewModel.resolveEmotionPayload(emotionalTag)
                                 viewModel.save(
@@ -398,10 +475,10 @@ fun AddMemoryScreen(
                                     emocionPersonalizada = customEmotionClean ?: emotionCustomFromTag
                                 )
                             } else {
-                                feedbackMessage = "La imagen es demasiado pesada. Probá con otra o recortala más."
+                                feedbackMessage = MemoryUploadLimits.exceededMessage(MemoryType.Photo)
                                 feedbackType = NonnaFeedbackType.Error
                                 feedbackVisible = true
-                                delay(2200)
+                                delay(2600)
                                 feedbackVisible = false
                             }
                         }
@@ -523,7 +600,9 @@ private fun ContentStep(
     textContent: String,
     onTextContentChange: (String) -> Unit,
     hasAudioRecording: Boolean,
+    selectedAudioLabel: String?,
     onAudioRecorded: (File) -> Unit,
+    onPickAudioFile: () -> Unit,
     hasImageSelected: Boolean,
     selectedImageUri: Uri?,
     onRequestPickImage: () -> Unit,
@@ -547,7 +626,9 @@ private fun ContentStep(
                 onCaptureImageClick = onRequestCaptureImage
             )
             MemoryType.Audio -> AudioContent(
-                onRecorded = onAudioRecorded
+                onRecorded = onAudioRecorded,
+                selectedAudioLabel = selectedAudioLabel,
+                onPickAudioFile = onPickAudioFile
             )
             MemoryType.Text -> TextContent(
                 content = textContent,
@@ -674,11 +755,29 @@ private fun PhotoContent(
 
 @Composable
 private fun AudioContent(
-    onRecorded: (File) -> Unit
+    onRecorded: (File) -> Unit,
+    selectedAudioLabel: String?,
+    onPickAudioFile: () -> Unit
 ) {
-    AudioRecorderComponent(
-        onRecordingComplete = { file, _ -> onRecorded(file) }
-    )
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AudioRecorderComponent(
+            onRecordingComplete = { file, _ -> onRecorded(file) }
+        )
+        NonnaButton(
+            text = "Subir archivo de audio",
+            onClick = onPickAudioFile,
+            style = NonnaButtonStyle.Outline,
+            icon = Icons.Outlined.Upload,
+            fullWidth = true
+        )
+        selectedAudioLabel?.takeIf { it.isNotBlank() }?.let { name ->
+            Text(
+                text = "Audio seleccionado: $name",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 @Composable
@@ -711,6 +810,7 @@ private fun TextContent(
 @Composable
 private fun DetailsStep(
     type: MemoryType,
+    selectedImageUri: Uri?,
     title: String,
     onTitleChange: (String) -> Unit,
     description: String,
@@ -735,33 +835,64 @@ private fun DetailsStep(
     val canSelectPresetEmotion = customEmotion.isBlank()
     val canWriteCustomEmotion = emotionalTag == null
     Column {
-        // Preview
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    shape = NonnaCorners.Large
-                )
-                .padding(NonnaDimens.cardPaddingLarge)
-        ) {
-            when (type) {
-                MemoryType.Photo -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Outlined.Image,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.memory_photo_selected),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+        // Vista previa del contenido (foto real en memoria tipo imagen)
+        when (type) {
+            MemoryType.Photo -> {
+                if (selectedImageUri != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(NonnaCorners.Large)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+                                shape = NonnaCorners.Large
+                            )
+                    ) {
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = stringResource(R.string.memory_selected_image_cd),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(4f / 3f),
+                            contentScale = ContentScale.Crop
                         )
                     }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(NonnaCorners.Large)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .padding(NonnaDimens.cardPaddingLarge)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Outlined.Image,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.memory_no_photo_loaded),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
-                MemoryType.Audio -> {
+            }
+            MemoryType.Audio -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(NonnaCorners.Large)
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+                        .padding(NonnaDimens.cardPaddingLarge)
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Outlined.AudioFile,
@@ -776,7 +907,17 @@ private fun DetailsStep(
                         )
                     }
                 }
-                MemoryType.Text -> {
+            }
+            MemoryType.Text -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(NonnaCorners.Large)
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+                        .padding(NonnaDimens.cardPaddingLarge)
+                ) {
                     Text(
                         text = textContent.take(200) + if (textContent.length > 200) "..." else "",
                         style = MaterialTheme.typography.bodyMedium,
@@ -940,5 +1081,32 @@ private fun android.content.Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is android.content.ContextWrapper -> baseContext.findActivity()
     else -> null
+}
+
+private fun copyAudioToCache(context: android.content.Context, uri: Uri): File? {
+    val extension = context.contentResolver.getType(uri)
+        ?.substringAfterLast('/')
+        ?.takeIf { it.isNotBlank() }
+        ?: "m4a"
+    val outFile = File.createTempFile("nonna_audio_upload_", ".$extension", context.cacheDir)
+    return runCatching {
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            FileOutputStream(outFile).use { output ->
+                input.copyTo(output)
+            }
+        } ?: return null
+        outFile
+    }.getOrNull()
+}
+
+private fun resolveDisplayName(context: android.content.Context, uri: Uri): String? {
+    return runCatching {
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    cursor.getString(0)
+                } else null
+            }
+    }.getOrNull()
 }
 

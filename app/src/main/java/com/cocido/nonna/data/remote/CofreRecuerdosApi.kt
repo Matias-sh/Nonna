@@ -84,4 +84,7 @@ interface CofreRecuerdosApi {
 
     @DELETE("cofre-recuerdos/invitaciones/{id}")
     suspend fun cancelarInvitacion(@Path("id") invitationId: String): Response<Unit>
+
+    @DELETE("cofre-recuerdos/invitaciones/cofre/{cofreId}/abandonar")
+    suspend fun abandonarCofreCompartido(@Path("cofreId") cofreId: String): Response<Unit>
 }

@@ -99,6 +99,7 @@ fun EditCofreScreen(
                 selectedRelationOption = null
                 customRelation = initialRelation
             }
+            description = cofre!!.descriptionPhrase.orEmpty()
             hasInitialized = true
         }
     }

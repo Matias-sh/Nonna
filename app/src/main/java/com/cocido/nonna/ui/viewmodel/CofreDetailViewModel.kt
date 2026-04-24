@@ -53,6 +53,12 @@ class CofreDetailViewModel @Inject constructor(
     private val _inviteSuccess = MutableSharedFlow<Unit>()
     val inviteSuccess: SharedFlow<Unit> = _inviteSuccess.asSharedFlow()
 
+    private val _abandonSuccess = MutableSharedFlow<Unit>()
+    val abandonSuccess: SharedFlow<Unit> = _abandonSuccess.asSharedFlow()
+
+    private val _leaveInProgress = MutableStateFlow(false)
+    val leaveInProgress: StateFlow<Boolean> = _leaveInProgress.asStateFlow()
+
     init {
         load()
     }
@@ -125,6 +131,23 @@ class CofreDetailViewModel @Inject constructor(
                 is ApiResult.Error -> _errorMessage.value = result.message
                 else -> { }
             }
+        }
+    }
+
+    fun abandonarCofreCompartido() {
+        viewModelScope.launch {
+            if (_cofre.value?.isOwner == true) {
+                _errorMessage.value = "El dueño no puede abandonar su propio cofre."
+                return@launch
+            }
+            _leaveInProgress.value = true
+            _errorMessage.value = null
+            when (val result = cofreRepository.abandonarCofreCompartido(cofreId)) {
+                is ApiResult.Success -> _abandonSuccess.emit(Unit)
+                is ApiResult.Error -> _errorMessage.value = result.message
+                else -> { }
+            }
+            _leaveInProgress.value = false
         }
     }
 }

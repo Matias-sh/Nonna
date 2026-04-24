@@ -62,6 +62,10 @@ enum class RecorderState {
     Idle, Recording, Paused, Recorded, Playing
 }
 
+private const val AUDIO_SAMPLE_RATE_HZ = 44_100
+private const val AUDIO_BITRATE_BPS = 128_000
+private const val AUDIO_CHANNELS = 1
+
 @Composable
 fun AudioRecorderComponent(
     onRecordingComplete: (file: File, durationSeconds: Int) -> Unit,
@@ -84,6 +88,10 @@ fun AudioRecorderComponent(
                 setAudioSource(MediaRecorder.AudioSource.MIC)
                 setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                // Perfil balanceado para voz: buena calidad percibida con menor tamaño final.
+                setAudioEncodingBitRate(AUDIO_BITRATE_BPS)
+                setAudioSamplingRate(AUDIO_SAMPLE_RATE_HZ)
+                setAudioChannels(AUDIO_CHANNELS)
                 setOutputFile(outputFile.absolutePath)
                 prepare()
                 start()

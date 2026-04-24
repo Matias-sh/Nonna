@@ -20,8 +20,7 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# Keep data classes and models
--keep class com.cocido.nonna.domain.model.** { *; }
+# DTOs / API (Gson @SerializedName en campos)
 -keep class com.cocido.nonna.data.remote.dto.** { *; }
 -keep class com.cocido.nonna.data.local.entity.** { *; }
 
@@ -33,10 +32,12 @@
 # Keep Retrofit interfaces
 -keep interface com.cocido.nonna.data.remote.** { *; }
 
-# Keep Dagger Hilt classes
+# Hilt / inyección
 -keep class dagger.hilt.** { *; }
 -keep class javax.inject.** { *; }
--keep class * extends dagger.hilt.android.lifecycle.HiltViewModel
+-keep,allowobfuscation,allowshrinking @dagger.hilt.android.lifecycle.HiltViewModel class * {
+    <init>(...);
+}
 
 # Keep coroutines
 -keep class kotlinx.coroutines.** { *; }
@@ -178,3 +179,12 @@
 # --- App (manifest / Hilt) ---
 -keep class com.cocido.nonna.NonnaApplication { *; }
 -keep class com.cocido.nonna.MainActivity { *; }
+
+# --- Coil 2 (AsyncImage, polaroid compartir, avatares) — por si activás minify ---
+-keep class coil.** { *; }
+-keep interface coil.** { *; }
+-dontwarn coil.**
+
+# --- Canhub Crop Image (recortar fotos en flujo de recuerdos) ---
+-keep class com.canhub.cropper.** { *; }
+-dontwarn com.canhub.cropper.**

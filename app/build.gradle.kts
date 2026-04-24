@@ -29,8 +29,8 @@ android {
         applicationId = "com.cocido.nonna.free"
         minSdk = 24
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.1.6"
+        versionCode = 8
+        versionName = "0.1.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -73,8 +73,12 @@ android {
             if (!hasKeystoreProps && isReleaseTaskRequested) {
                 throw GradleException("Falta keystore.properties para firmar la release.")
             }
-            // MVP release: desactivamos minify/shrink para evitar errores de reflexión
-            // (ej: Retrofit/Kotlin generic signatures) que no aparecen en debug.
+            // Play / producción: no depurgable.
+            isDebuggable = false
+            // R8 desactivado: el APK/AAB release es bytecode equivalente al de debug respecto a
+            // ofuscación/eliminación (no hay sorpresas por ProGuard al pasar dev → release).
+            // Para probar minify+shrinking antes de activarlo en release, usá el buildType `qa`
+            // (initWith release + reglas en proguard-rules.pro) y `assembleQa`.
             isMinifyEnabled = false
             isShrinkResources = false
             signingConfig = signingConfigs.getByName("release")

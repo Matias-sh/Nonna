@@ -210,11 +210,39 @@ class RecuerdosRepository @Inject constructor(
 
 private fun mapRecuerdoBackendError(raw: String, code: Int?): String {
     val normalized = raw.lowercase()
-    if (code == 413) return "El archivo es demasiado grande. Probá con uno más liviano."
+    if (code == 413 || normalized.contains("too large") || normalized.contains("payload too large")) {
+        val type = detectUploadType(normalized)
+        val max = extractMaxSizeLabel(raw) ?: "No informado por servidor"
+        return "Superaste el tamaño máximo de archivo para $type. El máximo es: $max."
+    }
     if (normalized.contains("cofr03_descripcion") || normalized.contains("descripcion")) {
         return "La descripción es demasiado larga. Reducí el texto e intentá nuevamente."
     }
     return raw
+}
+
+private fun detectUploadType(normalizedRaw: String): String {
+    return when {
+        normalizedRaw.contains("audio") || normalizedRaw.contains("m4a") || normalizedRaw.contains("mp3") -> "audio"
+        normalizedRaw.contains("image") || normalizedRaw.contains("imagen") || normalizedRaw.contains("jpg") || normalizedRaw.contains("png") -> "imagen"
+        normalizedRaw.contains("text") || normalizedRaw.contains("texto") || normalizedRaw.contains("txt") || normalizedRaw.contains("descripcion") -> "texto"
+        else -> "archivo"
+    }
+}
+
+private fun extractMaxSizeLabel(raw: String): String? {
+    val regex = Regex("""(\d+(?:[.,]\d+)?)\s*(kb|mb|gb|bytes|byte|b)""", RegexOption.IGNORE_CASE)
+    val match = regex.find(raw) ?: return null
+    val value = match.groupValues[1].replace(',', '.')
+    val unitRaw = match.groupValues[2].lowercase()
+    val unit = when (unitRaw) {
+        "kb" -> "KB"
+        "mb" -> "MB"
+        "gb" -> "GB"
+        "byte", "bytes", "b" -> "B"
+        else -> unitRaw.uppercase()
+    }
+    return "$value $unit"
 }
 
 /** Resuelve EmotionalTag desde el nombre que devuelve la API o emocionPersonalizada. */

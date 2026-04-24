@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -126,7 +126,7 @@ private fun MemoryCardGrid(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .requiredHeight(262.dp)
+            .heightIn(min = 238.dp)
             .nonnaInteractiveScale(interactionSource, pressed = 0.98f),
         interactionSource = interactionSource,
         shape = NonnaCorners.Card,
@@ -204,7 +204,7 @@ private fun MemoryCardGrid(
                     text = memory.title,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 
@@ -213,7 +213,7 @@ private fun MemoryCardGrid(
                     text = memory.description.orEmpty(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 
@@ -413,7 +413,7 @@ fun MemoryType.toIcon(): ImageVector = when (this) {
 }
 
 @Composable
-private fun PlaceholderCover(
+internal fun PlaceholderCover(
     type: MemoryType,
     compact: Boolean,
     modifier: Modifier = Modifier

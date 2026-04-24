@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -43,8 +44,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -75,6 +76,7 @@ import com.cocido.nonna.ui.components.HeaderAction
 import com.cocido.nonna.ui.components.localizedMemoryFilters
 import com.cocido.nonna.ui.components.MemoryCard
 import com.cocido.nonna.ui.components.MemoryCardViewMode
+import com.cocido.nonna.ui.components.ownerCreatorDisplayName
 import com.cocido.nonna.ui.components.MemoryFilters
 import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.ui.components.NonnaButton
@@ -101,7 +103,7 @@ fun CofreDetailScreen(
     cofreId: String,
     onBack: () -> Unit,
     onAddMemory: () -> Unit,
-    onMemoryClick: (String) -> Unit,
+    onMemoryClick: (memoryId: String, cofreName: String?, cofreCreatorDisplay: String?) -> Unit,
     onEditCofre: (String) -> Unit = {},
     viewModel: com.cocido.nonna.ui.viewmodel.CofreDetailViewModel = hiltViewModel()
 ) {
@@ -111,9 +113,11 @@ fun CofreDetailScreen(
     val memoriesState by viewModel.memories.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val leaveInProgress by viewModel.leaveInProgress.collectAsState()
     val cofre = cofreState
     var showInviteModal by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showLeaveCofreConfirm by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     var feedbackVisible by remember { mutableStateOf(false) }
     var feedbackMessage by remember { mutableStateOf("") }
@@ -138,6 +142,17 @@ fun CofreDetailScreen(
             feedbackVisible = true
             delay(1400)
             feedbackVisible = false
+        }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.abandonSuccess.collectLatest {
+            showLeaveCofreConfirm = false
+            feedbackMessage = context.getString(R.string.chest_leave_shared_success)
+            feedbackType = NonnaFeedbackType.Success
+            feedbackVisible = true
+            delay(1200)
+            feedbackVisible = false
+            onBack()
         }
     }
     LaunchedEffect(errorMessage) {
@@ -209,6 +224,9 @@ fun CofreDetailScreen(
                 }
             }
             else -> {
+        val memberStatCount = remember(cofre, currentUser) {
+            familiaListedMemberCount(cofre, currentUser)
+        }
         // Cover image
         val coverUrl = cofre.coverImageUrl?.takeIf { it.isNotBlank() && it != "string" }
         AnimatedVisibility(visible = true, enter = fadeIn(animationSpec = spring())) {
@@ -285,6 +303,7 @@ fun CofreDetailScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
                     .padding(NonnaDimens.spacing16),
                 horizontalArrangement = Arrangement.spacedBy(24.dp)
             ) {
@@ -305,8 +324,12 @@ fun CofreDetailScreen(
                 )
                 StatItem(
                     icon = Icons.Outlined.People,
-                    count = cofre.memberCount,
-                    label = if (cofre.memberCount == 1) stringResource(R.string.stat_member_singular) else stringResource(R.string.stat_member_plural)
+                    count = memberStatCount,
+                    label = if (memberStatCount == 1) {
+                        stringResource(R.string.stat_member_singular)
+                    } else {
+                        stringResource(R.string.stat_member_plural)
+                    }
                 )
             }
             }
@@ -326,7 +349,13 @@ fun CofreDetailScreen(
                 Tab(
                     selected = selectedTabIndex == index,
                     onClick = { selectedTabIndex = index },
-                    text = { Text(title) }
+                    text = {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1
+                        )
+                    }
                 )
             }
         }
@@ -340,6 +369,8 @@ fun CofreDetailScreen(
                 onFilterChange = { memoryFilter = it },
                 viewMode = viewMode,
                 onViewModeChange = { viewMode = it },
+                cofreName = cofre?.name,
+                cofreCreatorDisplay = cofre?.ownerCreatorDisplayName(),
                 onMemoryClick = onMemoryClick,
                 onAddMemory = onAddMemory
             )
@@ -351,7 +382,9 @@ fun CofreDetailScreen(
             2 -> DetallesTab(
                 cofre = cofre,
                 onEdit = { onEditCofre(viewModel.cofreId) },
-                onDelete = { showDeleteConfirm = true }
+                onDelete = { showDeleteConfirm = true },
+                onRequestLeaveCofre = { showLeaveCofreConfirm = true },
+                leaveInProgress = leaveInProgress
             )
         }
         }
@@ -390,6 +423,33 @@ fun CofreDetailScreen(
         )
     }
 
+    if (showLeaveCofreConfirm && cofre != null && !cofre.isOwner) {
+        AlertDialog(
+            onDismissRequest = { showLeaveCofreConfirm = false },
+            title = { Text(stringResource(R.string.chest_leave_shared_confirm_title)) },
+            text = { Text(stringResource(R.string.chest_leave_shared_confirm_text)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLeaveCofreConfirm = false
+                        viewModel.abandonarCofreCompartido()
+                    },
+                    enabled = !leaveInProgress
+                ) {
+                    Text(
+                        stringResource(R.string.chest_leave_shared),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLeaveCofreConfirm = false }, enabled = !leaveInProgress) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+
     NonnaBottomFeedbackBanner(
         visible = feedbackVisible,
         message = feedbackMessage,
@@ -416,7 +476,8 @@ private fun StatItem(
         Text(
             text = "$count $label", // i18n-ignore dynamic count + localized label
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1
         )
     }
 }
@@ -429,7 +490,9 @@ private fun RecuerdosTab(
     onFilterChange: (String) -> Unit,
     viewMode: MemoryCardViewMode,
     onViewModeChange: (MemoryCardViewMode) -> Unit,
-    onMemoryClick: (String) -> Unit,
+    cofreName: String?,
+    cofreCreatorDisplay: String?,
+    onMemoryClick: (memoryId: String, cofreName: String?, cofreCreatorDisplay: String?) -> Unit,
     onAddMemory: () -> Unit
 ) {
     Column(
@@ -538,7 +601,7 @@ private fun RecuerdosTab(
                         NonnaStaggerItem(index = index, stepDelayMs = 50) {
                             MemoryCard(
                                 memory = memory,
-                                onClick = { onMemoryClick(memory.id) },
+                                onClick = { onMemoryClick(memory.id, cofreName, cofreCreatorDisplay) },
                                 viewMode = MemoryCardViewMode.Grid
                             )
                         }
@@ -553,7 +616,7 @@ private fun RecuerdosTab(
                         NonnaStaggerItem(index = index, stepDelayMs = 50) {
                             MemoryCard(
                                 memory = memory,
-                                onClick = { onMemoryClick(memory.id) },
+                                onClick = { onMemoryClick(memory.id, cofreName, cofreCreatorDisplay) },
                                 viewMode = MemoryCardViewMode.List
                             )
                         }
@@ -626,7 +689,7 @@ private fun buildFamiliaMembers(
             fullName = invitee.fullName ?: inviteEmail,
             username = null,
             email = inviteEmail,
-            avatarUrl = if (isOwnerByEmail) cofre.ownerAvatarUrl else null,
+            avatarUrl = if (isOwnerByEmail) cofre.ownerAvatarUrl else invitee.avatarUrl,
             role = if (isOwnerByEmail) {
                 com.cocido.nonna.ui.components.CofreRole.Creador
             } else if (invitee.accepted) {
@@ -637,6 +700,21 @@ private fun buildFamiliaMembers(
         )
     }
     return baseMembers.distinctBy { it.email.lowercase() }
+}
+
+/** Misma cardinalidad que la lista de la pestaña Familia (creador + invitados visibles). */
+private fun familiaListedMemberCount(
+    cofre: com.cocido.nonna.ui.components.CofreUiModel,
+    currentUser: com.cocido.nonna.data.remote.dto.UserDto?
+): Int {
+    val listed = buildFamiliaMembers(cofre, currentUser)
+    if (listed.isNotEmpty()) return listed.size
+    val distinctInvites = cofre.invited
+        .map { it.email.trim().lowercase() }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .size
+    return (1 + distinctInvites).coerceAtLeast(1)
 }
 
 @Composable
@@ -657,7 +735,7 @@ private fun FamiliaTab(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.chest_members_title),
                     style = MaterialTheme.typography.titleMedium,
@@ -669,6 +747,7 @@ private fun FamiliaTab(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            Spacer(modifier = Modifier.width(12.dp))
             NonnaButton(
                 text = stringResource(R.string.common_invite),
                 onClick = onInvite,
@@ -754,11 +833,22 @@ private fun FamiliaTab(
                                         contentScale = ContentScale.Crop
                                     )
                                 } else {
-                                    Text(
-                                        text = member.fullName.firstOrNull()?.toString() ?: "?",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(1.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Person,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+                                        )
+                                        Text(
+                                            text = member.fullName.firstOrNull()?.toString() ?: "?",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                                        )
+                                    }
                                 }
                             }
                             
@@ -798,7 +888,9 @@ private fun FamiliaTab(
 private fun DetallesTab(
     cofre: com.cocido.nonna.ui.components.CofreUiModel,
     onEdit: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    onRequestLeaveCofre: () -> Unit = {},
+    leaveInProgress: Boolean = false
 ) {
     Column(
         modifier = Modifier
@@ -875,6 +967,18 @@ private fun DetallesTab(
                         text = stringResource(R.string.chest_guest_permissions_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    NonnaButton(
+                        text = if (leaveInProgress) {
+                            stringResource(R.string.auth_wait)
+                        } else {
+                            stringResource(R.string.chest_leave_shared)
+                        },
+                        onClick = onRequestLeaveCofre,
+                        enabled = !leaveInProgress,
+                        style = NonnaButtonStyle.Destructive,
+                        fullWidth = true
                     )
                 }
             }

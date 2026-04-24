@@ -6,6 +6,7 @@ import com.cocido.nonna.data.remote.AuthInterceptor
 import com.cocido.nonna.data.remote.CofreRecuerdosApi
 import com.cocido.nonna.data.remote.EmocionesApi
 import com.cocido.nonna.data.remote.RecuerdosApi
+import com.cocido.nonna.data.remote.SuscripcionApi
 import com.cocido.nonna.data.remote.UsuarioApi
 import com.cocido.nonna.BuildConfig
 import dagger.Module
@@ -82,4 +83,9 @@ object NetworkModule {
     @Singleton
     fun provideArbolFamiliarApi(retrofit: Retrofit): ArbolFamiliarApi =
         retrofit.create(ArbolFamiliarApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideSuscripcionApi(retrofit: Retrofit): SuscripcionApi =
+        retrofit.create(SuscripcionApi::class.java)
 }

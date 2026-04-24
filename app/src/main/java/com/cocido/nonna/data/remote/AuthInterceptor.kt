@@ -17,7 +17,11 @@ class AuthInterceptor @Inject constructor(
         val original = chain.request()
         val requestBuilder = original.newBuilder()
         val path = original.url.encodedPath
-        val skipAuthHeader = path == "/auth/login" || path == "/auth/signup"
+        val skipAuthHeader = path == "/auth/login" ||
+            path == "/auth/signup" ||
+            path == "/auth/password-reset/request-code" ||
+            path == "/auth/password-reset/verify-code" ||
+            path == "/auth/password-reset/confirm"
 
         val token = runCatching {
             runBlocking { tokenManager.token.first() }

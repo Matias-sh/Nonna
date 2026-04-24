@@ -1,6 +1,8 @@
 package com.cocido.nonna.ui.screens.profile
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -35,16 +38,22 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.cocido.nonna.R
 import com.cocido.nonna.BuildConfig
 import com.cocido.nonna.ui.components.AppShell
+import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
+import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTab
 import com.cocido.nonna.ui.components.SimpleHeader
 import com.cocido.nonna.ui.theme.NonnaDimens
@@ -53,6 +62,9 @@ import com.cocido.nonna.ui.theme.PrimaryGradientEnd
 import com.cocido.nonna.ui.theme.PrimaryGradientStart
 import com.cocido.nonna.ui.theme.NonnaTheme
 import androidx.compose.ui.tooling.preview.Preview
+import kotlinx.coroutines.delay
+import com.cocido.nonna.data.remote.dto.SuscripcionPlanDto
+import java.util.Locale
 
 @Composable
 fun ProfileScreen(
@@ -63,8 +75,23 @@ fun ProfileScreen(
     viewModel: com.cocido.nonna.ui.viewmodel.ProfileViewModel = hiltViewModel()
 ) {
     val user by viewModel.user.collectAsState()
+    val suscripcion by viewModel.suscripcion.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    var planFeedbackVisible by remember { mutableStateOf(false) }
+    var planFeedbackMessage by remember { mutableStateOf("") }
+    var planFeedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
     LaunchedEffect(Unit) { viewModel.load() }
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { msg ->
+            planFeedbackType = NonnaFeedbackType.Error
+            planFeedbackMessage = msg
+            planFeedbackVisible = true
+            delay(2200)
+            planFeedbackVisible = false
+            viewModel.clearError()
+        }
+    }
 
     val displayUser = user
     // En perfil mostramos el nombre \"humano\" (persona/nombre) más que el username técnico.
@@ -77,6 +104,7 @@ fun ProfileScreen(
         currentTab = NonnaTab.Perfil,
         onTabSelected = onTabSelected
     ) {
+        Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -165,6 +193,11 @@ fun ProfileScreen(
                 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                suscripcion?.let { sub ->
+                    SubscriptionSummaryCard(suscripcion = sub)
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
                 Text(
                     text = stringResource(R.string.profile_options),
                     style = MaterialTheme.typography.titleMedium,
@@ -252,6 +285,205 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(100.dp)) // Bottom nav padding
             }
         }
+
+            NonnaBottomFeedbackBanner(
+                visible = planFeedbackVisible && planFeedbackMessage.isNotBlank(),
+                message = planFeedbackMessage,
+                type = planFeedbackType,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+
+    }
+}
+
+@Composable
+private fun SubscriptionSummaryCard(
+    suscripcion: com.cocido.nonna.data.remote.dto.SuscripcionActualDto
+) {
+    val plan = suscripcion.plan
+    val limites = suscripcion.limites
+    val uso = suscripcion.uso
+    val planDisplay = plan?.nombre?.takeIf { it.isNotBlank() }
+        ?: plan?.codigo?.takeIf { it.isNotBlank() }
+        ?: "—"
+    val showUpsell = isLikelyFreeTier(plan)
+    val upsellBg = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+    val upsellBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+    val upsellText = MaterialTheme.colorScheme.onPrimaryContainer
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = NonnaCorners.Card,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.28f))
+    ) {
+        Column(modifier = Modifier.padding(NonnaDimens.cardPaddingLarge)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = stringResource(R.string.subscription_section_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                Surface(
+                    shape = NonnaCorners.Full,
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
+                ) {
+                    Text(
+                        text = planDisplay,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            plan?.descripcion?.takeIf { it.isNotBlank() }?.let { desc ->
+                Text(
+                    text = desc,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+            suscripcion.estado?.takeIf { it.isNotBlank() }?.let { est ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.subscription_status_label) + ": " + est,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (showUpsell) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(NonnaCorners.Medium)
+                        .background(upsellBg)
+                        .border(1.dp, upsellBorder, NonnaCorners.Medium)
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Outlined.Star,
+                            contentDescription = null,
+                            modifier = Modifier.size(22.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.subscription_upsell_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = upsellText
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.subscription_upsell_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = upsellText.copy(alpha = 0.92f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = stringResource(R.string.subscription_limits_title),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            limites?.maxCofres?.let {
+                PlanStatRow(
+                    label = stringResource(R.string.subscription_limit_cofres),
+                    value = it.toString()
+                )
+            }
+            limites?.maxRecuerdos?.let {
+                PlanStatRow(
+                    label = stringResource(R.string.subscription_limit_recuerdos),
+                    value = it.toString()
+                )
+            }
+            limites?.maxMiembrosPorCofre?.let {
+                PlanStatRow(
+                    label = stringResource(R.string.subscription_limit_miembros),
+                    value = it.toString()
+                )
+            }
+            limites?.maxCofresInvitado?.let {
+                PlanStatRow(
+                    label = stringResource(R.string.subscription_limit_invitado_cofres),
+                    value = it.toString()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = stringResource(R.string.subscription_usage_title),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            uso?.cofresCreados?.let {
+                PlanStatRow(
+                    label = stringResource(R.string.subscription_usage_cofres),
+                    value = it.toString()
+                )
+            }
+            uso?.recuerdosCreados?.let {
+                PlanStatRow(
+                    label = stringResource(R.string.subscription_usage_recuerdos),
+                    value = it.toString()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlanStatRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+private fun isLikelyFreeTier(plan: SuscripcionPlanDto?): Boolean {
+    if (plan == null) return true
+    val code = plan.codigo?.trim()?.uppercase(Locale.getDefault()).orEmpty()
+    val name = plan.nombre?.trim()?.lowercase(Locale.getDefault()).orEmpty()
+    return when {
+        code == "FREE" || code == "GRATIS" || code == "GRATUIT" -> true
+        name.contains("gratis") || name == "free" -> true
+        else -> false
     }
 }
 

@@ -2,6 +2,7 @@ package com.cocido.nonna.data.repository
 
 import com.cocido.nonna.data.mock.relationToApi
 import com.cocido.nonna.data.remote.CofreRecuerdosApi
+import com.cocido.nonna.data.remote.UsuarioApi
 import com.cocido.nonna.data.remote.dto.CofreCreateRequest
 import com.cocido.nonna.data.remote.dto.CofreDto
 import com.cocido.nonna.data.remote.dto.CofreInviteRequest
@@ -22,7 +23,8 @@ import java.io.IOException
 import javax.inject.Inject
 
 class CofreRepository @Inject constructor(
-    private val api: CofreRecuerdosApi
+    private val api: CofreRecuerdosApi,
+    private val usuarioApi: UsuarioApi
 ) {
     fun misCofres(): Flow<ApiResult<List<CofreUiModel>>> = flow {
         emit(ApiResult.Loading)
@@ -52,7 +54,9 @@ class CofreRepository @Inject constructor(
         return try {
             val response = api.getById(id)
             if (response.isSuccessful) {
-                response.body()?.let { ApiResult.Success(it.toUiModel()) }
+                response.body()?.let {
+                    ApiResult.Success(enrichInviteesAvatar(it.toUiModel()))
+                }
                     ?: ApiResult.Error("Cofre no encontrado")
             } else {
                 ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
@@ -64,6 +68,27 @@ class CofreRepository @Inject constructor(
         } catch (e: IOException) {
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
+    }
+
+    private suspend fun enrichInviteesAvatar(cofre: CofreUiModel): CofreUiModel {
+        val unresolvedEmails = cofre.invited
+            .filter { it.avatarUrl.isNullOrBlank() && it.email.isNotBlank() }
+            .map { it.email.trim().lowercase() }
+            .distinct()
+        if (unresolvedEmails.isEmpty()) return cofre
+
+        val resolvedByEmail = mutableMapOf<String, String>()
+        unresolvedEmails.forEach { email ->
+            runCatching {
+                val search = usuarioApi.search(query = email)
+                if (!search.isSuccessful) return@runCatching
+                val user = search.body()?.list()?.firstOrNull { it.email.equals(email, ignoreCase = true) }
+                    ?: return@runCatching
+                user.profileImageUrl()?.let { resolvedByEmail[email] = it }
+            }
+        }
+        if (resolvedByEmail.isEmpty()) return cofre
+        return applyResolvedInviteeAvatars(cofre, resolvedByEmail)
     }
 
     suspend fun createCofre(
@@ -190,6 +215,29 @@ class CofreRepository @Inject constructor(
         }
     }
 
+    suspend fun abandonarCofreCompartido(cofreId: String): ApiResult<Unit> {
+        return try {
+            val response = api.abandonarCofreCompartido(cofreId)
+            if (response.isSuccessful) ApiResult.Success(Unit)
+            else {
+                ApiResult.Error(
+                    NetworkErrorParser.parse(response.errorBody()?.string())
+                        ?: "No se pudo abandonar el cofre",
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            ApiResult.Error(
+                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                e.code()
+            )
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error("Sin conexión. Revisá tu internet.")
+        }
+    }
+
     suspend fun invitar(cofreId: String, emails: List<String>): ApiResult<Unit> {
         if (emails.isEmpty()) return ApiResult.Error("Indicá al menos un email")
         return try {
@@ -292,14 +340,38 @@ class CofreRepository @Inject constructor(
     }
 }
 
+internal fun applyResolvedInviteeAvatars(
+    cofre: CofreUiModel,
+    resolvedByEmail: Map<String, String>
+): CofreUiModel {
+    if (resolvedByEmail.isEmpty()) return cofre
+    return cofre.copy(
+        invited = cofre.invited.map { invitee ->
+            val key = invitee.email.trim().lowercase()
+            val avatar = invitee.avatarUrl ?: resolvedByEmail[key]
+            if (avatar == null) invitee else invitee.copy(avatarUrl = avatar)
+        }
+    )
+}
+
 private fun CofreDto.toUiModel(forceNotOwner: Boolean = false): CofreUiModel = CofreUiModel(
     id = idValue(),
     name = displayName(),
     relation = displayRelation(),
+    descriptionPhrase = listOfNotNull(
+        fraseDescripcion?.trim()?.takeIf { it.isNotBlank() },
+        descripcion?.trim()?.takeIf { it.isNotBlank() },
+        description?.trim()?.takeIf { it.isNotBlank() }
+    ).firstOrNull(),
     photoCount = photoCount ?: 0,
     audioCount = audioCount ?: 0,
     textCount = textCount ?: 0,
-    memberCount = memberCount ?: 1,
+    memberCount = memberCount ?: run {
+        val inviteEmails = invitedList().mapNotNull { inv ->
+            inv.email?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
+        }.distinct()
+        (1 + inviteEmails.size).coerceAtLeast(1)
+    },
     lastUpdated = formatLastUpdated(updatedAt ?: updated_at),
     updatedAtIso = updatedAt ?: updated_at,
     coverImageUrl = coverUrl(),
@@ -315,7 +387,8 @@ private fun CofreDto.toUiModel(forceNotOwner: Boolean = false): CofreUiModel = C
             accepted = invite.invitacionAceptada == true,
             fullName = listOfNotNull(invite.persona?.nombre, invite.persona?.apellido)
                 .joinToString(" ")
-                .ifBlank { null }
+                .ifBlank { null },
+            avatarUrl = invite.profileImageUrlValue()
         )
     }
 )

@@ -40,9 +40,36 @@ data class InvitadoCofreDto(
     @SerializedName("id") private val idRaw: JsonElement? = null,
     @SerializedName("email") val email: String? = null,
     @SerializedName("invitacionAceptada") val invitacionAceptada: Boolean? = null,
-    @SerializedName("persona") val persona: PersonaDto? = null
+    @SerializedName("persona") val persona: PersonaDto? = null,
+    @SerializedName("avatarUrl") val avatarUrl: String? = null,
+    @SerializedName("avatar_url") val avatar_url: String? = null,
+    @SerializedName("fotoPerfil") val fotoPerfil: String? = null,
+    @SerializedName("urlFotoPerfil") val urlFotoPerfil: String? = null,
+    @SerializedName("foto_perfil") val fotoPerfilSnake: String? = null,
+    @SerializedName("url_foto_perfil") val urlFotoPerfilSnake: String? = null,
+    @SerializedName("usuario") val usuario: UsuarioDto? = null
 ) {
     fun idValue(): String = idRaw.primitiveIdString()
+
+    fun profileImageUrlValue(): String? {
+        val fromSelf = listOfNotNull(
+            avatarUrl,
+            avatar_url,
+            fotoPerfil,
+            urlFotoPerfil,
+            fotoPerfilSnake,
+            urlFotoPerfilSnake
+        ).firstOrNull { !it.isNullOrBlank() && it != "string" }?.trim()
+        val raw = fromSelf
+            ?: persona?.profileImageUrl()
+            ?: usuario?.fotoPerfil?.takeIf { it.isNotBlank() && it != "string" }
+            ?: return null
+        return when {
+            raw.startsWith("http://") || raw.startsWith("https://") -> raw
+            raw.startsWith("/") -> "https://apinonna.pushsoftware.com.ar$raw"
+            else -> "https://apinonna.pushsoftware.com.ar/$raw"
+        }
+    }
 }
 
 data class CofreInvitationDto(

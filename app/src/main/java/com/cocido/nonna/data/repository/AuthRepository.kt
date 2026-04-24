@@ -4,8 +4,11 @@ import com.cocido.nonna.data.local.TokenManager
 import com.cocido.nonna.data.remote.AuthApi
 import com.cocido.nonna.data.remote.dto.LoginRequest
 import com.cocido.nonna.data.remote.dto.RefreshTokenRequest
+import com.cocido.nonna.data.remote.dto.RequestPasswordResetCodeDto
+import com.cocido.nonna.data.remote.dto.ResetPasswordWithCodeDto
 import com.cocido.nonna.data.remote.dto.UserDto
 import com.cocido.nonna.data.remote.dto.VerifyEmailRequest
+import com.cocido.nonna.data.remote.dto.VerifyPasswordResetCodeDto
 import com.cocido.nonna.util.UserMessages
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -260,5 +263,120 @@ class AuthRepository @Inject constructor(
         } catch (e: Exception) {
             ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
         }
+    }
+
+    suspend fun requestPasswordResetCode(email: String): ApiResult<String> {
+        return try {
+            val response = authApi.requestPasswordResetCode(RequestPasswordResetCodeDto(email.trim()))
+            if (response.isSuccessful) {
+                ApiResult.Success(response.body()?.message ?: "Código enviado")
+            } else {
+                ApiResult.Error(
+                    NetworkErrorParser.parse(response.errorBody()?.string())
+                        ?: "No se pudo enviar el código",
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            ApiResult.Error(
+                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                e.code()
+            )
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error(UserMessages.NO_INTERNET)
+        } catch (e: Exception) {
+            ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
+        }
+    }
+
+    suspend fun verifyPasswordResetCode(code: String): ApiResult<String> {
+        return try {
+            val response = authApi.verifyPasswordResetCode(VerifyPasswordResetCodeDto(codigo = code.trim()))
+            if (response.isSuccessful) {
+                val token = response.body()?.resetToken?.trim().orEmpty()
+                if (token.isNotBlank()) {
+                    ApiResult.Success(token)
+                } else {
+                    ApiResult.Error("No se recibió el token de recuperación")
+                }
+            } else {
+                ApiResult.Error(
+                    messageForPasswordResetVerifyFailure(
+                        response.errorBody()?.string(),
+                        response.code()
+                    ),
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            ApiResult.Error(
+                messageForPasswordResetVerifyFailure(
+                    e.response()?.errorBody()?.string(),
+                    e.code()
+                ),
+                e.code()
+            )
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error(UserMessages.NO_INTERNET)
+        } catch (e: Exception) {
+            ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
+        }
+    }
+
+    suspend fun confirmPasswordReset(resetToken: String, newPassword: String, confirmPassword: String): ApiResult<String> {
+        return try {
+            val bearer = "Bearer ${resetToken.trim()}"
+            val response = authApi.confirmPasswordReset(
+                authorization = bearer,
+                body = ResetPasswordWithCodeDto(
+                    contrasena = newPassword,
+                    confirmarContrasena = confirmPassword
+                )
+            )
+            if (response.isSuccessful) {
+                ApiResult.Success(response.body()?.message ?: "Contraseña actualizada")
+            } else {
+                ApiResult.Error(
+                    NetworkErrorParser.parse(response.errorBody()?.string())
+                        ?: "No se pudo restablecer la contraseña",
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            ApiResult.Error(
+                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                e.code()
+            )
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error(UserMessages.NO_INTERNET)
+        } catch (e: Exception) {
+            ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
+        }
+    }
+
+    /**
+     * El verify de recuperación suele devolver 4xx con cuerpo poco claro; evitamos mostrar error genérico
+     * cuando en la práctica el código ingresado no coincide o expiró.
+     */
+    private fun messageForPasswordResetVerifyFailure(errorBody: String?, httpCode: Int): String {
+        val parsed = NetworkErrorParser.parse(errorBody)
+        if (parsed == null) {
+            return if (httpCode in 400..499 && httpCode != 429) {
+                UserMessages.WRONG_VERIFICATION_CODE
+            } else {
+                "Código incorrecto o expirado"
+            }
+        }
+        val clientError = httpCode in 400..499 && httpCode != 429
+        val isGeneric = parsed == UserMessages.GENERIC_REQUEST_ERROR ||
+            parsed == UserMessages.GENERIC_ERROR ||
+            parsed.contains("Revisá los datos ingresados", ignoreCase = true)
+        return if (clientError && isGeneric) UserMessages.WRONG_VERIFICATION_CODE else parsed
     }
 }

@@ -46,6 +46,8 @@ data class CofreUiModel(
     val id: String,
     val name: String,
     val relation: String,
+    /** Frase opcional del cofre (`fraseDescripcion` en API). */
+    val descriptionPhrase: String? = null,
     val photoCount: Int = 0,
     val audioCount: Int = 0,
     val textCount: Int = 0,
@@ -65,8 +67,16 @@ data class CofreInviteeUiModel(
     val id: String,
     val email: String,
     val accepted: Boolean,
-    val fullName: String?
+    val fullName: String?,
+    val avatarUrl: String? = null
 )
+
+/** Nombre del creador del cofre (dueño) para mostrar «Agregado por…». */
+fun CofreUiModel.ownerCreatorDisplayName(): String? {
+    ownerName?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
+    ownerUsername?.trim()?.takeIf { it.isNotBlank() }?.let { return "@$it" }
+    return ownerEmail?.trim()?.takeIf { it.isNotBlank() }
+}
 
 @Composable
 fun CofreCard(

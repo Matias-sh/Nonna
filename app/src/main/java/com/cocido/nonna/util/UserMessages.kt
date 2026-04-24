@@ -68,7 +68,10 @@ object UserMessages {
         get() = tr(R.string.msg_invalid_verification_code, "Ingresá un código válido de 6 dígitos.")
 
     val WRONG_VERIFICATION_CODE: String
-        get() = tr(R.string.msg_wrong_verification_code, "El código de verificación es incorrecto.")
+        get() = tr(
+            R.string.msg_wrong_verification_code,
+            "Ese código no coincide con el que te enviamos. Revisalo e intentá de nuevo."
+        )
 
     val EXPIRED_VERIFICATION_CODE: String
         get() = tr(R.string.msg_expired_verification_code, "El código de verificación venció. Pedí uno nuevo.")

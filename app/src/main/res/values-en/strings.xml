@@ -69,7 +69,7 @@
     <string name="auth_email_label">Email</string>
     <string name="auth_email_placeholder">you@email.com</string>
     <string name="auth_password_label">Password</string>
-    <string name="auth_password_placeholder">â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢</string>
+    <string name="auth_password_placeholder">********</string>
     <string name="auth_confirm_password_label">Confirm password</string>
     <string name="auth_hide_password">Hide password</string>
     <string name="auth_show_password">Show password</string>
@@ -78,6 +78,45 @@
     <string name="auth_login_button">Sign in</string>
     <string name="auth_signup_button">Create account</string>
     <string name="auth_privacy_note">By continuing, you agree this is a private and secure space for your family. Your data is yours.</string>
+    <string name="auth_forgot_password">Forgot your password?</string>
+
+    <string name="forgot_password_title_email">Reset password</string>
+    <string name="forgot_password_subtitle_email">We will send a 6-digit code to your email.</string>
+    <string name="forgot_password_send_code">Send code</string>
+    <string name="forgot_password_title_code">Enter the code</string>
+    <string name="forgot_password_subtitle_code">Check your inbox (and spam).</string>
+    <string name="forgot_password_code_label">Code</string>
+    <string name="forgot_password_code_placeholder">000000</string>
+    <string name="forgot_password_verify_code">Verify code</string>
+    <string name="forgot_password_code_sent">If the email is registered, we sent a code.</string>
+    <string name="forgot_password_title_new">New password</string>
+    <string name="forgot_password_subtitle_new">Choose a strong password (at least 8 characters).</string>
+    <string name="forgot_password_save">Save password</string>
+    <string name="forgot_password_success">Password updated. You can sign in now.</string>
+
+    <string name="subscription_section_title">Current plan</string>
+    <string name="subscription_plan_label">Plan</string>
+    <string name="subscription_status_label">Status</string>
+    <string name="subscription_limits_title">What your plan includes</string>
+    <string name="subscription_upsell_title">Unlock more features</string>
+    <string name="subscription_upsell_description">With Premium you will be able to create unlimited chests, export photo books, and more. You will be able to subscribe from the app soon.</string>
+    <string name="subscription_usage_title">Current usage</string>
+    <string name="subscription_limit_cofres">Own chests</string>
+    <string name="subscription_limit_recuerdos">Memories</string>
+    <string name="subscription_limit_miembros">Members per chest</string>
+    <string name="subscription_limit_invitado_cofres">Chests as guest</string>
+    <string name="subscription_usage_cofres">Chests created</string>
+    <string name="subscription_usage_recuerdos">Memories created</string>
+    <string name="subscription_change_plan">Change plan</string>
+    <string name="subscription_change_plan_title">Choose a plan</string>
+    <string name="subscription_change_plan_message">The change applies without a payment gateway (per server availability).</string>
+    <string name="subscription_load_error">Could not load plan information.</string>
+    <string name="subscription_plan_changed">Plan updated</string>
+
+    <string name="chest_leave_shared">Leave chest</string>
+    <string name="chest_leave_shared_confirm_title">Leave this chest?</string>
+    <string name="chest_leave_shared_confirm_text">You will leave as collaborator or guest. You will not see it in your list until someone invites you again.</string>
+    <string name="chest_leave_shared_success">You left the chest</string>
     <string name="nav_home">Home</string>
     <string name="nav_chests">Chests</string>
     <string name="nav_profile">Profile</string>
@@ -300,6 +339,24 @@
     <string name="memory_photos_title">Memory photos</string>
     <string name="memory_text_no_visible_content">This text memory has no visible content yet.</string>
     <string name="memory_detail_info_note">This memory was saved to preserve family memory. You can edit or share it with your family.</string>
+    <string name="memory_detail_media_photo">Photo</string>
+    <string name="memory_detail_media_audio">Audio</string>
+    <string name="memory_detail_media_text">Text</string>
+    <string name="memory_family_comments_title">Family comments</string>
+    <string name="memory_family_comments_coming_soon">Soon you\'ll be able to leave comments and reactions on memories.</string>
+    <string name="memory_share_chooser_title">Share memory</string>
+    <string name="memory_share_cd">Share</string>
+    <string name="memory_share_brand_line">Memory · Nonna</string>
+    <string name="memory_share_type_prefix">Type:</string>
+    <string name="memory_share_cofre_line">Chest: %1$s</string>
+    <string name="memory_share_date_prefix">Date:</string>
+    <string name="memory_share_emotion_prefix">Emotion:</string>
+    <string name="memory_share_link_line">Link:</string>
+    <string name="memory_share_footer">Shared from Nonna</string>
+    <string name="memory_share_image_error">Could not prepare the image to share.</string>
+    <string name="memory_added_by">Added by %1$s</string>
+    <string name="memory_delete_confirm_title">Delete this memory?</string>
+    <string name="memory_delete_confirm_text">This action cannot be undone.</string>
     <string name="memory_fullscreen_image_cd">Fullscreen image</string>
     <string name="common_close_viewer">Close viewer</string>
     <string name="common_save_changes">Save changes</string>
@@ -402,7 +459,7 @@
     <string name="msg_invitation_rejected">Invitation rejected</string>
     <string name="msg_invitation_cancelled">Invitation cancelled</string>
     <string name="chest_guest_permissions_hint">You are an invited member. Only the creator can invite members, edit, or delete this chest.</string>
-    <string name="msg_wrong_verification_code">The verification code is incorrect.</string>
+    <string name="msg_wrong_verification_code">That code doesn\'t match the one we sent you. Check it and try again.</string>
     <string name="msg_expired_verification_code">The verification code has expired. Request a new one.</string>
 </resources>
 

@@ -1,6 +1,7 @@
 package com.cocido.nonna.ui.screens.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +64,7 @@ import androidx.compose.ui.tooling.preview.Preview
 fun AuthScreen(
     mode: AuthMode,
     onBack: () -> Unit,
+    onForgotPassword: () -> Unit = {},
     onAuth: (user: UserDto) -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
@@ -323,6 +325,21 @@ fun AuthScreen(
                     } else null,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    }
+
+                    if (mode == AuthMode.Login) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            Text(
+                                text = stringResource(R.string.auth_forgot_password),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.clickable { onForgotPassword() }
+                            )
+                        }
                     }
                     
                     Spacer(modifier = Modifier.height(24.dp))

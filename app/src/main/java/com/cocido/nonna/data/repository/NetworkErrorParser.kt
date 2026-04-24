@@ -11,6 +11,7 @@ import com.cocido.nonna.util.UserMessages
  */
 object NetworkErrorParser {
     private val gson = Gson()
+    private val CODE_WORD_REGEX = Regex("\\bcode\\b")
 
     /**
      * Intenta extraer y normalizar mensaje de error desde un body JSON.
@@ -50,6 +51,32 @@ object NetworkErrorParser {
         }.trim()
     }
 
+    /** "codigo" / "código" o la palabra inglesa "code" como palabra completa. */
+    private fun mentionsCodigoOrCodeWord(lower: String): Boolean =
+        "codigo" in lower || "código" in lower || CODE_WORD_REGEX.containsMatchIn(lower)
+
+    /** Contexto típico de error al validar código de email o de recuperación de contraseña. */
+    private fun isVerificationOrResetCodeContext(lower: String): Boolean =
+        mentionsCodigoOrCodeWord(lower) ||
+            "verification code" in lower ||
+            "reset code" in lower ||
+            "código de verificación" in lower ||
+            ("code" in lower && ("reset" in lower || "recuper" in lower || "recovery" in lower)) ||
+            ("password" in lower && "reset" in lower) ||
+            ("contraseña" in lower && "recuper" in lower) ||
+            ("contrasena" in lower && "recuper" in lower) ||
+            (("reset" in lower || "recuper" in lower) && "token" in lower)
+
+    private fun mentionsInvalidOrWrongCode(lower: String): Boolean =
+        "invalido" in lower || "inválido" in lower || "invalid" in lower ||
+            "incorrect" in lower || "incorrecto" in lower || "wrong" in lower ||
+            "no coincide" in lower || "does not match" in lower ||
+            "no es válido" in lower || "no es valido" in lower ||
+            "not valid" in lower || "mismatch" in lower
+
+    private fun mentionsCodeExpired(lower: String): Boolean =
+        "expired" in lower || "expir" in lower || "venc" in lower || "caduc" in lower
+
     private fun normalize(raw: String): String {
         val value = raw.trim()
         if (value.isBlank()) return UserMessages.GENERIC_ERROR
@@ -62,12 +89,13 @@ object NetworkErrorParser {
                 UserMessages.INVALID_INVITE_EMAIL
             "already exists" in lower || "ya existe" in lower || "nombre de usuario en uso" in lower ->
                 UserMessages.DUPLICATE_ACCOUNT
-            "password" in lower || "contrasena" in lower || "contraseña" in lower ->
-                UserMessages.INVALID_PASSWORD_RULES
-            "codigo" in lower && ("expired" in lower || "expir" in lower || "venc" in lower) ->
+            isVerificationOrResetCodeContext(lower) && mentionsCodeExpired(lower) ->
                 UserMessages.EXPIRED_VERIFICATION_CODE
-            "codigo" in lower && ("invalido" in lower || "inválido" in lower || "incorrect" in lower) ->
+            isVerificationOrResetCodeContext(lower) && mentionsInvalidOrWrongCode(lower) ->
                 UserMessages.WRONG_VERIFICATION_CODE
+            ("password" in lower || "contrasena" in lower || "contraseña" in lower) &&
+                !isVerificationOrResetCodeContext(lower) ->
+                UserMessages.INVALID_PASSWORD_RULES
             "already verified" in lower || "ya está verificado" in lower || "ya esta verificado" in lower ->
                 "Tu correo ya estaba verificado."
             "ya invitado" in lower || "already invited" in lower ->
