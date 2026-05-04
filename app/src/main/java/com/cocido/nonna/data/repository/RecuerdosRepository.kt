@@ -2,7 +2,6 @@ package com.cocido.nonna.data.repository
 
 import android.util.Log
 import com.cocido.nonna.data.remote.RecuerdosApi
-import com.cocido.nonna.data.remote.dto.RecuerdoCreateRequest
 import com.cocido.nonna.data.remote.dto.RecuerdoDto
 import com.cocido.nonna.ui.components.EmotionalTag
 import com.cocido.nonna.ui.components.MemoryType
@@ -11,7 +10,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import com.cocido.nonna.util.MemoryMediaUrlHeuristics
 import com.google.gson.JsonParseException
 import retrofit2.HttpException
 import java.io.File
@@ -71,22 +72,43 @@ class RecuerdosRepository @Inject constructor(
         descripcion: String? = null,
         fecha: String? = null,
         emocionId: String? = null,
-        emocionPersonalizada: String? = null
+        emocionPersonalizada: String? = null,
+        portadaAudio: File? = null,
+        galleryImages: List<File> = emptyList()
     ): ApiResult<MemoryUiModel> {
         return try {
-            val mediaType = when (file.extension.lowercase()) {
-                "jpg", "jpeg", "png", "gif", "webp" -> "image/*".toMediaTypeOrNull()
-                "txt" -> "text/plain".toMediaTypeOrNull()
-                "mp3", "m4a", "ogg", "wav" -> "audio/*".toMediaTypeOrNull()
-                else -> "application/octet-stream".toMediaTypeOrNull()
-            } ?: "application/octet-stream".toMediaTypeOrNull()!!
+            val mediaType = mediaTypeForFile(file)
             val filePart = MultipartPartHelper.createFormDataFile("file", file, mediaType)
             val textPlain = "text/plain".toMediaTypeOrNull()
             val tituloBody = titulo.toRequestBody(contentType = textPlain)
             val descripcionBody = (descripcion ?: "").toRequestBody(contentType = textPlain)
             val fechaBody = (fecha ?: "").toRequestBody(contentType = textPlain)
-            val emocionIdBody = emocionId?.let { it.toRequestBody(contentType = textPlain) }
-            val emocionPersonalizadaBody = emocionPersonalizada?.let { it.toRequestBody(contentType = textPlain) }
+            val emocionIdBody = emocionId?.trim()?.takeIf { it.isNotBlank() }?.toRequestBody(contentType = textPlain)
+            val emocionPersonalizadaBody =
+                emocionPersonalizada?.trim()?.takeIf { it.isNotBlank() }?.toRequestBody(contentType = textPlain)
+
+            val isMainImage = file.extension.lowercase() in setOf("jpg", "jpeg", "png", "gif", "webp")
+            val isMainAudio = file.extension.lowercase() in setOf("mp3", "m4a", "ogg", "wav")
+
+            val portadaPart = if (isMainAudio && portadaAudio != null) {
+                val coverType = mediaTypeForFile(portadaAudio)
+                MultipartBody.Part.createFormData(
+                    "portadaAudio",
+                    portadaAudio.name,
+                    RequestBody.create(coverType, portadaAudio)
+                )
+            } else {
+                null
+            }
+
+            val galleryParts = if (isMainImage && galleryImages.isNotEmpty()) {
+                galleryImages.map { g ->
+                    val gt = mediaTypeForFile(g)
+                    MultipartBody.Part.createFormData("imagenesGaleria", g.name, RequestBody.create(gt, g))
+                }
+            } else {
+                null
+            }
 
             val response = api.create(
                 cofreRecuerdosId = cofreRecuerdosId,
@@ -95,7 +117,9 @@ class RecuerdosRepository @Inject constructor(
                 descripcion = descripcionBody,
                 fecha = fechaBody,
                 emocionId = emocionIdBody,
-                emocionPersonalizada = emocionPersonalizadaBody
+                emocionPersonalizada = emocionPersonalizadaBody,
+                portadaAudio = portadaPart,
+                imagenesGaleria = galleryParts
             )
             if (response.isSuccessful) {
                 response.body()?.let { ApiResult.Success(it.toUiModel()) }
@@ -123,43 +147,57 @@ class RecuerdosRepository @Inject constructor(
         fecha: String? = null,
         emocionId: String? = null,
         emocionPersonalizada: String? = null,
-        file: File? = null
+        file: File? = null,
+        urlArchivo: String? = null,
+        portadaAudio: File? = null,
+        urlPortadaAudio: String? = null,
+        galleryImages: List<File>? = null,
+        limpiarImagenesGaleria: Boolean = false
     ): ApiResult<MemoryUiModel> {
         return try {
             Log.d(
                 TOMCAT_EMOTION_TAG,
-                "PATCH recuerdos/$id payload -> emocionId=$emocionId, emocionPersonalizada=$emocionPersonalizada, hasFile=${file != null}"
+                "PATCH recuerdos/$id multipart -> emocionId=$emocionId, emocionPersonalizada=$emocionPersonalizada, " +
+                    "hasFile=${file != null}, urlArchivo=${urlArchivo != null}, limpiarGaleria=$limpiarImagenesGaleria"
             )
-            val response = if (file != null) {
-                val mediaType = when (file.extension.lowercase()) {
-                    "jpg", "jpeg", "png", "gif", "webp" -> "image/*".toMediaTypeOrNull()
-                    "txt" -> "text/plain".toMediaTypeOrNull()
-                    "mp3", "m4a", "ogg", "wav" -> "audio/*".toMediaTypeOrNull()
-                    else -> "application/octet-stream".toMediaTypeOrNull()
-                } ?: "application/octet-stream".toMediaTypeOrNull()!!
-                val filePart = MultipartPartHelper.createFormDataFile("file", file, mediaType)
-                val textPlain = "text/plain".toMediaTypeOrNull()
-                api.updateFull(
-                    id = id,
-                    file = filePart,
-                    titulo = titulo?.toRequestBody(contentType = textPlain),
-                    descripcion = descripcion?.toRequestBody(contentType = textPlain),
-                    fecha = fecha?.toRequestBody(contentType = textPlain),
-                    emocionId = emocionId?.toRequestBody(contentType = textPlain),
-                    emocionPersonalizada = emocionPersonalizada?.toRequestBody(contentType = textPlain)
-                )
-            } else {
-                api.update(
-                    id,
-                    RecuerdoCreateRequest(
-                        titulo = titulo,
-                        descripcion = descripcion,
-                        fecha = fecha,
-                        emocionId = emocionId,
-                        emocionPersonalizada = emocionPersonalizada
-                    )
-                )
+            val textPlain = "text/plain".toMediaTypeOrNull()
+            val filePart = file?.let { f ->
+                val mediaType = mediaTypeForFile(f)
+                MultipartPartHelper.createFormDataFile("file", f, mediaType)
             }
+            val urlArchivoBody = urlArchivo?.takeIf { it.isNotBlank() }?.toRequestBody(contentType = textPlain)
+            val portadaPart = portadaAudio?.let { f ->
+                val coverType = mediaTypeForFile(f)
+                MultipartBody.Part.createFormData("portadaAudio", f.name, RequestBody.create(coverType, f))
+            }
+            val urlPortadaBody = urlPortadaAudio?.let { it.toRequestBody(contentType = textPlain) }
+            val galleryParts = galleryImages
+                ?.filter { it.exists() && it.length() > 0 }
+                ?.takeIf { it.isNotEmpty() }
+                ?.map { g ->
+                    val gt = mediaTypeForFile(g)
+                    MultipartBody.Part.createFormData("imagenesGaleria", g.name, RequestBody.create(gt, g))
+                }
+            val limpiarPart = if (limpiarImagenesGaleria) {
+                "true".toRequestBody(contentType = textPlain)
+            } else {
+                null
+            }
+            val response = api.update(
+                id = id,
+                file = filePart,
+                urlArchivo = urlArchivoBody,
+                portadaAudio = portadaPart,
+                urlPortadaAudio = urlPortadaBody,
+                imagenesGaleria = galleryParts,
+                limpiarImagenesGaleria = limpiarPart,
+                titulo = titulo?.toRequestBody(contentType = textPlain),
+                descripcion = descripcion?.toRequestBody(contentType = textPlain),
+                fecha = fecha?.toRequestBody(contentType = textPlain),
+                emocionId = emocionId?.trim()?.takeIf { it.isNotBlank() }?.toRequestBody(contentType = textPlain),
+                emocionPersonalizada = emocionPersonalizada?.trim()?.takeIf { it.isNotBlank() }
+                    ?.toRequestBody(contentType = textPlain)
+            )
             if (response.isSuccessful) {
                 response.body()?.let { updated ->
                     Log.d(
@@ -206,6 +244,19 @@ class RecuerdosRepository @Inject constructor(
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
     }
+}
+
+private fun mediaTypeForFile(file: File) = when (file.extension.lowercase()) {
+    "jpg", "jpeg", "png", "gif", "webp" -> "image/*".toMediaTypeOrNull()
+    "txt" -> "text/plain".toMediaTypeOrNull()
+    "mp3", "m4a", "ogg", "wav" -> "audio/*".toMediaTypeOrNull()
+    else -> "application/octet-stream".toMediaTypeOrNull()
+} ?: "application/octet-stream".toMediaTypeOrNull()!!
+
+private fun normalizeRecuerdoDate(raw: String): String {
+    val t = raw.trim()
+    if (t.length >= 10 && t[4] == '-' && t[7] == '-') return t.substring(0, 10)
+    return t
 }
 
 private fun mapRecuerdoBackendError(raw: String, code: Int?): String {
@@ -268,15 +319,113 @@ private fun resolveEmotionalTag(
     }
 }
 
+private fun normalizeTipoMedia(raw: String?): MemoryType? {
+    val v = raw?.trim()?.lowercase() ?: return null
+    return when {
+        v == "imagen" || v == "image" || v == "photo" || v == "foto" || v == "picture" -> MemoryType.Photo
+        v == "audio" || v == "sonido" -> MemoryType.Audio
+        v == "texto" || v == "text" || v == "txt" || v == "document" || v == "documento" -> MemoryType.Text
+        v.contains("imag") || v.contains("photo") || v.contains("foto") || v.contains("img") -> MemoryType.Photo
+        v.contains("audio") || v.contains("m4a") || v.contains("mp3") -> MemoryType.Audio
+        v.contains("text") || v.contains("txt") || v.contains("doc") -> MemoryType.Text
+        else -> null
+    }
+}
+
+private fun inferMemoryTypeFromUrls(urls: List<String>): MemoryType {
+    if (urls.isEmpty()) return MemoryType.Text
+    if (urls.any { MemoryMediaUrlHeuristics.looksLikeAudioFileUrl(it) }) return MemoryType.Audio
+    if (urls.any { MemoryMediaUrlHeuristics.looksLikePlainTextFileUrl(it) }) return MemoryType.Text
+    return MemoryType.Photo
+}
+
 private fun RecuerdoDto.toUiModel(): MemoryUiModel {
-    val tipoStr = (tipoArchivo ?: tipo ?: type)?.uppercase() ?: "TEXTO"
+    val sortedDetails = archivosDetalle?.sortedBy { it.orden ?: 0 }.orEmpty()
+    val primary = sortedDetails.firstOrNull()
+
+    val candidateHttpUrls = buildList {
+        sortedDetails.forEach { d -> d.rutaArchivo?.let { add(it) } }
+        rutaArchivo?.let { add(it) }
+        thumbnailUrl?.let { add(it) }
+        audioUrl?.let { add(it) }
+        urlsCarruselImagenes?.forEach { add(it) }
+    }
+        .mapNotNull { it.trim().takeIf { s -> s.isNotBlank() && MemoryMediaUrlHeuristics.isHttpUrl(s) } }
+        .distinct()
+
+    var explicitType = normalizeTipoMedia(primary?.tipoArchivo)
+        ?: normalizeTipoMedia(tipoArchivo)
+        ?: normalizeTipoMedia(tipo)
+        ?: normalizeTipoMedia(type)
+
+    if (!urlsCarruselImagenes.isNullOrEmpty()) {
+        explicitType = explicitType ?: MemoryType.Photo
+    }
+
+    val inferredFromUrls = inferMemoryTypeFromUrls(candidateHttpUrls)
+
     val memoryType = when {
-        tipoStr.contains("FOTO") || tipoStr.contains("PHOTO") || tipoStr.contains("IMAGE") || tipoStr == "IMAGEN" -> MemoryType.Photo
-        tipoStr.contains("AUDIO") -> MemoryType.Audio
-        tipoStr.contains("TEXTO") || tipoStr.contains("TEXT") || tipoStr.contains("TXT") || tipoStr.contains("DOCUMENT") -> MemoryType.Text
+        explicitType == MemoryType.Text &&
+            candidateHttpUrls.isNotEmpty() &&
+            inferredFromUrls != MemoryType.Text -> inferredFromUrls
+        explicitType != null -> explicitType
+        candidateHttpUrls.isNotEmpty() -> inferredFromUrls
         else -> MemoryType.Text
     }
-    val imageUrl = rutaArchivo ?: thumbnailUrl
+
+    val mainUrl = primary?.rutaArchivo?.trim()?.takeIf { it.isNotBlank() }
+        ?: rutaArchivo?.trim()?.takeIf { it.isNotBlank() }
+        ?: thumbnailUrl?.trim()?.takeIf { it.isNotBlank() }
+
+    val carouselFromApi = urlsCarruselImagenes
+        ?.mapNotNull { it.trim().takeIf { u -> MemoryMediaUrlHeuristics.isHttpUrl(u) } }
+        ?.distinct()
+        ?.take(3)
+        .orEmpty()
+
+    val carouselFromDetails = sortedDetails
+        .filter { it.tipoArchivo?.equals("imagen", ignoreCase = true) == true }
+        .mapNotNull { it.rutaArchivo?.trim()?.takeIf { u -> MemoryMediaUrlHeuristics.isHttpUrl(u) } }
+        .distinct()
+        .take(3)
+
+    val nonAudioNonTxt = candidateHttpUrls.filter {
+        !MemoryMediaUrlHeuristics.looksLikeAudioFileUrl(it) &&
+            !MemoryMediaUrlHeuristics.looksLikePlainTextFileUrl(it)
+    }
+
+    val carousel = when (memoryType) {
+        MemoryType.Photo -> when {
+            carouselFromApi.isNotEmpty() -> carouselFromApi
+            carouselFromDetails.isNotEmpty() -> carouselFromDetails
+            mainUrl != null && MemoryMediaUrlHeuristics.isHttpUrl(mainUrl) -> listOf(mainUrl)
+            nonAudioNonTxt.isNotEmpty() -> nonAudioNonTxt.take(3)
+            candidateHttpUrls.isNotEmpty() -> candidateHttpUrls.take(3)
+            else -> emptyList()
+        }
+        else -> emptyList()
+    }
+
+    val thumbForPhoto = carousel.firstOrNull()
+        ?: mainUrl?.takeIf { memoryType == MemoryType.Photo && MemoryMediaUrlHeuristics.isHttpUrl(it) }
+
+    val audioStreamUrl = when (memoryType) {
+        MemoryType.Audio -> primary?.rutaArchivo?.trim()?.takeIf { MemoryMediaUrlHeuristics.isHttpUrl(it) }
+            ?: audioUrl?.trim()?.takeIf { MemoryMediaUrlHeuristics.isHttpUrl(it) }
+            ?: rutaArchivo?.trim()?.takeIf { MemoryMediaUrlHeuristics.isHttpUrl(it) }
+        MemoryType.Text -> primary?.rutaArchivo?.trim()?.takeIf { MemoryMediaUrlHeuristics.isHttpUrl(it) }
+            ?: rutaArchivo?.trim()?.takeIf { MemoryMediaUrlHeuristics.isHttpUrl(it) }
+            ?: audioUrl?.trim()?.takeIf { MemoryMediaUrlHeuristics.isHttpUrl(it) }
+        else -> null
+    }
+
+    val coverAudio = if (memoryType == MemoryType.Audio) {
+        primary?.portadaAudioUrl()?.takeIf { MemoryMediaUrlHeuristics.isHttpUrl(it) }
+            ?: thumbnailUrl?.trim()?.takeIf { MemoryMediaUrlHeuristics.isDisplayableImageUrl(it) }
+    } else {
+        null
+    }
+
     val emocionTag = resolveEmotionalTag(
         nombreFromApi = emocion?.displayName(),
         emocionPersonalizada = emocionPersonalizada
@@ -287,11 +436,18 @@ private fun RecuerdoDto.toUiModel(): MemoryUiModel {
         type = memoryType,
         title = displayTitle(),
         description = displayDescription(),
-        date = displayDate(),
+        date = normalizeRecuerdoDate(displayDate()),
         emotionalTag = emocionTag,
         emotionalCustomLabel = if (emocionTag == null) emotionalCustomLabel else null,
-        thumbnailUrl = imageUrl,
-        audioUrl = audioUrl ?: rutaArchivo,
-        duration = displayDuration()
+        thumbnailUrl = when (memoryType) {
+            MemoryType.Photo -> thumbForPhoto
+            MemoryType.Audio -> coverAudio
+            else -> null
+        },
+        audioUrl = audioStreamUrl,
+        duration = displayDuration(),
+        carouselImageUrls = if (memoryType == MemoryType.Photo) carousel else emptyList(),
+        audioCoverUrl = coverAudio,
+        mainMediaUrl = mainUrl
     )
 }

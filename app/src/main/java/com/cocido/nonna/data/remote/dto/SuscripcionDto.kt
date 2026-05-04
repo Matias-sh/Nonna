@@ -14,6 +14,7 @@ data class SuscripcionPlanDto(
     @SerializedName("maxRecuerdos") val maxRecuerdos: Int? = null,
     @SerializedName("maxMiembrosPorCofre") val maxMiembrosPorCofre: Int? = null,
     @SerializedName("maxCofresInvitado") val maxCofresInvitado: Int? = null,
+    @SerializedName("maxArchivosPorRecuerdo") val maxArchivosPorRecuerdo: Int? = null,
     @SerializedName("activo") val activo: Boolean? = null
 )
 
@@ -21,7 +22,8 @@ data class LimitesPlanDto(
     @SerializedName("maxCofres") val maxCofres: Int? = null,
     @SerializedName("maxRecuerdos") val maxRecuerdos: Int? = null,
     @SerializedName("maxMiembrosPorCofre") val maxMiembrosPorCofre: Int? = null,
-    @SerializedName("maxCofresInvitado") val maxCofresInvitado: Int? = null
+    @SerializedName("maxCofresInvitado") val maxCofresInvitado: Int? = null,
+    @SerializedName("maxArchivosPorRecuerdo") val maxArchivosPorRecuerdo: Int? = null
 )
 
 data class UsoPlanDto(
@@ -35,7 +37,8 @@ data class SuscripcionActualDto(
     @SerializedName("limites") val limites: LimitesPlanDto? = null,
     @SerializedName("uso") val uso: UsoPlanDto? = null,
     @SerializedName("fechaInicio") val fechaInicio: String? = null,
-    @SerializedName("fechaFin") val fechaFin: String? = null
+    @SerializedName("fechaFin") val fechaFin: String? = null,
+    @SerializedName("periodicidad") val periodicidad: String? = null
 )
 
 data class CambiarPlanRequestDto(

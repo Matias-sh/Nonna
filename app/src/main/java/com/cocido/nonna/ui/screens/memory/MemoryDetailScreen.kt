@@ -5,8 +5,11 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -60,6 +64,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -100,6 +105,7 @@ import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.ui.components.PlaceholderCover
 import com.cocido.nonna.ui.components.emotionalTagLabel
 import com.cocido.nonna.util.MemoryDetailShareFormatter
+import com.cocido.nonna.util.MemoryMediaUrlHeuristics
 import com.cocido.nonna.util.MemorySharePolaroidGenerator
 import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
@@ -184,12 +190,17 @@ private fun MemoryDetailContent(
         MemoryDetailShareFormatter.formatDisplayDate(memory.date, locale)
     }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    val photoUrls = remember(memory.thumbnailUrl) {
-        MemoryDetailShareFormatter.splitPhotoUrls(memory.thumbnailUrl)
+    val photoUrls = remember(memory.carouselImageUrls, memory.thumbnailUrl, memory.mainMediaUrl) {
+        if (memory.carouselImageUrls.isNotEmpty()) {
+            memory.carouselImageUrls
+        } else {
+            val fromThumb = MemoryDetailShareFormatter.splitPhotoUrls(memory.thumbnailUrl)
+            if (fromThumb.isNotEmpty()) fromThumb
+            else MemoryDetailShareFormatter.splitPhotoUrls(memory.mainMediaUrl)
+        }
     }
-    var selectedPhotoUrl by remember(photoUrls) { mutableStateOf(photoUrls.firstOrNull()) }
     var showPhotoViewer by remember { mutableStateOf(false) }
-    var showTapHint by remember(selectedPhotoUrl) { mutableStateOf(selectedPhotoUrl != null) }
+    var fullscreenStartPage by remember { mutableIntStateOf(0) }
     var fallbackTextContent by remember(memory.id) { mutableStateOf<String?>(null) }
     var isLoadingFallbackText by remember(memory.id) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -217,14 +228,6 @@ private fun MemoryDetailContent(
             downloadTextFromUrl(candidateUrl)
         }
         isLoadingFallbackText = false
-    }
-
-    LaunchedEffect(selectedPhotoUrl) {
-        if (selectedPhotoUrl != null) {
-            showTapHint = true
-            delay(5000)
-            showTapHint = false
-        }
     }
 
     Column(
@@ -483,44 +486,20 @@ private fun MemoryDetailContent(
                     audioUrl = memory.audioUrl,
                     title = memory.title.ifBlank { stringResource(R.string.memory_detail_title) },
                     subtitle = memory.description ?: stringResource(R.string.memory_audio_fallback_subtitle),
-                    coverUrl = memory.thumbnailUrl?.takeIf { isLikelyImageUrl(it) },
+                    coverUrl = memory.audioCoverUrl?.takeIf { MemoryMediaUrlHeuristics.isDisplayableImageUrl(it) }
+                        ?: memory.thumbnailUrl?.takeIf { MemoryMediaUrlHeuristics.isDisplayableImageUrl(it) },
                     showInlineHeader = false
                 )
-            } else if (memory.type == MemoryType.Photo && selectedPhotoUrl != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = NonnaCorners.Large,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Box {
-                        AsyncImage(
-                            model = selectedPhotoUrl,
-                            contentDescription = memory.title,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showPhotoViewer = true },
-                            contentScale = ContentScale.FillWidth
-                        )
-                        if (showTapHint) {
-                            Surface(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(bottom = 12.dp),
-                                shape = NonnaCorners.Full,
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.86f)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.memory_tap_to_expand),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                )
-                            }
-                        }
+            } else if (memory.type == MemoryType.Photo && photoUrls.isNotEmpty()) {
+                MemoryPhotoCarouselSection(
+                    memoryId = memory.id,
+                    photoUrls = photoUrls,
+                    memoryTitle = memory.title.ifBlank { stringResource(R.string.memory_detail_title) },
+                    onOpenFullscreen = { page ->
+                        fullscreenStartPage = page
+                        showPhotoViewer = true
                     }
-                }
+                )
             } else {
                 Card(
                     modifier = Modifier
@@ -542,39 +521,6 @@ private fun MemoryDetailContent(
                             compact = false,
                             modifier = Modifier.fillMaxSize()
                         )
-                    }
-                }
-            }
-
-            if (memory.type == MemoryType.Photo && photoUrls.size > 1) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = stringResource(R.string.memory_photos_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(photoUrls) { url ->
-                        Card(
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clickable { selectedPhotoUrl = url },
-                            shape = NonnaCorners.Medium,
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            AsyncImage(
-                                model = url,
-                                contentDescription = stringResource(R.string.memory_photo_cd),
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
                     }
                 }
             }
@@ -692,11 +638,150 @@ private fun MemoryDetailContent(
         )
     }
 
-    if (showPhotoViewer && selectedPhotoUrl != null) {
+    if (showPhotoViewer && photoUrls.isNotEmpty()) {
         PhotoFullScreenViewer(
-            imageUrl = selectedPhotoUrl!!,
+            imageUrls = photoUrls,
+            initialPage = fullscreenStartPage.coerceIn(0, photoUrls.lastIndex),
             onDismiss = { showPhotoViewer = false }
         )
+    }
+}
+
+@Composable
+private fun MemoryPhotoCarouselSection(
+    memoryId: String,
+    photoUrls: List<String>,
+    memoryTitle: String,
+    onOpenFullscreen: (pageIndex: Int) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val pagerState = rememberPagerState(pageCount = { photoUrls.size })
+    LaunchedEffect(memoryId, photoUrls) {
+        pagerState.scrollToPage(0)
+    }
+    var showTapHint by remember { mutableStateOf(true) }
+    LaunchedEffect(pagerState.settledPage) {
+        showTapHint = true
+        delay(5000)
+        showTapHint = false
+    }
+    val hintText = if (photoUrls.size > 1) {
+        stringResource(R.string.memory_photo_swipe_expand)
+    } else {
+        stringResource(R.string.memory_tap_to_expand)
+    }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = NonnaCorners.Large,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(4f / 3f),
+                    beyondViewportPageCount = 1,
+                    verticalAlignment = Alignment.CenterVertically
+                ) { page ->
+                    AsyncImage(
+                        model = photoUrls[page],
+                        contentDescription = memoryTitle,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable { onOpenFullscreen(page) },
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                if (showTapHint) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                    ) {
+                        Text(
+                            text = hintText,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            maxLines = 2
+                        )
+                    }
+                }
+            }
+        }
+        if (photoUrls.size > 1) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                repeat(photoUrls.size) { index ->
+                    val selected = pagerState.currentPage == index
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .size(if (selected) 10.dp else 8.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (selected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)
+                                }
+                            )
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.memory_photos_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(photoUrls.size) { index ->
+                    val url = photoUrls[index]
+                    val selected = pagerState.currentPage == index
+                    Card(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .then(
+                                if (selected) {
+                                    Modifier.border(
+                                        width = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = NonnaCorners.Medium
+                                    )
+                                } else {
+                                    Modifier
+                                }
+                            )
+                            .clickable {
+                                scope.launch { pagerState.animateScrollToPage(index) }
+                            },
+                        shape = NonnaCorners.Medium,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        AsyncImage(
+                            model = url,
+                            contentDescription = stringResource(R.string.memory_photo_cd),
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -708,6 +793,91 @@ private fun memoryTypeIcon(type: MemoryType): ImageVector = when (type) {
 
 @Composable
 private fun PhotoFullScreenViewer(
+    imageUrls: List<String>,
+    initialPage: Int,
+    onDismiss: () -> Unit
+) {
+    val urls = remember(imageUrls) { imageUrls.filter { it.isNotBlank() } }
+    if (urls.isEmpty()) return
+
+    if (urls.size == 1) {
+        PhotoFullScreenViewerSingle(imageUrl = urls.first(), onDismiss = onDismiss)
+    } else {
+        val start = initialPage.coerceIn(0, urls.lastIndex)
+        val pagerState = rememberPagerState(
+            initialPage = start,
+            pageCount = { urls.size }
+        )
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    beyondViewportPageCount = 1,
+                    verticalAlignment = Alignment.CenterVertically
+                ) { page ->
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = urls[page],
+                            contentDescription = stringResource(R.string.memory_fullscreen_image_cd),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = false) {},
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .padding(12.dp)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.45f),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = stringResource(R.string.common_close_viewer),
+                        tint = Color.White
+                    )
+                }
+                Text(
+                    text = stringResource(
+                        R.string.memory_photo_page_counter,
+                        pagerState.settledPage + 1,
+                        urls.size
+                    ),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 28.dp)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.4f),
+                            shape = NonnaCorners.Full
+                        )
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhotoFullScreenViewerSingle(
     imageUrl: String,
     onDismiss: () -> Unit
 ) {
@@ -1213,11 +1383,3 @@ private tailrec fun Context.findActivityForShare(): Activity? = when (this) {
     else -> null
 }
 
-private fun isLikelyImageUrl(url: String): Boolean {
-    val normalized = url.lowercase()
-    return normalized.endsWith(".jpg") ||
-        normalized.endsWith(".jpeg") ||
-        normalized.endsWith(".png") ||
-        normalized.endsWith(".webp") ||
-        normalized.endsWith(".gif")
-}

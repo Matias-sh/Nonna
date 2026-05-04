@@ -66,6 +66,7 @@ import com.cocido.nonna.ui.theme.TagNostalgicoBackground
 import com.cocido.nonna.ui.theme.TagNostalgicoText
 import androidx.compose.ui.tooling.preview.Preview
 import com.cocido.nonna.ui.theme.NonnaTheme
+import com.cocido.nonna.util.MemoryMediaUrlHeuristics
 import com.cocido.nonna.R
 
 enum class MemoryType {
@@ -93,7 +94,13 @@ data class MemoryUiModel(
     val emotionalCustomLabel: String? = null,
     val thumbnailUrl: String? = null,
     val audioUrl: String? = null,
-    val duration: String? = null // For audio
+    val duration: String? = null, // For audio
+    /** Hasta 3 URLs (principal + galería) cuando el tipo es foto. */
+    val carouselImageUrls: List<String> = emptyList(),
+    /** Portada opcional para recuerdos de audio. */
+    val audioCoverUrl: String? = null,
+    /** URL del archivo principal (PATCH multipart `urlArchivo` si no se reemplaza el archivo). */
+    val mainMediaUrl: String? = null
 )
 
 enum class MemoryCardViewMode {
@@ -115,12 +122,28 @@ fun MemoryCard(
 }
 
 @Composable
+private fun MemoryUiModel.coverImageForCard(): String? {
+    val ordered = when (type) {
+        MemoryType.Audio -> listOfNotNull(audioCoverUrl, carouselImageUrls.firstOrNull(), thumbnailUrl)
+        MemoryType.Photo -> buildList {
+            addAll(carouselImageUrls)
+            thumbnailUrl?.let { add(it) }
+            mainMediaUrl?.let { add(it) }
+        }
+        MemoryType.Text -> emptyList()
+    }
+    return ordered
+        .mapNotNull { it.trim().takeIf { s -> s.isNotBlank() } }
+        .firstOrNull { MemoryMediaUrlHeuristics.isDisplayableImageUrl(it) }
+}
+
+@Composable
 private fun MemoryCardGrid(
     memory: MemoryUiModel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val coverImageUrl = memory.thumbnailUrl?.takeIf { isLikelyImageUrl(it) }
+    val coverImageUrl = memory.coverImageForCard()
     val interactionSource = rememberMotionInteractionSource()
     Card(
         onClick = onClick,
@@ -255,7 +278,7 @@ private fun MemoryCardList(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val coverImageUrl = memory.thumbnailUrl?.takeIf { isLikelyImageUrl(it) }
+    val coverImageUrl = memory.coverImageForCard()
     val interactionSource = rememberMotionInteractionSource()
     Card(
         onClick = onClick,
@@ -690,16 +713,6 @@ private fun TextMemoryCover(
             }
         }
     }
-}
-
-private fun isLikelyImageUrl(url: String): Boolean {
-    if (url.isBlank()) return false
-    val normalized = url.substringBefore('?').lowercase()
-    return normalized.endsWith(".jpg") ||
-        normalized.endsWith(".jpeg") ||
-        normalized.endsWith(".png") ||
-        normalized.endsWith(".webp") ||
-        normalized.endsWith(".gif")
 }
 
 // ==================== PREVIEWS ====================

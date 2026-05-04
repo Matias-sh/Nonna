@@ -35,6 +35,7 @@ import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.AlertDialog
@@ -114,8 +115,11 @@ fun CofreDetailScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val leaveInProgress by viewModel.leaveInProgress.collectAsState()
+    val removeInviteeInProgress by viewModel.removeInviteeInProgress.collectAsState()
     val cofre = cofreState
     var showInviteModal by remember { mutableStateOf(false) }
+    var inviteeIdPendingRemoval by remember { mutableStateOf<String?>(null) }
+    var inviteeEmailPendingRemoval by remember { mutableStateOf<String?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showLeaveCofreConfirm by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -138,6 +142,17 @@ fun CofreDetailScreen(
     LaunchedEffect(Unit) {
         viewModel.inviteSuccess.collectLatest {
             feedbackMessage = context.getString(R.string.chest_invite_sent)
+            feedbackType = NonnaFeedbackType.Success
+            feedbackVisible = true
+            delay(1400)
+            feedbackVisible = false
+        }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.inviteeRemovedSuccess.collectLatest {
+            inviteeIdPendingRemoval = null
+            inviteeEmailPendingRemoval = null
+            feedbackMessage = context.getString(R.string.chest_member_removed_success)
             feedbackType = NonnaFeedbackType.Success
             feedbackVisible = true
             delay(1400)
@@ -377,7 +392,12 @@ fun CofreDetailScreen(
             1 -> FamiliaTab(
                 members = buildFamiliaMembers(cofre, currentUser),
                 canInvite = canManageCofre(cofre),
-                onInvite = { showInviteModal = true }
+                onInvite = { showInviteModal = true },
+                removeMemberInProgress = removeInviteeInProgress,
+                onRequestRemoveMember = { userId, email ->
+                    inviteeIdPendingRemoval = userId
+                    inviteeEmailPendingRemoval = email
+                }
             )
             2 -> DetallesTab(
                 cofre = cofre,
@@ -444,6 +464,47 @@ fun CofreDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showLeaveCofreConfirm = false }, enabled = !leaveInProgress) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+
+    if (inviteeIdPendingRemoval != null && cofre != null && cofre.isOwner) {
+        AlertDialog(
+            onDismissRequest = {
+                inviteeIdPendingRemoval = null
+                inviteeEmailPendingRemoval = null
+            },
+            title = { Text(stringResource(R.string.chest_remove_invitee_confirm_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.chest_remove_invitee_confirm_body
+                    ) + (inviteeEmailPendingRemoval?.let { "\n\n$it" } ?: "")
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val id = inviteeIdPendingRemoval
+                        inviteeIdPendingRemoval = null
+                        inviteeEmailPendingRemoval = null
+                        if (id != null) viewModel.eliminarInvitadoAceptado(id)
+                    },
+                    enabled = !removeInviteeInProgress
+                ) {
+                    Text(stringResource(R.string.chest_remove_invitee), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        inviteeIdPendingRemoval = null
+                        inviteeEmailPendingRemoval = null
+                    },
+                    enabled = !removeInviteeInProgress
+                ) {
                     Text(stringResource(R.string.common_cancel))
                 }
             }
@@ -633,7 +694,8 @@ private data class CofreMemberDisplay(
     val username: String?,
     val email: String,
     val avatarUrl: String?,
-    val role: com.cocido.nonna.ui.components.CofreRole
+    val role: com.cocido.nonna.ui.components.CofreRole,
+    val removableInvitedUserId: String? = null
 )
 
 private fun buildFamiliaMembers(
@@ -655,7 +717,8 @@ private fun buildFamiliaMembers(
             email = ownerEmail,
             avatarUrl = cofre.ownerAvatarUrl
                 ?: if (ownerEmail.equals(currentUser.email, ignoreCase = true)) currentUser.profileImageUrl() else null,
-            role = com.cocido.nonna.ui.components.CofreRole.Creador
+            role = com.cocido.nonna.ui.components.CofreRole.Creador,
+            removableInvitedUserId = null
         )
     } else if (cofre.isOwner) {
         baseMembers += CofreMemberDisplay(
@@ -663,7 +726,8 @@ private fun buildFamiliaMembers(
             username = currentUser.nombreUsuario,
             email = currentUser.email,
             avatarUrl = currentUser.profileImageUrl(),
-            role = com.cocido.nonna.ui.components.CofreRole.Creador
+            role = com.cocido.nonna.ui.components.CofreRole.Creador,
+            removableInvitedUserId = null
         )
     }
 
@@ -677,7 +741,8 @@ private fun buildFamiliaMembers(
                 com.cocido.nonna.ui.components.CofreRole.Colaborador
             } else {
                 com.cocido.nonna.ui.components.CofreRole.Invitado
-            }
+            },
+            removableInvitedUserId = null
         )
     }
 
@@ -685,6 +750,16 @@ private fun buildFamiliaMembers(
         val inviteEmail = invitee.email.trim()
         if (inviteEmail.lowercase() == currentEmail) return@forEach
         val isOwnerByEmail = ownerEmail.isNotBlank() && inviteEmail.equals(ownerEmail, ignoreCase = true)
+        val removalId = if (
+            cofre.isOwner &&
+            !isOwnerByEmail &&
+            invitee.accepted &&
+            !invitee.invitedUserId.isNullOrBlank()
+        ) {
+            invitee.invitedUserId
+        } else {
+            null
+        }
         baseMembers += CofreMemberDisplay(
             fullName = invitee.fullName ?: inviteEmail,
             username = null,
@@ -696,7 +771,8 @@ private fun buildFamiliaMembers(
                 com.cocido.nonna.ui.components.CofreRole.Colaborador
             } else {
                 com.cocido.nonna.ui.components.CofreRole.Invitado
-            }
+            },
+            removableInvitedUserId = removalId
         )
     }
     return baseMembers.distinctBy { it.email.lowercase() }
@@ -721,7 +797,9 @@ private fun familiaListedMemberCount(
 private fun FamiliaTab(
     members: List<CofreMemberDisplay>,
     canInvite: Boolean,
-    onInvite: () -> Unit
+    onInvite: () -> Unit,
+    removeMemberInProgress: Boolean = false,
+    onRequestRemoveMember: (userId: String, email: String) -> Unit = { _, _ -> }
 ) {
     Column(
         modifier = Modifier
@@ -872,6 +950,20 @@ private fun FamiliaTab(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                            }
+
+                            val removableId = member.removableInvitedUserId
+                            if (removableId != null && canInvite) {
+                                IconButton(
+                                    onClick = { onRequestRemoveMember(removableId, member.email) },
+                                    enabled = !removeMemberInProgress
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Delete,
+                                        contentDescription = stringResource(R.string.chest_remove_invitee),
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
                             
                             PermissionBadge(role = member.role)

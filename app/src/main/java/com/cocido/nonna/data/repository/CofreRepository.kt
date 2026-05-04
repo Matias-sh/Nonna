@@ -238,6 +238,32 @@ class CofreRepository @Inject constructor(
         }
     }
 
+    suspend fun eliminarInvitadoAceptado(cofreId: String, invitadoUsuarioId: String): ApiResult<Unit> {
+        if (invitadoUsuarioId.isBlank()) {
+            return ApiResult.Error("No se puede quitar a este invitado desde la app (falta id de usuario).")
+        }
+        return try {
+            val response = api.eliminarInvitadoAceptado(cofreId, invitadoUsuarioId)
+            if (response.isSuccessful) ApiResult.Success(Unit)
+            else {
+                ApiResult.Error(
+                    NetworkErrorParser.parse(response.errorBody()?.string())
+                        ?: "No se pudo quitar al invitado",
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            ApiResult.Error(
+                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                e.code()
+            )
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error("Sin conexión. Revisá tu internet.")
+        }
+    }
+
     suspend fun invitar(cofreId: String, emails: List<String>): ApiResult<Unit> {
         if (emails.isEmpty()) return ApiResult.Error("Indicá al menos un email")
         return try {
@@ -388,7 +414,8 @@ private fun CofreDto.toUiModel(forceNotOwner: Boolean = false): CofreUiModel = C
             fullName = listOfNotNull(invite.persona?.nombre, invite.persona?.apellido)
                 .joinToString(" ")
                 .ifBlank { null },
-            avatarUrl = invite.profileImageUrlValue()
+            avatarUrl = invite.profileImageUrlValue(),
+            invitedUserId = invite.invitadoUsuarioIdForApi()
         )
     }
 )

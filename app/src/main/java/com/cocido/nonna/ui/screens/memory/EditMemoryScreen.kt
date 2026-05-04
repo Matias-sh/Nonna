@@ -3,15 +3,22 @@ package com.cocido.nonna.ui.screens.memory
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -19,6 +26,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,7 +61,9 @@ import com.cocido.nonna.ui.components.PageHeader
 import com.cocido.nonna.ui.components.emotionalTagLabel
 import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
+import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.util.ImageCompressor
+import com.cocido.nonna.util.MemoryUploadLimits
 import com.cocido.nonna.util.FormValidators
 import com.cocido.nonna.util.UserMessages
 import kotlinx.coroutines.Dispatchers
@@ -66,6 +76,7 @@ import java.io.File
 
 private const val MAX_MEMORY_DESCRIPTION_LENGTH = 280
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EditMemoryScreen(
     memoryId: String,
@@ -90,6 +101,47 @@ fun EditMemoryScreen(
     var isPreparingReplacement by remember { mutableStateOf(false) }
     var resolvedTextContent by remember { mutableStateOf<String?>(null) }
     var attemptedSave by remember { mutableStateOf(false) }
+    val maxArchivosPlan by viewModel.maxArchivosPorRecuerdo.collectAsState()
+    val maxGalleryExtra = remember(maxArchivosPlan) {
+        (maxArchivosPlan - 1).coerceIn(0, 2)
+    }
+    var extraGalleryUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var newCoverUri by remember { mutableStateOf<Uri?>(null) }
+    var markRemoveAudioCover by remember { mutableStateOf(false) }
+    var markClearGalleryExtras by remember { mutableStateOf(false) }
+
+    val galleryPickerLauncher = rememberLauncherForActivityResult(
+        contract = PickMultipleVisualMedia(maxGalleryExtra.coerceIn(1, 2))
+    ) { uris ->
+        if (maxGalleryExtra > 0 && uris.isNotEmpty()) {
+            extraGalleryUris = (extraGalleryUris + uris)
+                .distinctBy { it.toString() }
+                .take(maxGalleryExtra)
+            markClearGalleryExtras = false
+        }
+    }
+    val audioCoverCropLauncher = rememberLauncherForActivityResult(
+        contract = NonnaCropContract()
+    ) { result ->
+        if (result != null) {
+            newCoverUri = result
+            markRemoveAudioCover = false
+        }
+    }
+    val coverPickerLauncher = rememberLauncherForActivityResult(
+        contract = PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let {
+            audioCoverCropLauncher.launch(
+                NonnaCropRequest(
+                    sourceUri = it,
+                    aspectRatio = 1f,
+                    title = context.getString(R.string.memory_audio_cover_crop_title),
+                    lockAspectRatio = false
+                )
+            )
+        }
+    }
 
     val cropLauncher = rememberLauncherForActivityResult(
         contract = NonnaCropContract()
@@ -119,6 +171,10 @@ fun EditMemoryScreen(
 
     LaunchedEffect(memory?.id) {
         val current = memory ?: return@LaunchedEffect
+        extraGalleryUris = emptyList()
+        newCoverUri = null
+        markRemoveAudioCover = false
+        markClearGalleryExtras = false
         title = current.title
         date = current.date
         emotionalTag = current.emotionalTag
@@ -247,6 +303,122 @@ fun EditMemoryScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+                if (currentMemory.type == MemoryType.Photo && maxGalleryExtra > 0) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.memory_carousel_optional_title),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(R.string.memory_carousel_optional_subtitle, maxGalleryExtra),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        NonnaButton(
+                            text = stringResource(R.string.memory_carousel_pick),
+                            onClick = {
+                                galleryPickerLauncher.launch(
+                                    PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+                                )
+                            },
+                            style = NonnaButtonStyle.Outline
+                        )
+                        if (extraGalleryUris.isNotEmpty() || currentMemory.carouselImageUrls.size > 1) {
+                            NonnaButton(
+                                text = stringResource(R.string.memory_carousel_clear),
+                                onClick = {
+                                    extraGalleryUris = emptyList()
+                                    markClearGalleryExtras = true
+                                },
+                                style = NonnaButtonStyle.Ghost
+                            )
+                        }
+                    }
+                    if (extraGalleryUris.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            extraGalleryUris.forEach { u ->
+                                AsyncImage(
+                                    model = u,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .clip(NonnaCorners.Medium),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (currentMemory.type == MemoryType.Audio) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.memory_audio_cover_optional_title),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(R.string.memory_audio_cover_section_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        NonnaButton(
+                            text = stringResource(R.string.memory_audio_cover_pick),
+                            onClick = {
+                                coverPickerLauncher.launch(
+                                    PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+                                )
+                            },
+                            style = NonnaButtonStyle.Outline
+                        )
+                        if (newCoverUri != null || !currentMemory.audioCoverUrl.isNullOrBlank()) {
+                            NonnaButton(
+                                text = stringResource(R.string.memory_audio_cover_clear),
+                                onClick = {
+                                    newCoverUri = null
+                                    markRemoveAudioCover = true
+                                },
+                                style = NonnaButtonStyle.Ghost
+                            )
+                        }
+                    }
+                    val coverPreviewModel: Any? = when {
+                        newCoverUri != null -> newCoverUri
+                        markRemoveAudioCover -> null
+                        else -> currentMemory.audioCoverUrl?.trim()?.takeIf { it.isNotBlank() }
+                    }
+                    if (coverPreviewModel != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        AsyncImage(
+                            model = coverPreviewModel,
+                            contentDescription = stringResource(R.string.memory_audio_cover_cd),
+                            modifier = Modifier
+                                .width(140.dp)
+                                .height(175.dp)
+                                .clip(NonnaCorners.Medium),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
@@ -372,7 +544,7 @@ fun EditMemoryScreen(
                                         ImageCompressor.compressForUpload(
                                             context = context,
                                             uri = replacementUri!!,
-                                            maxBytes = 1024L * 1024L,
+                                            maxBytes = MemoryUploadLimits.maxBytesFor(MemoryType.Photo),
                                             maxLongEdge = 1600
                                         )
                                     }
@@ -387,14 +559,55 @@ fun EditMemoryScreen(
                                     else -> null
                                 }
                             }
+                            val portadaFile = if (current.type == MemoryType.Audio && newCoverUri != null) {
+                                withContext(Dispatchers.IO) {
+                                    ImageCompressor.compressForUpload(
+                                        context = context,
+                                        uri = newCoverUri!!,
+                                        maxBytes = MemoryUploadLimits.maxBytesFor(MemoryType.Photo),
+                                        maxLongEdge = 1600
+                                    )
+                                }
+                            } else {
+                                null
+                            }
+                            val galleryFiles = if (current.type == MemoryType.Photo && extraGalleryUris.isNotEmpty()) {
+                                withContext(Dispatchers.IO) {
+                                    extraGalleryUris.mapNotNull { uri ->
+                                        ImageCompressor.compressForUpload(
+                                            context = context,
+                                            uri = uri,
+                                            maxBytes = MemoryUploadLimits.maxBytesFor(MemoryType.Photo),
+                                            maxLongEdge = 1600
+                                        )
+                                    }
+                                }
+                            } else {
+                                null
+                            }
                             isPreparingReplacement = false
+                            val urlPortada = if (
+                                current.type == MemoryType.Audio &&
+                                markRemoveAudioCover &&
+                                newCoverUri == null &&
+                                portadaFile == null
+                            ) {
+                                ""
+                            } else {
+                                null
+                            }
+                            val limpiar = markClearGalleryExtras && extraGalleryUris.isEmpty()
                             viewModel.save(
                                 title = title.trim(),
                                 description = if (current.type == MemoryType.Text) null else description,
                                 date = date,
                                 emotionalTag = emotionalTag,
                                 customEmotion = customEmotion,
-                                replacementFile = replacementFile
+                                replacementFile = replacementFile,
+                                newPortadaAudio = portadaFile,
+                                urlPortadaAudio = urlPortada,
+                                galleryImages = galleryFiles,
+                                limpiarImagenesGaleria = limpiar
                             )
                         }
                     },

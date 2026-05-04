@@ -59,9 +59,14 @@ object MemorySharePolaroidGenerator {
         locale: Locale
     ): File? = withContext(Dispatchers.IO) {
         val res = context.resources
-        val photoUrl = if (memory.type == MemoryType.Photo) {
-            MemoryDetailShareFormatter.splitPhotoUrls(memory.thumbnailUrl).firstOrNull()
-        } else null
+        val photoUrl = when (memory.type) {
+            MemoryType.Photo ->
+                memory.carouselImageUrls.firstOrNull()
+                    ?: MemoryDetailShareFormatter.splitPhotoUrls(memory.thumbnailUrl).firstOrNull()
+            MemoryType.Audio ->
+                memory.audioCoverUrl?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
+            else -> null
+        }
 
         val photoBitmap = if (photoUrl != null) {
             loadPhotoBitmap(context, photoUrl)

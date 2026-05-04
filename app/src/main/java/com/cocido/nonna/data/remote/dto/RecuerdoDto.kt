@@ -3,6 +3,20 @@ package com.cocido.nonna.data.remote.dto
 import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 
+/** Detalle de archivo del recuerdo (orden 0 = principal). */
+data class RecuerdoArchivoDetalleItemDto(
+    @SerializedName("id") private val idRaw: JsonElement? = null,
+    @SerializedName("orden") val orden: Int? = null,
+    @SerializedName(value = "tipoArchivo", alternate = ["tipo", "tipo_archivo"])
+    val tipoArchivo: String? = null,
+    @SerializedName(value = "rutaArchivo", alternate = ["url", "urlArchivo", "ruta"])
+    val rutaArchivo: String? = null,
+    @SerializedName("rutaPortadaAudio") val rutaPortadaAudio: JsonElement? = null
+) {
+    fun idValue(): String = idRaw.primitiveIdString()
+    fun portadaAudioUrl(): String? = rutaPortadaAudio.audioCoverUrlFromJson()
+}
+
 data class RecuerdoDto(
     @SerializedName("id") private val idRaw: JsonElement? = null,
     @SerializedName("titulo") val titulo: String? = null,
@@ -13,12 +27,15 @@ data class RecuerdoDto(
     @SerializedName("contenido") val contenido: String? = null,
     @SerializedName("texto") val texto: String? = null,
     @SerializedName("content") val content: String? = null,
-    @SerializedName("tipo") val tipo: String? = null,
+    @SerializedName(value = "tipo", alternate = ["tipoRecuerdo", "tipoMedia"])
+    val tipo: String? = null,
     @SerializedName("type") val type: String? = null,
-    @SerializedName("tipoArchivo") val tipoArchivo: String? = null,
+    @SerializedName(value = "tipoArchivo", alternate = ["tipo_archivo", "tipoArchivoPrincipal"])
+    val tipoArchivo: String? = null,
     @SerializedName("fecha") val fecha: String? = null,
     @SerializedName("date") val date: String? = null,
-    @SerializedName("rutaArchivo") val rutaArchivo: String? = null,
+    @SerializedName(value = "rutaArchivo", alternate = ["url", "urlArchivo", "archivoUrl", "ruta"])
+    val rutaArchivo: String? = null,
     @SerializedName("thumbnailUrl") val thumbnailUrl: String? = null,
     @SerializedName("audioUrl") val audioUrl: String? = null,
     @SerializedName("duracion") val duracion: String? = null,
@@ -27,7 +44,14 @@ data class RecuerdoDto(
     @SerializedName("emocion") val emocion: EmocionDto? = null,
     @SerializedName("emocionPersonalizada") val emocionPersonalizada: String? = null,
     @SerializedName("cofreRecuerdosId") val cofreRecuerdosId: String? = null,
-    @SerializedName("createdAt") val createdAt: String? = null
+    @SerializedName("createdAt") val createdAt: String? = null,
+    @SerializedName(
+        value = "archivosDetalle",
+        alternate = ["archivos_detalle", "detalles", "detallesArchivo", "files", "archivos"]
+    )
+    val archivosDetalle: List<RecuerdoArchivoDetalleItemDto>? = null,
+    @SerializedName(value = "urlsCarruselImagenes", alternate = ["urls_carrusel_imagenes", "carruselImagenes"])
+    val urlsCarruselImagenes: List<String>? = null
 ) {
     /** id como string (backend puede devolver número). */
     fun idValue(): String = idRaw.primitiveIdString()

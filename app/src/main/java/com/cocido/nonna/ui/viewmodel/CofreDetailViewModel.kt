@@ -56,8 +56,14 @@ class CofreDetailViewModel @Inject constructor(
     private val _abandonSuccess = MutableSharedFlow<Unit>()
     val abandonSuccess: SharedFlow<Unit> = _abandonSuccess.asSharedFlow()
 
+    private val _inviteeRemovedSuccess = MutableSharedFlow<Unit>()
+    val inviteeRemovedSuccess: SharedFlow<Unit> = _inviteeRemovedSuccess.asSharedFlow()
+
     private val _leaveInProgress = MutableStateFlow(false)
     val leaveInProgress: StateFlow<Boolean> = _leaveInProgress.asStateFlow()
+
+    private val _removeInviteeInProgress = MutableStateFlow(false)
+    val removeInviteeInProgress: StateFlow<Boolean> = _removeInviteeInProgress.asStateFlow()
 
     init {
         load()
@@ -148,6 +154,29 @@ class CofreDetailViewModel @Inject constructor(
                 else -> { }
             }
             _leaveInProgress.value = false
+        }
+    }
+
+    fun eliminarInvitadoAceptado(invitadoUsuarioId: String) {
+        viewModelScope.launch {
+            if (!canManageCofre(_cofre.value)) {
+                _errorMessage.value = "Solo el dueño puede quitar invitados."
+                return@launch
+            }
+            _removeInviteeInProgress.value = true
+            _errorMessage.value = null
+            when (val result = cofreRepository.eliminarInvitadoAceptado(cofreId, invitadoUsuarioId)) {
+                is ApiResult.Success -> {
+                    when (val cofreResult = cofreRepository.getCofre(cofreId)) {
+                        is ApiResult.Success -> _cofre.value = resolveOwnership(cofreResult.data, _currentUser.value)
+                        else -> Unit
+                    }
+                    _inviteeRemovedSuccess.emit(Unit)
+                }
+                is ApiResult.Error -> _errorMessage.value = result.message
+                else -> Unit
+            }
+            _removeInviteeInProgress.value = false
         }
     }
 }

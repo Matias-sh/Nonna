@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.EmocionesRepository
 import com.cocido.nonna.data.repository.RecuerdosRepository
+import com.cocido.nonna.data.repository.SuscripcionRepository
 import com.cocido.nonna.ui.components.EmotionalTag
+import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.ui.components.MemoryUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -23,7 +25,8 @@ import javax.inject.Inject
 class EditMemoryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val recuerdosRepository: RecuerdosRepository,
-    private val emocionesRepository: EmocionesRepository
+    private val emocionesRepository: EmocionesRepository,
+    private val suscripcionRepository: SuscripcionRepository
 ) : ViewModel() {
 
     private val memoryId: String = savedStateHandle.get<String>("memoryId") ?: ""
@@ -45,8 +48,12 @@ class EditMemoryViewModel @Inject constructor(
 
     private val _emotionIdByName = MutableStateFlow<Map<String, String>>(emptyMap())
 
+    private val _maxArchivosPorRecuerdo = MutableStateFlow(3)
+    val maxArchivosPorRecuerdo: StateFlow<Int> = _maxArchivosPorRecuerdo.asStateFlow()
+
     init {
         loadEmotions()
+        loadSubscriptionLimits()
         load()
     }
 
@@ -68,7 +75,11 @@ class EditMemoryViewModel @Inject constructor(
         date: String?,
         emotionalTag: EmotionalTag?,
         customEmotion: String?,
-        replacementFile: java.io.File? = null
+        replacementFile: java.io.File? = null,
+        newPortadaAudio: java.io.File? = null,
+        urlPortadaAudio: String? = null,
+        galleryImages: List<java.io.File>? = null,
+        limpiarImagenesGaleria: Boolean = false
     ) {
         viewModelScope.launch {
             _isSaving.value = true
@@ -85,6 +96,18 @@ class EditMemoryViewModel @Inject constructor(
             } else {
                 null
             }
+            val current = _memory.value
+            val urlArchivo = if (
+                replacementFile == null &&
+                current != null &&
+                current.type != MemoryType.Text &&
+                !current.mainMediaUrl.isNullOrBlank()
+            ) {
+                current.mainMediaUrl
+            } else {
+                null
+            }
+            val limpiar = limpiarImagenesGaleria && galleryImages.isNullOrEmpty()
             when (
                 val result = recuerdosRepository.updateRecuerdo(
                     id = memoryId,
@@ -93,7 +116,12 @@ class EditMemoryViewModel @Inject constructor(
                     fecha = date?.trim().takeUnless { it.isNullOrBlank() },
                     emocionId = emotionId,
                     emocionPersonalizada = customEmotionClean ?: emotionCustomFallback,
-                    file = replacementFile
+                    file = replacementFile,
+                    urlArchivo = urlArchivo,
+                    portadaAudio = newPortadaAudio,
+                    urlPortadaAudio = urlPortadaAudio,
+                    galleryImages = galleryImages,
+                    limpiarImagenesGaleria = limpiar
                 )
             ) {
                 is ApiResult.Success -> _updated.emit(Unit)
@@ -101,6 +129,21 @@ class EditMemoryViewModel @Inject constructor(
                 else -> Unit
             }
             _isSaving.value = false
+        }
+    }
+
+    private fun loadSubscriptionLimits() {
+        viewModelScope.launch {
+            when (val sub = suscripcionRepository.getMiSuscripcion()) {
+                is ApiResult.Success -> {
+                    val max = sub.data.limites?.maxArchivosPorRecuerdo
+                        ?: sub.data.plan?.maxArchivosPorRecuerdo
+                    if (max != null && max >= 1) {
+                        _maxArchivosPorRecuerdo.value = max
+                    }
+                }
+                else -> Unit
+            }
         }
     }
 

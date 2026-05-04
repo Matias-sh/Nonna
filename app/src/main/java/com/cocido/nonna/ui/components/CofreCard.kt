@@ -68,7 +68,9 @@ data class CofreInviteeUiModel(
     val email: String,
     val accepted: Boolean,
     val fullName: String?,
-    val avatarUrl: String? = null
+    val avatarUrl: String? = null,
+    /** Id de usuario backend para expulsar invitado aceptado; null si aún no está registrado. */
+    val invitedUserId: String? = null
 )
 
 /** Nombre del creador del cofre (dueño) para mostrar «Agregado por…». */

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.EmocionesRepository
 import com.cocido.nonna.data.repository.RecuerdosRepository
+import com.cocido.nonna.data.repository.SuscripcionRepository
 import com.cocido.nonna.ui.components.EmotionalTag
 import com.cocido.nonna.ui.components.MemoryUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AddMemoryViewModel @Inject constructor(
     private val recuerdosRepository: RecuerdosRepository,
-    private val emocionesRepository: EmocionesRepository
+    private val emocionesRepository: EmocionesRepository,
+    private val suscripcionRepository: SuscripcionRepository
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -35,8 +37,13 @@ class AddMemoryViewModel @Inject constructor(
 
     private val _emotionIdByName = MutableStateFlow<Map<String, String>>(emptyMap())
 
+    /** Límite del plan (archivos por recuerdo, incluye el principal). Mínimo 1; por defecto 3 (1 principal + 2 galería). */
+    private val _maxArchivosPorRecuerdo = MutableStateFlow(3)
+    val maxArchivosPorRecuerdo: StateFlow<Int> = _maxArchivosPorRecuerdo.asStateFlow()
+
     init {
         loadEmotions()
+        loadSubscriptionLimits()
     }
 
     fun save(
@@ -46,7 +53,9 @@ class AddMemoryViewModel @Inject constructor(
         descripcion: String? = null,
         fecha: String? = null,
         emocionId: String? = null,
-        emocionPersonalizada: String? = null
+        emocionPersonalizada: String? = null,
+        portadaAudio: java.io.File? = null,
+        galleryImages: List<java.io.File> = emptyList()
     ) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -57,7 +66,9 @@ class AddMemoryViewModel @Inject constructor(
                 descripcion = descripcion,
                 fecha = fecha,
                 emocionId = emocionId,
-                emocionPersonalizada = emocionPersonalizada
+                emocionPersonalizada = emocionPersonalizada,
+                portadaAudio = portadaAudio,
+                galleryImages = galleryImages
             )) {
                 is ApiResult.Success -> _saved.emit(result.data)
                 is ApiResult.Error -> _errorMessage.emit(result.message)
@@ -75,6 +86,21 @@ class AddMemoryViewModel @Inject constructor(
             emotionId to null
         } else {
             null to tag.label
+        }
+    }
+
+    private fun loadSubscriptionLimits() {
+        viewModelScope.launch {
+            when (val sub = suscripcionRepository.getMiSuscripcion()) {
+                is ApiResult.Success -> {
+                    val max = sub.data.limites?.maxArchivosPorRecuerdo
+                        ?: sub.data.plan?.maxArchivosPorRecuerdo
+                    if (max != null && max >= 1) {
+                        _maxArchivosPorRecuerdo.value = max
+                    }
+                }
+                else -> Unit
+            }
         }
     }
 

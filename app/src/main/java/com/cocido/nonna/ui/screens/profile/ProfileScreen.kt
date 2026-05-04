@@ -429,6 +429,12 @@ private fun SubscriptionSummaryCard(
                     value = it.toString()
                 )
             }
+            limites?.maxArchivosPorRecuerdo?.let {
+                PlanStatRow(
+                    label = stringResource(R.string.subscription_limit_archivos_recuerdo),
+                    value = it.toString()
+                )
+            }
 
             Spacer(modifier = Modifier.height(14.dp))
             Text(

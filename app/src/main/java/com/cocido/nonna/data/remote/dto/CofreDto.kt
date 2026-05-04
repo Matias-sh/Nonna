@@ -38,6 +38,8 @@ data class CofreDto(
 
 data class InvitadoCofreDto(
     @SerializedName("id") private val idRaw: JsonElement? = null,
+    /** Id del usuario invitado (para expulsar vía API cuando aceptó). */
+    @SerializedName("usuarioId") private val usuarioIdRaw: JsonElement? = null,
     @SerializedName("email") val email: String? = null,
     @SerializedName("invitacionAceptada") val invitacionAceptada: Boolean? = null,
     @SerializedName("persona") val persona: PersonaDto? = null,
@@ -50,6 +52,15 @@ data class InvitadoCofreDto(
     @SerializedName("usuario") val usuario: UsuarioDto? = null
 ) {
     fun idValue(): String = idRaw.primitiveIdString()
+
+    /** Id de usuario para DELETE …/invitados/{invitadoUsuarioId} (invitación aceptada). */
+    fun invitadoUsuarioIdForApi(): String? {
+        val fromField = usuarioIdRaw.primitiveIdString().trim().takeIf { it.isNotBlank() }
+        if (!fromField.isNullOrBlank()) return fromField
+        val uid = usuario?.id
+        if (uid != null && uid != 0) return uid.toString()
+        return null
+    }
 
     fun profileImageUrlValue(): String? {
         val fromSelf = listOfNotNull(

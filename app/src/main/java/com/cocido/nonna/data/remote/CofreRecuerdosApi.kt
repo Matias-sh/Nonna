@@ -87,4 +87,11 @@ interface CofreRecuerdosApi {
 
     @DELETE("cofre-recuerdos/invitaciones/cofre/{cofreId}/abandonar")
     suspend fun abandonarCofreCompartido(@Path("cofreId") cofreId: String): Response<Unit>
+
+    /** Solo el dueño; el invitado debe haber aceptado (usuario registrado). */
+    @DELETE("cofre-recuerdos/invitaciones/cofre/{cofreId}/invitados/{invitadoUsuarioId}")
+    suspend fun eliminarInvitadoAceptado(
+        @Path("cofreId") cofreId: String,
+        @Path("invitadoUsuarioId") invitadoUsuarioId: String
+    ): Response<Unit>
 }
