@@ -1,0 +1,28 @@
+package com.cocido.nonna.analytics
+
+object PaymentsAnalytics {
+    const val SCREEN_OPENED = "payments_subscription_screen_opened"
+    const val CHECKOUT_TAP = "payments_checkout_tap"
+    const val CHECKOUT_CREATE_SUCCESS = "payments_checkout_create_success"
+    const val CHECKOUT_CREATE_ERROR = "payments_checkout_create_error"
+    const val CHECKOUT_OPEN_BROWSER = "payments_checkout_open_browser"
+    const val CHECKOUT_OPEN_BROWSER_ERROR = "payments_checkout_open_browser_error"
+    const val CHECKOUT_OPEN_MP_APP = "payments_checkout_open_mp_app"
+    const val CHECKOUT_OPEN_MP_APP_UNAVAILABLE = "payments_checkout_open_mp_app_unavailable"
+    const val CHECKOUT_DEEPLINK_RETURN = "payments_checkout_deeplink_return"
+    const val CHECKOUT_REFRESH_AFTER_RETURN = "payments_checkout_refresh_after_return"
+    const val PENDING_CHECKOUT_CONTINUE_TAP = "payments_pending_checkout_continue_tap"
+    const val PENDING_CHECKOUT_CONTINUE_ERROR = "payments_pending_checkout_continue_error"
+    const val PENDING_PAYMENT_SYNC_TAP = "payments_pending_payment_sync_tap"
+    const val PENDING_PAYMENT_SYNC_SUCCESS = "payments_pending_payment_sync_success"
+    const val PENDING_PAYMENT_SYNC_ERROR = "payments_pending_payment_sync_error"
+    const val PENDING_PAYMENT_CANCEL_TAP = "payments_pending_payment_cancel_tap"
+    const val PENDING_PAYMENT_CANCEL_SUCCESS = "payments_pending_payment_cancel_success"
+    const val PENDING_PAYMENT_CANCEL_ERROR = "payments_pending_payment_cancel_error"
+    const val PENDING_AUTO_RENEW_CANCEL_TAP = "payments_pending_auto_renew_cancel_tap"
+    const val PENDING_AUTO_RENEW_CANCEL_SUCCESS = "payments_pending_auto_renew_cancel_success"
+    const val PENDING_AUTO_RENEW_CANCEL_ERROR = "payments_pending_auto_renew_cancel_error"
+    const val AUTO_RENEW_REACTIVATE_TAP = "payments_auto_renew_reactivate_tap"
+    const val AUTO_RENEW_REACTIVATE_SUCCESS = "payments_auto_renew_reactivate_success"
+    const val AUTO_RENEW_REACTIVATE_ERROR = "payments_auto_renew_reactivate_error"
+}

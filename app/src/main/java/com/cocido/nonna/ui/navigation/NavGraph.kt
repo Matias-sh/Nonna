@@ -39,6 +39,7 @@ import com.cocido.nonna.ui.screens.onboarding.OnboardingScreen
 import com.cocido.nonna.ui.screens.profile.ProfileScreen
 import com.cocido.nonna.ui.screens.profile.ProfileSettingsScreen
 import com.cocido.nonna.ui.screens.profile.InvitationsScreen
+import com.cocido.nonna.ui.screens.profile.SubscriptionCenterScreen
 import com.cocido.nonna.ui.screens.tree.AddPersonScreen
 import com.cocido.nonna.ui.screens.tree.FamilyTreeScreen
 import com.cocido.nonna.ui.screens.welcome.WelcomeScreen
@@ -63,6 +64,20 @@ sealed class Screen(val route: String) {
     data object Profile : Screen("profile")
     data object ProfileSettings : Screen("profile/settings")
     data object ProfileEdit : Screen("profile/edit")
+    data object SubscriptionCenter : Screen(
+        "profile/subscription?status={status}&collectionStatus={collectionStatus}&paymentId={paymentId}"
+    ) {
+        fun createRoute(
+            status: String? = null,
+            collectionStatus: String? = null,
+            paymentId: String? = null
+        ): String {
+            val s = Uri.encode(status.orEmpty())
+            val cs = Uri.encode(collectionStatus.orEmpty())
+            val pid = Uri.encode(paymentId.orEmpty())
+            return "profile/subscription?status=$s&collectionStatus=$cs&paymentId=$pid"
+        }
+    }
     data object Invitations : Screen("profile/invitations?invitationId={invitationId}") {
         fun createRoute(invitationId: String? = null): String =
             if (invitationId.isNullOrBlank()) {
@@ -129,8 +144,30 @@ fun NonnaNavHost(
     val activity = LocalContext.current as? ComponentActivity
     LaunchedEffect(navController, activity, effectiveStartDestination) {
         val intent: Intent = activity?.intent ?: return@LaunchedEffect
-        if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
-            runCatching { navController.handleDeepLink(intent) }
+        val data = intent.data
+        if (intent.action == Intent.ACTION_VIEW && data != null) {
+            val handledByGraph = runCatching { navController.handleDeepLink(intent) }.getOrDefault(false)
+            if (!handledByGraph) {
+                val host = data.host.orEmpty()
+                val path = data.path.orEmpty()
+                val isPaymentsCallback =
+                    (host == "apinonna.pushsoftware.com.ar" && path.contains("/pagos-suscripcion")) ||
+                        (data.scheme == "nonna" && host == "pagos-suscripcion")
+                if (isPaymentsCallback) {
+                    val status = data.getQueryParameter("status")
+                    val collectionStatus = data.getQueryParameter("collectionStatus")
+                        ?: data.getQueryParameter("collection_status")
+                    val paymentId = data.getQueryParameter("paymentId")
+                        ?: data.getQueryParameter("payment_id")
+                    navController.navigate(
+                        Screen.SubscriptionCenter.createRoute(
+                            status = status,
+                            collectionStatus = collectionStatus,
+                            paymentId = paymentId
+                        )
+                    )
+                }
+            }
         }
     }
 
@@ -330,6 +367,7 @@ fun NonnaNavHost(
                     }
                 },
                 onEditProfile = { navController.navigate(Screen.ProfileEdit.route) },
+                onOpenSubscriptionCenter = { navController.navigate(Screen.SubscriptionCenter.createRoute()) },
                 onOpenInvitations = { navController.navigate(Screen.Invitations.createRoute()) },
                 onLogout = {
                     onLogout()
@@ -367,6 +405,36 @@ fun NonnaNavHost(
         composable(Screen.ProfileEdit.route) {
             ProfileSettingsScreen(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.SubscriptionCenter.route,
+            arguments = listOf(
+                navArgument("status") { type = NavType.StringType; defaultValue = "" },
+                navArgument("collectionStatus") { type = NavType.StringType; defaultValue = "" },
+                navArgument("paymentId") { type = NavType.StringType; defaultValue = "" }
+            ),
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "nonna://pagos-suscripcion/callback?status={status}&collectionStatus={collectionStatus}&paymentId={paymentId}"
+                },
+                navDeepLink {
+                    uriPattern = "nonna://pagos-suscripcion/callback?status={status}&collection_status={collectionStatus}&payment_id={paymentId}"
+                },
+                navDeepLink {
+                    uriPattern = "https://apinonna.pushsoftware.com.ar/pagos-suscripcion/callback?status={status}&collection_status={collectionStatus}&payment_id={paymentId}"
+                }
+            )
+        ) { backStackEntry ->
+            val status = backStackEntry.arguments?.getString("status")?.takeIf { it.isNotBlank() }
+            val collectionStatus = backStackEntry.arguments?.getString("collectionStatus")?.takeIf { it.isNotBlank() }
+            val paymentId = backStackEntry.arguments?.getString("paymentId")?.takeIf { it.isNotBlank() }
+            SubscriptionCenterScreen(
+                onBack = { navController.popBackStack() },
+                checkoutStatus = status,
+                checkoutCollectionStatus = collectionStatus,
+                checkoutPaymentId = paymentId
             )
         }
         

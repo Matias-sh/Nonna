@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -70,6 +71,7 @@ import java.util.Locale
 fun ProfileScreen(
     onTabSelected: (NonnaTab) -> Unit,
     onEditProfile: () -> Unit,
+    onOpenSubscriptionCenter: () -> Unit,
     onOpenInvitations: () -> Unit,
     onLogout: () -> Unit,
     viewModel: com.cocido.nonna.ui.viewmodel.ProfileViewModel = hiltViewModel()
@@ -211,6 +213,15 @@ fun ProfileScreen(
                     title = stringResource(R.string.profile_edit_title),
                     onClick = onEditProfile,
                     subtitle = stringResource(R.string.profile_edit_subtitle)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OptionCard(
+                    icon = Icons.Outlined.Payments,
+                    title = stringResource(R.string.subscription_center_title),
+                    onClick = onOpenSubscriptionCenter,
+                    subtitle = stringResource(R.string.subscription_center_subtitle)
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -554,6 +565,7 @@ private fun ProfileScreenPreview() {
         ProfileScreen(
             onTabSelected = {},
             onEditProfile = {},
+            onOpenSubscriptionCenter = {},
             onOpenInvitations = {},
             onLogout = {}
         )

@@ -47,6 +47,15 @@
                     android:host="apinonna.pushsoftware.com.ar"
                     android:pathPrefix="/invitaciones/" />
             </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="apinonna.pushsoftware.com.ar"
+                    android:pathPrefix="/pagos-suscripcion/" />
+            </intent-filter>
             <!-- Esquema nonna (intent://…#Intent;scheme=nonna;package=com.cocido.nonna.free → nonna://invitaciones/{id}) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -55,6 +64,15 @@
                 <data
                     android:scheme="nonna"
                     android:host="invitaciones"
+                    android:pathPrefix="/" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="nonna"
+                    android:host="pagos-suscripcion"
                     android:pathPrefix="/" />
             </intent-filter>
         </activity>
