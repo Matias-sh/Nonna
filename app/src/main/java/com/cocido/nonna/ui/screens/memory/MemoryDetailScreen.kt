@@ -136,8 +136,6 @@ fun MemoryDetailScreen(
     val memory by viewModel.memory.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    LaunchedEffect(Unit) { viewModel.load() }
-
     when {
         isLoading && memory == null -> {
             Box(

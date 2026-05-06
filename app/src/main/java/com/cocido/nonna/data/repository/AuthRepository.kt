@@ -15,15 +15,23 @@ import kotlinx.coroutines.flow.firstOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.google.gson.JsonParseException
 import retrofit2.HttpException
 import java.io.IOException
+import android.os.SystemClock
 import javax.inject.Inject
 
 class AuthRepository @Inject constructor(
     private val authApi: AuthApi,
     private val tokenManager: TokenManager
 ) {
+    private val meRequestMutex = Mutex()
+    private var cachedMeUser: UserDto? = null
+    private var cachedMeAtMs: Long = 0L
+    private val meCacheTtlMs: Long = 5_000L
+
     val token: Flow<String?> = tokenManager.token
     val refreshToken: Flow<String?> = tokenManager.refreshToken
     val isLoggedIn: Flow<Boolean> = tokenManager.token.map { !it.isNullOrBlank() }
@@ -111,32 +119,51 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun getMe(): ApiResult<UserDto> {
-        return try {
-            val response = authApi.getMe()
-            if (response.isSuccessful) {
-                response.body()?.let { ApiResult.Success(it) }
-                    ?: ApiResult.Error("Usuario no encontrado")
-            } else {
-                if (response.code() == 401) tokenManager.clear()
-                ApiResult.Error(NetworkErrorParser.parse(response.errorBody()?.string()) ?: "Error", response.code())
+        return meRequestMutex.withLock {
+            val now = SystemClock.elapsedRealtime()
+            val cached = cachedMeUser
+            if (cached != null && (now - cachedMeAtMs) <= meCacheTtlMs) {
+                return@withLock ApiResult.Success(cached)
             }
-        } catch (e: HttpException) {
-            if (e.code() == 401) {
-                tokenManager.clear()
-                ApiResult.Error("Sesión expirada")
-            } else {
-                ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            try {
+                val response = authApi.getMe()
+                if (response.isSuccessful) {
+                    response.body()?.let {
+                        cachedMeUser = it
+                        cachedMeAtMs = SystemClock.elapsedRealtime()
+                        ApiResult.Success(it)
+                    }
+                        ?: ApiResult.Error("Usuario no encontrado")
+                } else {
+                    if (response.code() == 401) {
+                        cachedMeUser = null
+                        cachedMeAtMs = 0L
+                        tokenManager.clear()
+                    }
+                    ApiResult.Error(NetworkErrorParser.parse(response.errorBody()?.string()) ?: "Error", response.code())
+                }
+            } catch (e: HttpException) {
+                if (e.code() == 401) {
+                    cachedMeUser = null
+                    cachedMeAtMs = 0L
+                    tokenManager.clear()
+                    ApiResult.Error("Sesión expirada")
+                } else {
+                    ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+                }
+            } catch (e: JsonParseException) {
+                ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+            } catch (e: IOException) {
+                ApiResult.Error("Sin conexión. Revisá tu internet.")
+            } catch (e: Exception) {
+                ApiResult.Error("No se pudo cargar tu perfil. Probá de nuevo en unos minutos.")
             }
-        } catch (e: JsonParseException) {
-            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
-        } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
-        } catch (e: Exception) {
-            ApiResult.Error("No se pudo cargar tu perfil. Probá de nuevo en unos minutos.")
         }
     }
 
     suspend fun logout() {
+        cachedMeUser = null
+        cachedMeAtMs = 0L
         tokenManager.clear()
     }
 

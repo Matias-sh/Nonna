@@ -127,8 +127,6 @@ fun CofreDetailScreen(
     var feedbackMessage by remember { mutableStateOf("") }
     var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
 
-    LaunchedEffect(Unit) { viewModel.load() }
-
     LaunchedEffect(Unit) {
         viewModel.deleteSuccess.collectLatest {
             feedbackMessage = context.getString(R.string.chest_deleted_success)

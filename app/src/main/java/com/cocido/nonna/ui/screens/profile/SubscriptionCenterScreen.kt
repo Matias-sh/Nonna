@@ -662,11 +662,12 @@ private fun PlanCheckoutRow(
         }
         Spacer(modifier = Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val monthlyPrice = formatMoney(plan.precioMensual, plan.moneda)
+            val yearlyPrice = formatMoney(plan.precioAnual, plan.moneda)
             NonnaButton(
                 text = stringResource(
                     R.string.subscription_checkout_monthly_cta,
-                    plan.precioMensual?.toInt() ?: 0,
-                    plan.moneda.orEmpty()
+                    monthlyPrice
                 ),
                 onClick = onMonthly,
                 enabled = enabled,
@@ -675,8 +676,7 @@ private fun PlanCheckoutRow(
             NonnaButton(
                 text = stringResource(
                     R.string.subscription_checkout_yearly_cta,
-                    plan.precioAnual?.toInt() ?: 0,
-                    plan.moneda.orEmpty()
+                    yearlyPrice
                 ),
                 onClick = onYearly,
                 enabled = enabled,

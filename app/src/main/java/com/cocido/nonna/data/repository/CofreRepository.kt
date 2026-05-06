@@ -26,6 +26,8 @@ class CofreRepository @Inject constructor(
     private val api: CofreRecuerdosApi,
     private val usuarioApi: UsuarioApi
 ) {
+    private val inviteeAvatarCacheByEmail = mutableMapOf<String, String>()
+
     fun misCofres(): Flow<ApiResult<List<CofreUiModel>>> = flow {
         emit(ApiResult.Loading)
         try {
@@ -79,12 +81,19 @@ class CofreRepository @Inject constructor(
 
         val resolvedByEmail = mutableMapOf<String, String>()
         unresolvedEmails.forEach { email ->
+            inviteeAvatarCacheByEmail[email]?.let {
+                resolvedByEmail[email] = it
+                return@forEach
+            }
             runCatching {
                 val search = usuarioApi.search(query = email)
                 if (!search.isSuccessful) return@runCatching
                 val user = search.body()?.list()?.firstOrNull { it.email.equals(email, ignoreCase = true) }
                     ?: return@runCatching
-                user.profileImageUrl()?.let { resolvedByEmail[email] = it }
+                user.profileImageUrl()?.let {
+                    inviteeAvatarCacheByEmail[email] = it
+                    resolvedByEmail[email] = it
+                }
             }
         }
         if (resolvedByEmail.isEmpty()) return cofre

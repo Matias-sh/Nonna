@@ -119,8 +119,8 @@
     <string name="subscription_cancel_auto_renew">Cancel auto-renewal</string>
     <string name="subscription_checkout_title">Choose a plan</string>
     <string name="subscription_checkout_subtitle">You will continue to Mercado Pago to finish checkout.</string>
-    <string name="subscription_checkout_monthly_cta">Monthly %1$d %2$s</string>
-    <string name="subscription_checkout_yearly_cta">Yearly %1$d %2$s</string>
+    <string name="subscription_checkout_monthly_cta">Monthly %1$s</string>
+    <string name="subscription_checkout_yearly_cta">Yearly %1$s</string>
     <string name="subscription_checkout_open_error">Could not open checkout.</string>
     <string name="subscription_payments_history_title">Payment history</string>
     <string name="subscription_payments_empty">You have no recorded payments yet.</string>

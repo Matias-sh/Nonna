@@ -121,8 +121,8 @@
     <string name="subscription_cancel_auto_renew">Cancelar auto-renovación</string>
     <string name="subscription_checkout_title">Elegí un plan</string>
     <string name="subscription_checkout_subtitle">Al continuar vas a Mercado Pago para completar el checkout.</string>
-    <string name="subscription_checkout_monthly_cta">Mensual %1$d %2$s</string>
-    <string name="subscription_checkout_yearly_cta">Anual %1$d %2$s</string>
+    <string name="subscription_checkout_monthly_cta">Mensual %1$s</string>
+    <string name="subscription_checkout_yearly_cta">Anual %1$s</string>
     <string name="subscription_checkout_open_error">No se pudo abrir el checkout.</string>
     <string name="subscription_payments_history_title">Historial de pagos</string>
     <string name="subscription_payments_empty">Todavía no tenés pagos registrados.</string>
