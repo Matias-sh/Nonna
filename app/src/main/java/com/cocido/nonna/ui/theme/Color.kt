@@ -59,3 +59,10 @@ val RoleAbueloText = Color(0xFFD97706)
 // Gradients (for use with Brush)
 val PrimaryGradientStart = Caramel
 val PrimaryGradientEnd = Olive
+
+// Semantic aliases for DS consumption
+val TextPrimary = Sepia
+val TextSecondary = MutedForeground
+val TextDisabled = MutedForeground.copy(alpha = 0.5f)
+val Success = Olive
+val Warning = Color(0xFFD97706)

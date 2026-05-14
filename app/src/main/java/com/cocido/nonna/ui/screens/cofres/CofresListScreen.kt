@@ -30,13 +30,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.res.stringResource
 import com.cocido.nonna.R
@@ -59,21 +60,49 @@ import com.cocido.nonna.ui.theme.NonnaTheme
 import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
-fun CofresListScreen(
+fun CofresListRoute(
     onTabSelected: (NonnaTab) -> Unit,
     onCofreClick: (String) -> Unit,
     onCreateCofre: () -> Unit,
     viewModel: CofresListViewModel = hiltViewModel()
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    var activeFilter by remember { mutableStateOf(CofreFilters.todos.id) }
-    val cofres by viewModel.cofres.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    var fabVisible by remember { mutableStateOf(false) }
+    val cofres by viewModel.cofres.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+
+    val uiState = remember(cofres, isLoading, errorMessage) {
+        CofresListUiState(
+            isLoading = isLoading,
+            cofres = cofres,
+            errorMessage = errorMessage
+        )
+    }
 
     LaunchedEffect(Unit) { viewModel.load() }
-    LaunchedEffect(cofres.isNotEmpty()) {
-        if (cofres.isNotEmpty()) {
+
+    CofresListScreen(
+        uiState = uiState,
+        onEvent = { event ->
+            when (event) {
+                is CofresListEvent.OpenCofre -> onCofreClick(event.cofreId)
+                CofresListEvent.CreateCofre -> onCreateCofre()
+                is CofresListEvent.SelectTab -> onTabSelected(event.tab)
+            }
+        }
+    )
+}
+
+@Composable
+fun CofresListScreen(
+    uiState: CofresListUiState,
+    onEvent: (CofresListEvent) -> Unit
+) {
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var activeFilter by rememberSaveable { mutableStateOf(CofreFilters.todos.id) }
+    var fabVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.cofres.isNotEmpty()) {
+        if (uiState.cofres.isNotEmpty()) {
             kotlinx.coroutines.delay(300)
             fabVisible = true
         } else {
@@ -81,7 +110,7 @@ fun CofresListScreen(
         }
     }
 
-    val filteredCofres = cofres.filter { cofre ->
+    val filteredCofres = uiState.cofres.filter { cofre ->
         val localizedRelation = relationValueLabel(cofre.relation)
         // Apply search
         val matchesSearch = cofre.name.contains(searchQuery, ignoreCase = true) ||
@@ -100,7 +129,7 @@ fun CofresListScreen(
     
     AppShell(
         currentTab = NonnaTab.Cofres,
-        onTabSelected = onTabSelected
+        onTabSelected = { onEvent(CofresListEvent.SelectTab(it)) }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -111,7 +140,7 @@ fun CofresListScreen(
                     subtitle = stringResource(R.string.chests_subtitle)
                 )
                 
-                if (isLoading && cofres.isEmpty()) {
+                if (uiState.isLoading && uiState.cofres.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -120,7 +149,7 @@ fun CofresListScreen(
                     ) {
                         androidx.compose.material3.CircularProgressIndicator()
                     }
-                } else if (cofres.isEmpty()) {
+                } else if (uiState.cofres.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -132,13 +161,15 @@ fun CofresListScreen(
                             title = stringResource(R.string.chests_empty_title),
                             description = stringResource(R.string.chests_empty_description),
                             buttonText = stringResource(R.string.select_chest_empty_button),
-                            onButtonClick = onCreateCofre
+                            buttonTestTag = "cofres_empty_create_button",
+                            onButtonClick = { onEvent(CofresListEvent.CreateCofre) }
                         )
                     }
                 } else {
                     NonnaTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
+                        testTag = "cofres_search_input",
                         placeholder = stringResource(R.string.chests_search_placeholder),
                         leadingIcon = Icons.Outlined.Search,
                         modifier = Modifier
@@ -187,7 +218,7 @@ fun CofresListScreen(
                                 NonnaStaggerItem(index = index, stepDelayMs = NonnaMotion.StaggerStepMs) {
                                     CofreCard(
                                         cofre = cofre,
-                                        onClick = { onCofreClick(cofre.id) },
+                                        onClick = { onEvent(CofresListEvent.OpenCofre(cofre.id)) },
                                         modifier = Modifier
                                     )
                                 }
@@ -197,7 +228,7 @@ fun CofresListScreen(
                 }
             }
 
-            if (cofres.isNotEmpty()) {
+            if (uiState.cofres.isNotEmpty()) {
                 val fabInteraction = rememberMotionInteractionSource()
                 val fabPressed by fabInteraction.collectIsPressedAsState()
                 val fabScale by animateFloatAsState(
@@ -220,12 +251,13 @@ fun CofresListScreen(
                     )
                 ) {
                     FloatingActionButton(
-                        onClick = onCreateCofre,
+                        onClick = { onEvent(CofresListEvent.CreateCofre) },
                         interactionSource = fabInteraction,
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
                             .scale(fabScale)
+                            .testTag("cofres_fab_create")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -245,9 +277,8 @@ fun CofresListScreen(
 private fun CofresListScreenPreview() {
     NonnaTheme {
         CofresListScreen(
-            onTabSelected = {},
-            onCofreClick = {},
-            onCreateCofre = {}
+            uiState = CofresListUiState(),
+            onEvent = {}
         )
     }
 }

@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
+import com.cocido.nonna.ui.theme.NonnaElevation
+import com.cocido.nonna.ui.theme.NonnaSpacing
 
 enum class NonnaTab(
     val route: String,
@@ -99,8 +101,8 @@ fun NonnaBottomNavigation(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.background,
-        shadowElevation = 16.dp,
-        tonalElevation = 3.dp
+        shadowElevation = NonnaElevation.xl,
+        tonalElevation = NonnaElevation.md
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -109,8 +111,8 @@ fun NonnaBottomNavigation(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(72.dp)
-                    .padding(horizontal = 8.dp),
+                    .height(NonnaDimens.bottomNavHeight + NonnaSpacing.sm)
+                    .padding(horizontal = NonnaSpacing.sm),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -156,7 +158,7 @@ private fun NavItem(
     
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(NonnaSpacing.md))
             .nonnaInteractiveScale(interactionSource = interactionSource, pressed = 0.98f)
             .selectable(
                 selected = selected,
@@ -165,7 +167,7 @@ private fun NavItem(
                 interactionSource = interactionSource,
                 indication = null
             )
-            .padding(vertical = 8.dp, horizontal = 12.dp),
+            .padding(vertical = NonnaSpacing.sm, horizontal = NonnaSpacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -176,8 +178,8 @@ private fun NavItem(
             if (selected) {
                 Box(
                     modifier = Modifier
-                        .size(width = 64.dp, height = 32.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .size(width = NonnaDimens.spacing64, height = NonnaDimens.spacing32)
+                        .clip(RoundedCornerShape(NonnaSpacing.lg))
                         .background(MaterialTheme.colorScheme.primaryContainer)
                 )
             }
@@ -191,7 +193,7 @@ private fun NavItem(
             )
         }
         
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(NonnaSpacing.xs))
         
         // Label
         Text(
@@ -199,7 +201,7 @@ private fun NavItem(
             style = MaterialTheme.typography.labelMedium,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             color = color,
-            fontSize = 12.sp
+            fontSize = MaterialTheme.typography.labelMedium.fontSize
         )
     }
 }
@@ -215,7 +217,7 @@ fun NonnaSidebar(
             .width(NonnaDimens.sidebarWidth)
             .fillMaxHeight(),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 2.dp
+        shadowElevation = NonnaElevation.md
     ) {
         Column(
             modifier = Modifier.padding(NonnaDimens.spacing24)
@@ -228,7 +230,7 @@ fun NonnaSidebar(
                 contentScale = ContentScale.Fit
             )
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(NonnaSpacing.xxl))
             
             // Navigation items
             NonnaTab.entries.forEach { tab ->
@@ -237,7 +239,7 @@ fun NonnaSidebar(
                     isSelected = currentTab == tab,
                     onClick = { onTabSelected(tab) }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(NonnaSpacing.sm))
             }
         }
     }
@@ -271,7 +273,7 @@ private fun SidebarNavItem(
         }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = NonnaSpacing.lg, vertical = NonnaSpacing.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -283,7 +285,7 @@ private fun SidebarNavItem(
                     MaterialTheme.colorScheme.onSurface
                 }
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(NonnaSpacing.md))
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,

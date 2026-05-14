@@ -18,8 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.cocido.nonna.ui.theme.NonnaDimens
+import com.cocido.nonna.ui.theme.NonnaSpacing
 import com.cocido.nonna.ui.theme.PrimaryGradientEnd
 import com.cocido.nonna.ui.theme.PrimaryGradientStart
 
@@ -40,7 +40,7 @@ fun EmptyState(
         // Icon container with gradient background
         Box(
             modifier = Modifier
-                .size(80.dp)
+                .size(NonnaDimens.avatarSizeXLarge)
                 .background(
                     brush = Brush.linearGradient(
                         colors = listOf(
@@ -55,12 +55,12 @@ fun EmptyState(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(NonnaDimens.spacing40),
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
             )
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(NonnaSpacing.lg))
         
         Text(
             text = title,
@@ -69,18 +69,18 @@ fun EmptyState(
             textAlign = TextAlign.Center
         )
         
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(NonnaSpacing.sm))
         
         Text(
             text = description,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 24.dp)
+            modifier = Modifier.padding(horizontal = NonnaSpacing.xl)
         )
         
         if (action != null) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(NonnaSpacing.xl))
             action()
         }
     }
@@ -93,6 +93,7 @@ fun EmptyStateWithButton(
     description: String,
     buttonText: String,
     onButtonClick: () -> Unit,
+    buttonTestTag: String? = null,
     modifier: Modifier = Modifier
 ) {
     EmptyState(
@@ -104,6 +105,7 @@ fun EmptyStateWithButton(
         NonnaButton(
             text = buttonText,
             onClick = onButtonClick,
+            testTag = buttonTestTag,
             style = NonnaButtonStyle.Primary
         )
     }

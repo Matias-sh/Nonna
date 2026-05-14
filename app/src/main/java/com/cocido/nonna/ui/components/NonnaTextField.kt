@@ -29,8 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
+import com.cocido.nonna.ui.theme.NonnaSpacing
 import com.cocido.nonna.ui.theme.InputBackground
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
@@ -40,6 +41,7 @@ fun NonnaTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    testTag: String? = null,
     label: String? = null,
     placeholder: String = "",
     leadingIcon: ImageVector? = null,
@@ -79,14 +81,16 @@ fun NonnaTextField(
                     MaterialTheme.colorScheme.onSurface
                 }
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(NonnaSpacing.sm))
         }
         
         // Input field
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .let { base -> if (testTag != null) base.testTag(testTag) else base },
             enabled = enabled,
             readOnly = readOnly,
             textStyle = MaterialTheme.typography.bodyLarge.copy(
@@ -114,7 +118,7 @@ fun NonnaTextField(
                         )
                         .background(InputBackground)
                         .border(
-                            width = 1.dp,
+                            width = NonnaDimens.borderWidth,
                             color = borderColor,
                             shape = NonnaCorners.Input
                         )
@@ -125,7 +129,7 @@ fun NonnaTextField(
                         modifier = Modifier
                             .fillMaxWidth()
                             .align(if (singleLine) Alignment.CenterStart else Alignment.TopStart)
-                            .padding(vertical = if (!singleLine) 12.dp else 0.dp),
+                            .padding(vertical = if (!singleLine) NonnaSpacing.md else NonnaSpacing.none),
                         verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top
                     ) {
                         if (leadingIcon != null) {
@@ -135,7 +139,7 @@ fun NonnaTextField(
                                 modifier = Modifier.size(NonnaDimens.inputIconSize),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(NonnaSpacing.md))
                         }
                         
                         Box(modifier = Modifier.weight(1f)) {
@@ -150,7 +154,7 @@ fun NonnaTextField(
                         }
                         
                         if (trailingIcon != null) {
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(NonnaSpacing.md))
                             Icon(
                                 imageVector = trailingIcon,
                                 contentDescription = null,
@@ -158,7 +162,7 @@ fun NonnaTextField(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         } else if (trailingIconContent != null) {
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(NonnaSpacing.md))
                             trailingIconContent()
                         }
                     }
@@ -168,14 +172,14 @@ fun NonnaTextField(
         
         // Helper/Error text
         if (errorMessage != null && isError) {
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(NonnaSpacing.xs))
             Text(
                 text = errorMessage,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error
             )
         } else if (helperText != null) {
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(NonnaSpacing.xs))
             Text(
                 text = helperText,
                 style = MaterialTheme.typography.bodySmall,

@@ -56,13 +56,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.AppShell
 import com.cocido.nonna.ui.components.EmptyStateWithButton
@@ -100,7 +100,7 @@ private fun SharedPreferences.suppressInviteWelcomeFor(inv: CofreInvitationUiMod
 }
 
 @Composable
-fun HomeScreen(
+fun HomeRoute(
     onTabSelected: (NonnaTab) -> Unit,
     onCreateCofre: () -> Unit,
     onAddMemory: () -> Unit,
@@ -108,36 +108,78 @@ fun HomeScreen(
     onOpenInvitations: () -> Unit = {},
     viewModel: com.cocido.nonna.ui.viewmodel.HomeViewModel = hiltViewModel()
 ) {
+    val cofres by viewModel.cofres.collectAsStateWithLifecycle()
+    val user by viewModel.user.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val featuredInvitation by viewModel.featuredInvitation.collectAsStateWithLifecycle()
+    val invitationAcceptLoading by viewModel.invitationAcceptLoading.collectAsStateWithLifecycle()
+    val invitationAcceptError by viewModel.invitationAcceptError.collectAsStateWithLifecycle()
+
+    val uiState = remember(
+        cofres,
+        user,
+        isLoading,
+        errorMessage,
+        featuredInvitation,
+        invitationAcceptLoading,
+        invitationAcceptError
+    ) {
+        HomeUiState(
+            cofres = cofres,
+            user = user,
+            isLoading = isLoading,
+            errorMessage = errorMessage,
+            featuredInvitation = featuredInvitation,
+            invitationAcceptLoading = invitationAcceptLoading,
+            invitationAcceptError = invitationAcceptError
+        )
+    }
+
+    LaunchedEffect(Unit) { viewModel.load() }
+
+    HomeScreen(
+        uiState = uiState,
+        onEvent = { event ->
+            when (event) {
+                is HomeEvent.SelectTab -> onTabSelected(event.tab)
+                HomeEvent.CreateCofre -> onCreateCofre()
+                HomeEvent.AddMemory -> onAddMemory()
+                is HomeEvent.ContinueCofre -> onContinueCofre(event.cofreId)
+                HomeEvent.OpenInvitations -> onOpenInvitations()
+                is HomeEvent.AcceptInvitation -> viewModel.acceptInvitationFromHome(event.invitationId)
+                HomeEvent.ClearInvitationAcceptError -> viewModel.clearInvitationAcceptError()
+                HomeEvent.DismissFeaturedInvitation -> viewModel.dismissFeaturedInvitation()
+            }
+        }
+    )
+}
+
+@Composable
+fun HomeScreen(
+    uiState: HomeUiState,
+    onEvent: (HomeEvent) -> Unit
+) {
     val context = LocalContext.current
     val homePrefs = remember(context) {
         context.getSharedPreferences("nonna_home_hints", android.content.Context.MODE_PRIVATE)
     }
     val todayKey = remember { LocalDate.now().toString() }
 
-    val cofres by viewModel.cofres.collectAsState()
-    val user by viewModel.user.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val featuredInvitation by viewModel.featuredInvitation.collectAsState()
-    val invitationAcceptLoading by viewModel.invitationAcceptLoading.collectAsState()
-    val invitationAcceptError by viewModel.invitationAcceptError.collectAsState()
-
-    LaunchedEffect(Unit) { viewModel.load() }
-
-    val hasData = cofres.isNotEmpty()
-    val lastViewedCofreId = remember(cofres, homePrefs) {
+    val hasData = uiState.cofres.isNotEmpty()
+    val lastViewedCofreId = remember(uiState.cofres, homePrefs) {
         homePrefs.getString("last_viewed_cofre_id", null)
     }
-    val lastCofre = remember(cofres, lastViewedCofreId) {
-        val lastViewed = cofres.firstOrNull { it.id == lastViewedCofreId }
+    val lastCofre = remember(uiState.cofres, lastViewedCofreId) {
+        val lastViewed = uiState.cofres.firstOrNull { it.id == lastViewedCofreId }
         if (lastViewed != null) {
             lastViewed
         } else {
-            cofres.maxByOrNull { parseCofreUpdatedAt(it.updatedAtIso) ?: java.time.Instant.EPOCH }
-                ?: cofres.firstOrNull()
+            uiState.cofres.maxByOrNull { parseCofreUpdatedAt(it.updatedAtIso) ?: java.time.Instant.EPOCH }
+                ?: uiState.cofres.firstOrNull()
         }
     }
-    val userName = user?.displayName()?.split(" ")?.firstOrNull() ?: ""
+    val userName = uiState.user?.displayName()?.split(" ")?.firstOrNull() ?: ""
     var showDailyPrompt by rememberSaveable(todayKey) {
         mutableStateOf(
             !homePrefs.getBoolean("daily_prompt_dismissed_$todayKey", false)
@@ -145,16 +187,16 @@ fun HomeScreen(
     }
     var dismissedInvitationId by rememberSaveable { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(featuredInvitation?.id) {
-        if (featuredInvitation?.id != dismissedInvitationId) return@LaunchedEffect
+    LaunchedEffect(uiState.featuredInvitation?.id) {
+        if (uiState.featuredInvitation?.id != dismissedInvitationId) return@LaunchedEffect
         dismissedInvitationId = null
     }
 
     AppShell(
         currentTab = NonnaTab.Inicio,
-        onTabSelected = onTabSelected
+        onTabSelected = { onEvent(HomeEvent.SelectTab(it)) }
     ) {
-        if (isLoading && cofres.isEmpty()) {
+        if (uiState.isLoading && uiState.cofres.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -171,7 +213,8 @@ fun HomeScreen(
                     title = stringResource(R.string.home_empty_title),
                     description = stringResource(R.string.home_empty_description),
                     buttonText = stringResource(R.string.home_empty_button),
-                    onButtonClick = onCreateCofre
+                    buttonTestTag = "home_empty_create_button",
+                    onButtonClick = { onEvent(HomeEvent.CreateCofre) }
                 )
             }
         } else {
@@ -197,7 +240,7 @@ fun HomeScreen(
                             coverImageUrl = lastCofre.coverImageUrl?.takeIf { it.isNotBlank() && it != "string" },
                             onClick = {
                                 homePrefs.edit().putString("last_viewed_cofre_id", lastCofre.id).apply()
-                                onContinueCofre(lastCofre.id)
+                                onEvent(HomeEvent.ContinueCofre(lastCofre.id))
                             }
                         )
                     }
@@ -209,7 +252,7 @@ fun HomeScreen(
                 if (showDailyPrompt) {
                     NonnaStaggerItem(index = 2, stepDelayMs = 100) {
                         DailyPromptSection(
-                            onAddMemory = onAddMemory,
+                            onAddMemory = { onEvent(HomeEvent.AddMemory) },
                             onDismiss = {
                                 homePrefs.edit()
                                     .putBoolean("daily_prompt_dismissed_$todayKey", true)
@@ -224,8 +267,8 @@ fun HomeScreen(
                 // Quick actions
                 NonnaStaggerItem(index = 3, stepDelayMs = 100) {
                     QuickActionsSection(
-                        onCreateCofre = onCreateCofre,
-                        onAddMemory = onAddMemory
+                        onCreateCofre = { onEvent(HomeEvent.CreateCofre) },
+                        onAddMemory = { onEvent(HomeEvent.AddMemory) }
                     )
                 }
                 
@@ -234,26 +277,26 @@ fun HomeScreen(
         }
     }
 
-    val invitationToShow = featuredInvitation?.takeIf {
+    val invitationToShow = uiState.featuredInvitation?.takeIf {
         it.id != dismissedInvitationId && !homePrefs.isInviteWelcomeSuppressed(it)
     }
     if (invitationToShow != null) {
         InvitationWelcomeDialog(
             invitation = invitationToShow,
-            acceptLoading = invitationAcceptLoading,
-            acceptError = invitationAcceptError,
-            onClearAcceptError = viewModel::clearInvitationAcceptError,
-            onAcceptNow = { viewModel.acceptInvitationFromHome(invitationToShow.id) },
+            acceptLoading = uiState.invitationAcceptLoading,
+            acceptError = uiState.invitationAcceptError,
+            onClearAcceptError = { onEvent(HomeEvent.ClearInvitationAcceptError) },
+            onAcceptNow = { onEvent(HomeEvent.AcceptInvitation(invitationToShow.id)) },
             onOpenInvitations = { dontShowAgain ->
                 if (dontShowAgain) homePrefs.suppressInviteWelcomeFor(invitationToShow)
                 else dismissedInvitationId = invitationToShow.id
-                viewModel.dismissFeaturedInvitation()
-                onOpenInvitations()
+                onEvent(HomeEvent.DismissFeaturedInvitation)
+                onEvent(HomeEvent.OpenInvitations)
             },
             onDismiss = { dontShowAgain ->
                 if (dontShowAgain) homePrefs.suppressInviteWelcomeFor(invitationToShow)
                 else dismissedInvitationId = invitationToShow.id
-                viewModel.dismissFeaturedInvitation()
+                onEvent(HomeEvent.DismissFeaturedInvitation)
             }
         )
     }
@@ -395,6 +438,7 @@ private fun InvitationWelcomeDialog(
                             stringResource(R.string.invite_welcome_modal_accept_now)
                         },
                         onClick = onAcceptNow,
+                        testTag = "home_invite_accept_button",
                         enabled = !acceptLoading,
                         fullWidth = true
                     )
@@ -402,6 +446,7 @@ private fun InvitationWelcomeDialog(
                     NonnaButton(
                         text = stringResource(R.string.invite_welcome_modal_open_button),
                         onClick = { onOpenInvitations(dontShowAgain) },
+                        testTag = "home_invite_open_invitations_button",
                         enabled = !acceptLoading,
                         style = NonnaButtonStyle.Outline,
                         fullWidth = true
@@ -429,6 +474,7 @@ private fun InvitationWelcomeDialog(
                     NonnaButton(
                         text = stringResource(R.string.common_close),
                         onClick = { onDismiss(dontShowAgain) },
+                        testTag = "home_invite_close_button",
                         enabled = !acceptLoading,
                         style = NonnaButtonStyle.Outline,
                         fullWidth = true
@@ -768,11 +814,8 @@ private fun parseCofreUpdatedAt(iso: String?): java.time.Instant? {
 private fun HomeScreenPreview() {
     NonnaTheme {
         HomeScreen(
-            onTabSelected = {},
-            onCreateCofre = {},
-            onAddMemory = {},
-            onContinueCofre = {},
-            onOpenInvitations = {}
+            uiState = HomeUiState(),
+            onEvent = {}
         )
     }
 }

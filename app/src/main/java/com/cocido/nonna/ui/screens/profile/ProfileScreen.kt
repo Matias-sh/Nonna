@@ -38,17 +38,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.cocido.nonna.R
 import com.cocido.nonna.BuildConfig
@@ -68,7 +69,7 @@ import com.cocido.nonna.data.remote.dto.SuscripcionPlanDto
 import java.util.Locale
 
 @Composable
-fun ProfileScreen(
+fun ProfileRoute(
     onTabSelected: (NonnaTab) -> Unit,
     onEditProfile: () -> Unit,
     onOpenSubscriptionCenter: () -> Unit,
@@ -76,26 +77,55 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     viewModel: com.cocido.nonna.ui.viewmodel.ProfileViewModel = hiltViewModel()
 ) {
-    val user by viewModel.user.collectAsState()
-    val suscripcion by viewModel.suscripcion.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
+    val user by viewModel.user.collectAsStateWithLifecycle()
+    val suscripcion by viewModel.suscripcion.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val uiState = ProfileUiState(
+        user = user,
+        suscripcion = suscripcion,
+        isLoading = isLoading,
+        errorMessage = errorMessage
+    )
+
+    LaunchedEffect(Unit) { viewModel.load() }
+
+    ProfileScreen(
+        uiState = uiState,
+        onConsumeError = viewModel::clearError,
+        onEvent = { event ->
+            when (event) {
+                is ProfileEvent.SelectTab -> onTabSelected(event.tab)
+                ProfileEvent.EditProfile -> onEditProfile()
+                ProfileEvent.OpenSubscriptionCenter -> onOpenSubscriptionCenter()
+                ProfileEvent.OpenInvitations -> onOpenInvitations()
+                ProfileEvent.Logout -> onLogout()
+            }
+        }
+    )
+}
+
+@Composable
+fun ProfileScreen(
+    uiState: ProfileUiState,
+    onEvent: (ProfileEvent) -> Unit,
+    onConsumeError: () -> Unit
+) {
     var planFeedbackVisible by remember { mutableStateOf(false) }
     var planFeedbackMessage by remember { mutableStateOf("") }
     var planFeedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
-    LaunchedEffect(Unit) { viewModel.load() }
-    LaunchedEffect(errorMessage) {
-        errorMessage?.let { msg ->
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { msg ->
             planFeedbackType = NonnaFeedbackType.Error
             planFeedbackMessage = msg
             planFeedbackVisible = true
             delay(2200)
             planFeedbackVisible = false
-            viewModel.clearError()
+            onConsumeError()
         }
     }
 
-    val displayUser = user
+    val displayUser = uiState.user
     // En perfil mostramos el nombre \"humano\" (persona/nombre) más que el username técnico.
     val userName = displayUser?.displayName() ?: ""
     val userEmail = displayUser?.email ?: ""
@@ -104,7 +134,7 @@ fun ProfileScreen(
 
     AppShell(
         currentTab = NonnaTab.Perfil,
-        onTabSelected = onTabSelected
+        onTabSelected = { onEvent(ProfileEvent.SelectTab(it)) }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -185,7 +215,7 @@ fun ProfileScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            if (isLoading) {
+                            if (uiState.isLoading) {
                                 Spacer(modifier = Modifier.height(12.dp))
                                 androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.size(24.dp))
                             }
@@ -195,7 +225,7 @@ fun ProfileScreen(
                 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                suscripcion?.let { sub ->
+                uiState.suscripcion?.let { sub ->
                     SubscriptionSummaryCard(suscripcion = sub)
                     Spacer(modifier = Modifier.height(24.dp))
                 }
@@ -211,7 +241,8 @@ fun ProfileScreen(
                 OptionCard(
                     icon = Icons.Outlined.Edit,
                     title = stringResource(R.string.profile_edit_title),
-                    onClick = onEditProfile,
+                    onClick = { onEvent(ProfileEvent.EditProfile) },
+                    modifier = Modifier.testTag("profile_edit_option"),
                     subtitle = stringResource(R.string.profile_edit_subtitle)
                 )
 
@@ -220,7 +251,8 @@ fun ProfileScreen(
                 OptionCard(
                     icon = Icons.Outlined.Payments,
                     title = stringResource(R.string.subscription_center_title),
-                    onClick = onOpenSubscriptionCenter,
+                    onClick = { onEvent(ProfileEvent.OpenSubscriptionCenter) },
+                    modifier = Modifier.testTag("profile_subscription_option"),
                     subtitle = stringResource(R.string.subscription_center_subtitle)
                 )
 
@@ -229,7 +261,8 @@ fun ProfileScreen(
                 OptionCard(
                     icon = Icons.Outlined.MailOutline,
                     title = stringResource(R.string.invites_title),
-                    onClick = onOpenInvitations,
+                    onClick = { onEvent(ProfileEvent.OpenInvitations) },
+                    modifier = Modifier.testTag("profile_invitations_option"),
                     subtitle = stringResource(R.string.invites_profile_subtitle)
                 )
 
@@ -241,8 +274,10 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Surface(
-                    onClick = onLogout,
-                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { onEvent(ProfileEvent.Logout) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("profile_logout_action"),
                     shape = NonnaCorners.Medium,
                     color = MaterialTheme.colorScheme.surface
                 ) {
@@ -509,11 +544,12 @@ private fun OptionCard(
     icon: ImageVector,
     title: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     subtitle: String? = null
 ) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = NonnaCorners.Card,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -563,11 +599,9 @@ private fun OptionCard(
 private fun ProfileScreenPreview() {
     NonnaTheme {
         ProfileScreen(
-            onTabSelected = {},
-            onEditProfile = {},
-            onOpenSubscriptionCenter = {},
-            onOpenInvitations = {},
-            onLogout = {}
+            uiState = ProfileUiState(),
+            onEvent = {},
+            onConsumeError = {}
         )
     }
 }

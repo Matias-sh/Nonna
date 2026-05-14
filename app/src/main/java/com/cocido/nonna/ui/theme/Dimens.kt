@@ -8,13 +8,13 @@ import androidx.compose.ui.unit.dp
  */
 object NonnaDimens {
     // Base spacing
-    val spacing4 = 4.dp
-    val spacing8 = 8.dp
-    val spacing12 = 12.dp
-    val spacing16 = 16.dp
+    val spacing4 = NonnaSpacing.xs
+    val spacing8 = NonnaSpacing.sm
+    val spacing12 = NonnaSpacing.md
+    val spacing16 = NonnaSpacing.lg
     val spacing20 = 20.dp
-    val spacing24 = 24.dp
-    val spacing32 = 32.dp
+    val spacing24 = NonnaSpacing.xl
+    val spacing32 = NonnaSpacing.xxl
     val spacing40 = 40.dp
     val spacing48 = 48.dp
     val spacing56 = 56.dp
@@ -27,8 +27,8 @@ object NonnaDimens {
     val paddingExtraLarge = spacing32
     
     // Screen padding
-    val screenPaddingHorizontal = spacing16
-    val screenPaddingVertical = spacing24
+    val screenPaddingHorizontal = NonnaSpacing.screenHorizontal
+    val screenPaddingVertical = NonnaSpacing.screenVertical
     
     // Card
     val cardPadding = spacing16

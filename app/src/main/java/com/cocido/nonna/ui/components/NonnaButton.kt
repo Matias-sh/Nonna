@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
+import com.cocido.nonna.ui.theme.NonnaElevation
+import com.cocido.nonna.ui.theme.NonnaSpacing
 import com.cocido.nonna.ui.theme.NonnaTheme
 
 enum class NonnaButtonStyle {
@@ -52,6 +55,7 @@ fun NonnaButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    testTag: String? = null,
     style: NonnaButtonStyle = NonnaButtonStyle.Primary,
     size: NonnaButtonSize = NonnaButtonSize.Medium,
     enabled: Boolean = true,
@@ -66,6 +70,7 @@ fun NonnaButton(
     } else {
         modifier
     }.nonnaInteractiveScale(interactionSource = interactionSource, pressed = 0.985f)
+        .let { base -> if (testTag != null) base.testTag(testTag) else base }
     
     val height = when (size) {
         NonnaButtonSize.Small -> NonnaDimens.buttonHeightSmall
@@ -74,9 +79,9 @@ fun NonnaButton(
     }
     
     val contentPadding = when (size) {
-        NonnaButtonSize.Small -> PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-        NonnaButtonSize.Medium -> PaddingValues(horizontal = 24.dp, vertical = 12.dp)
-        NonnaButtonSize.Large -> PaddingValues(horizontal = 32.dp, vertical = 14.dp)
+        NonnaButtonSize.Small -> PaddingValues(horizontal = NonnaDimens.spacing16, vertical = NonnaDimens.spacing8)
+        NonnaButtonSize.Medium -> PaddingValues(horizontal = NonnaDimens.spacing24, vertical = NonnaDimens.spacing12)
+        NonnaButtonSize.Large -> PaddingValues(horizontal = NonnaDimens.spacing32, vertical = NonnaDimens.spacing12)
     }
     
     val iconSize = when (size) {
@@ -137,7 +142,7 @@ fun NonnaButton(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 border = BorderStroke(
-                    width = 1.dp,
+                    width = NonnaDimens.borderWidth,
                     color = if (enabled) {
                         MaterialTheme.colorScheme.outline
                     } else {
@@ -196,27 +201,27 @@ private fun nonnaButtonElevation(style: NonnaButtonStyle): ButtonElevation {
         NonnaButtonStyle.Primary,
         NonnaButtonStyle.Secondary,
         NonnaButtonStyle.Destructive -> ButtonDefaults.buttonElevation(
-            defaultElevation = 2.dp,
-            pressedElevation = 6.dp,
-            focusedElevation = 4.dp,
-            hoveredElevation = 4.dp,
-            disabledElevation = 0.dp
+            defaultElevation = NonnaElevation.md,
+            pressedElevation = NonnaElevation.xl,
+            focusedElevation = NonnaElevation.lg,
+            hoveredElevation = NonnaElevation.lg,
+            disabledElevation = NonnaElevation.none
         )
 
         NonnaButtonStyle.Outline -> ButtonDefaults.buttonElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 2.dp,
-            focusedElevation = 1.dp,
-            hoveredElevation = 1.dp,
-            disabledElevation = 0.dp
+            defaultElevation = NonnaElevation.none,
+            pressedElevation = NonnaElevation.md,
+            focusedElevation = NonnaElevation.sm,
+            hoveredElevation = NonnaElevation.sm,
+            disabledElevation = NonnaElevation.none
         )
 
         NonnaButtonStyle.Ghost -> ButtonDefaults.buttonElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 1.dp,
-            focusedElevation = 0.dp,
-            hoveredElevation = 0.dp,
-            disabledElevation = 0.dp
+            defaultElevation = NonnaElevation.none,
+            pressedElevation = NonnaElevation.sm,
+            focusedElevation = NonnaElevation.none,
+            hoveredElevation = NonnaElevation.none,
+            disabledElevation = NonnaElevation.none
         )
     }
 }
@@ -240,13 +245,13 @@ private fun ButtonContent(
                 contentDescription = null,
                 modifier = Modifier.size(iconSize)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(NonnaSpacing.sm))
         }
         
         Text(text = text)
         
         if (icon != null && iconPosition == IconPosition.End) {
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(NonnaSpacing.sm))
             Icon(
                 imageVector = icon,
                 contentDescription = null,

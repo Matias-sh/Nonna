@@ -138,6 +138,13 @@ fun NonnaTheme(
  * Extension to access custom NONNA colors not in Material3 scheme
  */
 object NonnaColors {
+    // Semantic text/feedback aliases
+    val textPrimary = TextPrimary
+    val textSecondary = TextSecondary
+    val textDisabled = TextDisabled
+    val success = Success
+    val warning = Warning
+
     // Emotional tags
     val tagAlegre = TagAlegreBackground
     val tagAlegreText = TagAlegreText

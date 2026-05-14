@@ -27,16 +27,16 @@ import com.cocido.nonna.ui.screens.auth.AuthScreen
 import com.cocido.nonna.ui.screens.auth.ForgotPasswordScreen
 import com.cocido.nonna.ui.screens.auth.VerifyEmailScreen
 import com.cocido.nonna.ui.screens.cofres.CofreDetailScreen
-import com.cocido.nonna.ui.screens.cofres.CofresListScreen
+import com.cocido.nonna.ui.screens.cofres.CofresListRoute
 import com.cocido.nonna.ui.screens.cofres.CreateCofreScreen
 import com.cocido.nonna.ui.screens.cofres.EditCofreScreen
-import com.cocido.nonna.ui.screens.home.HomeScreen
+import com.cocido.nonna.ui.screens.home.HomeRoute
 import com.cocido.nonna.ui.screens.memory.AddMemoryScreen
 import com.cocido.nonna.ui.screens.memory.EditMemoryScreen
 import com.cocido.nonna.ui.screens.memory.MemoryDetailScreen
 import com.cocido.nonna.ui.screens.memory.SelectCofreScreen
 import com.cocido.nonna.ui.screens.onboarding.OnboardingScreen
-import com.cocido.nonna.ui.screens.profile.ProfileScreen
+import com.cocido.nonna.ui.screens.profile.ProfileRoute
 import com.cocido.nonna.ui.screens.profile.ProfileSettingsScreen
 import com.cocido.nonna.ui.screens.profile.InvitationsScreen
 import com.cocido.nonna.ui.screens.profile.SubscriptionCenterScreen
@@ -266,7 +266,7 @@ fun NonnaNavHost(
         
         // Home Screen
         composable(Screen.Home.route) {
-            HomeScreen(
+            HomeRoute(
                 onTabSelected = { tab ->
                     when (tab) {
                         NonnaTab.Inicio -> { /* Already here */ }
@@ -285,7 +285,7 @@ fun NonnaNavHost(
         
         // Cofres List Screen
         composable(Screen.Cofres.route) {
-            CofresListScreen(
+            CofresListRoute(
                 onTabSelected = { tab ->
                     when (tab) {
                         NonnaTab.Inicio -> navController.navigate(Screen.Home.route)
@@ -358,7 +358,7 @@ fun NonnaNavHost(
         
         // Profile Screen
         composable(Screen.Profile.route) {
-            ProfileScreen(
+            ProfileRoute(
                 onTabSelected = { tab ->
                     when (tab) {
                         NonnaTab.Inicio -> navController.navigate(Screen.Home.route)
