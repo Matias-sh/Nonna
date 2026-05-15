@@ -1,5 +1,6 @@
 package com.cocido.nonna.notifications
 
+import android.graphics.BitmapFactory
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -8,6 +9,7 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.cocido.nonna.MainActivity
 import com.cocido.nonna.R
 import com.cocido.nonna.data.repository.NotificationTokenSyncManager
@@ -44,13 +46,28 @@ class NonnaFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     private fun showForegroundNotification(message: RemoteMessage) {
-        val title = message.notification?.title
+        val pushType = message.data["type"]?.trim().orEmpty()
+        val rawTitle = message.notification?.title
             ?: message.data["title"]
             ?: getString(R.string.notifications_title)
-        val body = message.notification?.body
+        val rawBody = message.notification?.body
             ?: message.data["body"]
             ?: message.data["cuerpo"]
             ?: getString(R.string.notifications_subtitle)
+        val title = when (pushType) {
+            "invitacion_cofre" -> rawTitle.ifBlank { getString(R.string.notifications_type_invitation_title) }
+            "invitacion_aceptada" -> rawTitle.ifBlank { getString(R.string.notifications_type_invitation_accepted_title) }
+            "suscripcion_renovacion_requerida" -> rawTitle.ifBlank { getString(R.string.notifications_type_subscription_title) }
+            "nueva_version" -> rawTitle.ifBlank { getString(R.string.notifications_type_update_title) }
+            else -> rawTitle
+        }
+        val body = rawBody
+        val category = when (pushType) {
+            "invitacion_cofre", "invitacion_aceptada" -> NotificationCompat.CATEGORY_SOCIAL
+            "suscripcion_renovacion_requerida" -> NotificationCompat.CATEGORY_REMINDER
+            "nueva_version" -> NotificationCompat.CATEGORY_RECOMMENDATION
+            else -> NotificationCompat.CATEGORY_MESSAGE
+        }
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -70,12 +87,18 @@ class NonnaFirebaseMessagingService : FirebaseMessagingService() {
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         ensureNotificationChannel(notificationManager)
+        val largeIcon = BitmapFactory.decodeResource(resources, R.drawable.nonna_logo)
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification_small)
+            .setColor(ContextCompat.getColor(this, R.color.primary))
+            .setLargeIcon(largeIcon)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setSubText(getString(R.string.app_name))
+            .setCategory(category)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

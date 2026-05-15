@@ -511,6 +511,10 @@
     <string name="notifications_load_more">Cargar más</string>
     <string name="notifications_loading_more">Cargando...</string>
     <string name="notifications_clear_message">Cerrar mensaje</string>
+    <string name="notifications_type_invitation_title">Invitación a un cofre</string>
+    <string name="notifications_type_invitation_accepted_title">Invitación aceptada</string>
+    <string name="notifications_type_subscription_title">Renovación de suscripción</string>
+    <string name="notifications_type_update_title">Nueva versión disponible</string>
     <string name="invites_received_tab">Recibidas</string>
     <string name="invites_sent_tab">Enviadas</string>
     <string name="invites_empty_state">No hay invitaciones para mostrar.</string>

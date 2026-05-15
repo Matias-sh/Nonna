@@ -158,6 +158,7 @@ dependencies {
     
     // WorkManager
     implementation(libs.androidx.work.runtime)
+    implementation("androidx.profileinstaller:profileinstaller:1.3.1")
     
     // Networking
     implementation(libs.retrofit)

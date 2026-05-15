@@ -131,11 +131,6 @@ fun EditCofreScreen(
 
     LaunchedEffect(Unit) {
         viewModel.updateSuccess.collectLatest {
-            feedbackMessage = "Cofre actualizado correctamente"
-            feedbackType = NonnaFeedbackType.Success
-            feedbackVisible = true
-            delay(1200)
-            feedbackVisible = false
             onUpdated()
             onBack()
         }

@@ -1,5 +1,7 @@
 package com.cocido.nonna.ui.viewmodel
 
+import android.os.SystemClock
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
@@ -25,6 +27,9 @@ class AddMemoryViewModel @Inject constructor(
     private val emocionesRepository: EmocionesRepository,
     private val suscripcionRepository: SuscripcionRepository
 ) : ViewModel() {
+    companion object {
+        private const val PERF_TAG = "NonnaPerf"
+    }
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -34,6 +39,8 @@ class AddMemoryViewModel @Inject constructor(
 
     private val _saved = MutableSharedFlow<MemoryUiModel>()
     val saved: SharedFlow<MemoryUiModel> = _saved.asSharedFlow()
+    private val _uploadProgress = MutableStateFlow<Float?>(null)
+    val uploadProgress: StateFlow<Float?> = _uploadProgress.asStateFlow()
 
     private val _emotionIdByName = MutableStateFlow<Map<String, String>>(emptyMap())
 
@@ -58,7 +65,9 @@ class AddMemoryViewModel @Inject constructor(
         galleryImages: List<java.io.File> = emptyList()
     ) {
         viewModelScope.launch {
+            val startMs = SystemClock.elapsedRealtime()
             _isLoading.value = true
+            _uploadProgress.value = 0f
             when (val result = recuerdosRepository.createRecuerdo(
                 cofreRecuerdosId = cofreRecuerdosId,
                 titulo = titulo,
@@ -68,13 +77,34 @@ class AddMemoryViewModel @Inject constructor(
                 emocionId = emocionId,
                 emocionPersonalizada = emocionPersonalizada,
                 portadaAudio = portadaAudio,
-                galleryImages = galleryImages
+                galleryImages = galleryImages,
+                onUploadProgress = { uploadedBytes, totalBytes ->
+                    if (totalBytes > 0L) {
+                        _uploadProgress.value = (uploadedBytes.toFloat() / totalBytes.toFloat())
+                            .coerceIn(0f, 1f)
+                    }
+                }
             )) {
-                is ApiResult.Success -> _saved.emit(result.data)
-                is ApiResult.Error -> _errorMessage.emit(result.message)
+                is ApiResult.Success -> {
+                    Log.d(
+                        PERF_TAG,
+                        "save_recuerdo_success_ms=${SystemClock.elapsedRealtime() - startMs} " +
+                            "gallery_count=${galleryImages.size}"
+                    )
+                    _saved.emit(result.data)
+                }
+                is ApiResult.Error -> {
+                    Log.d(
+                        PERF_TAG,
+                        "save_recuerdo_error_ms=${SystemClock.elapsedRealtime() - startMs} " +
+                            "gallery_count=${galleryImages.size}"
+                    )
+                    _errorMessage.emit(result.message)
+                }
                 else -> { }
             }
             _isLoading.value = false
+            _uploadProgress.value = null
         }
     }
 

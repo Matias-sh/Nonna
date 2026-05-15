@@ -1,0 +1,12 @@
+Lcom/cocido/nonna/MainActivity;
+Lcom/cocido/nonna/NonnaApplication;
+Lcom/cocido/nonna/ui/navigation/NavGraphKt;
+Lcom/cocido/nonna/ui/viewmodel/MainViewModel;
+Lcom/cocido/nonna/ui/viewmodel/HomeViewModel;
+Lcom/cocido/nonna/ui/viewmodel/CofresListViewModel;
+Lcom/cocido/nonna/ui/viewmodel/CofreDetailViewModel;
+Lcom/cocido/nonna/ui/viewmodel/AddMemoryViewModel;
+Lcom/cocido/nonna/ui/screens/home/HomeScreenKt;
+Lcom/cocido/nonna/ui/screens/cofres/CofresListScreenKt;
+Lcom/cocido/nonna/ui/screens/cofres/CofreDetailScreenKt;
+Lcom/cocido/nonna/ui/screens/memory/AddMemoryScreenKt;

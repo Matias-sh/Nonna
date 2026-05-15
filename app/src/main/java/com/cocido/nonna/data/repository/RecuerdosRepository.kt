@@ -12,12 +12,16 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import com.cocido.nonna.util.MemoryMediaUrlHeuristics
 import com.google.gson.JsonParseException
 import retrofit2.HttpException
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
+import okio.BufferedSink
+import okio.source
 
 class RecuerdosRepository @Inject constructor(
     private val api: RecuerdosApi
@@ -74,11 +78,26 @@ class RecuerdosRepository @Inject constructor(
         emocionId: String? = null,
         emocionPersonalizada: String? = null,
         portadaAudio: File? = null,
-        galleryImages: List<File> = emptyList()
+        galleryImages: List<File> = emptyList(),
+        onUploadProgress: ((uploadedBytes: Long, totalBytes: Long) -> Unit)? = null
     ): ApiResult<MemoryUiModel> {
         return try {
             val mediaType = mediaTypeForFile(file)
-            val filePart = MultipartPartHelper.createFormDataFile("file", file, mediaType)
+            val progressFiles = buildList {
+                add(file)
+                if (portadaAudio != null) add(portadaAudio)
+                addAll(galleryImages)
+            }.filter { it.exists() && it.length() > 0L }
+            val totalUploadBytes = progressFiles.sumOf { it.length() }
+            val uploadedBytes = AtomicLong(0L)
+            val filePart = createProgressPart(
+                partName = "file",
+                file = file,
+                mediaType = mediaType,
+                totalBytes = totalUploadBytes,
+                uploadedBytes = uploadedBytes,
+                onUploadProgress = onUploadProgress
+            )
             val textPlain = "text/plain".toMediaTypeOrNull()
             val tituloBody = titulo.toRequestBody(contentType = textPlain)
             val descripcionBody = (descripcion ?: "").toRequestBody(contentType = textPlain)
@@ -92,10 +111,13 @@ class RecuerdosRepository @Inject constructor(
 
             val portadaPart = if (isMainAudio && portadaAudio != null) {
                 val coverType = mediaTypeForFile(portadaAudio)
-                MultipartBody.Part.createFormData(
-                    "portadaAudio",
-                    portadaAudio.name,
-                    RequestBody.create(coverType, portadaAudio)
+                createProgressPart(
+                    partName = "portadaAudio",
+                    file = portadaAudio,
+                    mediaType = coverType,
+                    totalBytes = totalUploadBytes,
+                    uploadedBytes = uploadedBytes,
+                    onUploadProgress = onUploadProgress
                 )
             } else {
                 null
@@ -104,7 +126,14 @@ class RecuerdosRepository @Inject constructor(
             val galleryParts = if (isMainImage && galleryImages.isNotEmpty()) {
                 galleryImages.map { g ->
                     val gt = mediaTypeForFile(g)
-                    MultipartBody.Part.createFormData("imagenesGaleria", g.name, RequestBody.create(gt, g))
+                    createProgressPart(
+                        partName = "imagenesGaleria",
+                        file = g,
+                        mediaType = gt,
+                        totalBytes = totalUploadBytes,
+                        uploadedBytes = uploadedBytes,
+                        onUploadProgress = onUploadProgress
+                    )
                 }
             } else {
                 null
@@ -122,6 +151,9 @@ class RecuerdosRepository @Inject constructor(
                 imagenesGaleria = galleryParts
             )
             if (response.isSuccessful) {
+                if (totalUploadBytes > 0L) {
+                    onUploadProgress?.invoke(totalUploadBytes, totalUploadBytes)
+                }
                 response.body()?.let { ApiResult.Success(it.toUiModel()) }
                     ?: ApiResult.Error("Error al crear recuerdo")
             } else {
@@ -204,15 +236,6 @@ class RecuerdosRepository @Inject constructor(
                         TOMCAT_EMOTION_TAG,
                         "PATCH recuerdos/$id response -> emocionId=${updated.emocionId}, emocionPersonalizada=${updated.emocionPersonalizada}"
                     )
-                    runCatching { api.getById(id) }.onSuccess { verifyResponse ->
-                        val verified = verifyResponse.body()
-                        Log.d(
-                            TOMCAT_EMOTION_TAG,
-                            "GET recuerdos/$id verify -> code=${verifyResponse.code()}, emocionId=${verified?.emocionId}, emocionPersonalizada=${verified?.emocionPersonalizada}"
-                        )
-                    }.onFailure {
-                        Log.w(TOMCAT_EMOTION_TAG, "GET verify failed: ${it.message}")
-                    }
                     ApiResult.Success(updated.toUiModel())
                 } ?: ApiResult.Error("Error al actualizar")
             } else {
@@ -244,6 +267,35 @@ class RecuerdosRepository @Inject constructor(
             ApiResult.Error("Sin conexión. Revisá tu internet.")
         }
     }
+}
+
+private fun createProgressPart(
+    partName: String,
+    file: File,
+    mediaType: okhttp3.MediaType,
+    totalBytes: Long,
+    uploadedBytes: AtomicLong,
+    onUploadProgress: ((uploadedBytes: Long, totalBytes: Long) -> Unit)?
+): MultipartBody.Part {
+    val delegate = file.asRequestBody(mediaType)
+    val progressBody = object : RequestBody() {
+        override fun contentType() = delegate.contentType()
+        override fun contentLength(): Long = delegate.contentLength()
+        override fun writeTo(sink: BufferedSink) {
+            file.source().use { source ->
+                val buffer = okio.Buffer()
+                var read: Long
+                while (source.read(buffer, 8 * 1024).also { read = it } != -1L) {
+                    sink.write(buffer, read)
+                    val uploaded = uploadedBytes.addAndGet(read)
+                    if (totalBytes > 0L) {
+                        onUploadProgress?.invoke(uploaded.coerceAtMost(totalBytes), totalBytes)
+                    }
+                }
+            }
+        }
+    }
+    return MultipartBody.Part.createFormData(partName, file.name, progressBody)
 }
 
 private fun mediaTypeForFile(file: File) = when (file.extension.lowercase()) {

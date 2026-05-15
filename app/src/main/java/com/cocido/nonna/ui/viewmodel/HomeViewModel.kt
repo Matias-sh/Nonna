@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import android.os.SystemClock
 import javax.inject.Inject
 
 @HiltViewModel
@@ -20,6 +21,9 @@ class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val cofreRepository: CofreRepository
 ) : ViewModel() {
+    private val cacheTtlMs = 30_000L
+    private var lastLoadAtMs: Long = 0L
+    private var loadInProgress = false
 
     private val _user = MutableStateFlow<UserDto?>(null)
     val user: StateFlow<UserDto?> = _user.asStateFlow()
@@ -42,18 +46,30 @@ class HomeViewModel @Inject constructor(
     private val _invitationAcceptError = MutableStateFlow<String?>(null)
     val invitationAcceptError: StateFlow<String?> = _invitationAcceptError.asStateFlow()
 
-    fun load() {
+    fun load(forceRefresh: Boolean = false) {
+        val now = SystemClock.elapsedRealtime()
+        if (!forceRefresh && !loadInProgress && (now - lastLoadAtMs) <= cacheTtlMs && _cofres.value.isNotEmpty()) {
+            return
+        }
+        if (loadInProgress) return
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
-            when (val userResult = authRepository.getMe()) {
-                is ApiResult.Success -> _user.value = userResult.data
-                is ApiResult.Error -> _errorMessage.value = userResult.message
-                else -> { }
+            loadInProgress = true
+            try {
+                _isLoading.value = true
+                _errorMessage.value = null
+                when (val userResult = authRepository.getMe()) {
+                    is ApiResult.Success -> _user.value = userResult.data
+                    is ApiResult.Error -> _errorMessage.value = userResult.message
+                    else -> { }
+                }
+                refreshFeaturedInvitation()
+                collectCofresList()
+                _isLoading.value = false
+                lastLoadAtMs = SystemClock.elapsedRealtime()
+            } finally {
+                _isLoading.value = false
+                loadInProgress = false
             }
-            refreshFeaturedInvitation()
-            collectCofresList()
-            _isLoading.value = false
         }
     }
 

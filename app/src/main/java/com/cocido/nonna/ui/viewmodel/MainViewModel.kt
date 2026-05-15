@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.AuthRepository
 import com.cocido.nonna.data.repository.NotificationTokenSyncManager
+import com.cocido.nonna.notifications.PushTokenProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val notificationTokenSyncManager: NotificationTokenSyncManager
+    private val notificationTokenSyncManager: NotificationTokenSyncManager,
+    private val pushTokenProvider: PushTokenProvider
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -53,6 +55,7 @@ class MainViewModel @Inject constructor(
                                 else AuthState.LoggedInUnverified
                             }
                             notificationTokenSyncManager.syncIfLoggedIn()
+                            syncPushTokenForCurrentUser()
                         }
                         is ApiResult.Error -> _authState.update { AuthState.LoggedOut }
                         else -> _authState.update { AuthState.LoggedOut }
@@ -66,6 +69,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             notificationTokenSyncManager.syncIfLoggedIn()
         }
+        syncPushTokenForCurrentUser()
     }
 
     fun onNewPushToken(token: String) {
@@ -76,7 +80,19 @@ class MainViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
+            notificationTokenSyncManager.onLogout()
+            pushTokenProvider.deleteToken { _ -> }
             authRepository.logout()
+        }
+    }
+
+    private fun syncPushTokenForCurrentUser() {
+        pushTokenProvider.fetchToken { token ->
+            if (!token.isNullOrBlank()) {
+                viewModelScope.launch {
+                    notificationTokenSyncManager.onNewTokenAvailable(token)
+                }
+            }
         }
     }
 }

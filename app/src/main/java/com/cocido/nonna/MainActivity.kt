@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -19,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,6 +66,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val appStartMs = SystemClock.elapsedRealtime()
 
         requestNotificationsPermissionIfNeeded()
 
@@ -97,6 +101,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val mainViewModel: MainViewModel = hiltViewModel()
                     val authState by mainViewModel.authState.collectAsState()
+                    val ttiLogged = remember { mutableStateOf(false) }
 
                     when (authState) {
                         is AuthState.Loading -> {
@@ -108,6 +113,10 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         else -> {
+                            if (!ttiLogged.value) {
+                                ttiLogged.value = true
+                                Log.d("NonnaPerf", "app_tti_ms=${SystemClock.elapsedRealtime() - appStartMs}")
+                            }
                             val startDestination = when (authState) {
                                 is AuthState.LoggedInVerified -> "home"
                                 is AuthState.LoggedInUnverified -> "verify-email"

@@ -150,7 +150,8 @@ fun NonnaNavHost(
 
     val activity = LocalContext.current as? ComponentActivity
     val currentIntent = externalIntent ?: activity?.intent
-    LaunchedEffect(navController, currentIntent, effectiveStartDestination) {
+    LaunchedEffect(navController, currentIntent, effectiveStartDestination, isLoggedIn) {
+        if (!isLoggedIn) return@LaunchedEffect
         val intent: Intent = currentIntent ?: return@LaunchedEffect
         val data = intent.data
         if (intent.action == Intent.ACTION_VIEW && data != null) {

@@ -27,9 +27,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
@@ -218,61 +218,64 @@ fun HomeScreen(
                 )
             }
         } else {
-            Column(
+            val listState = rememberLazyListState()
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(NonnaDimens.screenPaddingHorizontal)
+                    .padding(horizontal = NonnaDimens.screenPaddingHorizontal),
+                state = listState
             ) {
-                Spacer(modifier = Modifier.height(NonnaDimens.spacing24))
-                NonnaStaggerItem(index = 0, stepDelayMs = 100) {
-                    GreetingSection(userName = userName)
+                item {
+                    Spacer(modifier = Modifier.height(NonnaDimens.spacing24))
+                    NonnaStaggerItem(index = 0, stepDelayMs = 100) {
+                        GreetingSection(userName = userName)
+                    }
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                // Continue where you left off
+
                 if (lastCofre != null) {
-                    NonnaStaggerItem(index = 1, stepDelayMs = 100) {
-                        ContinueSection(
-                            cofreName = lastCofre.name,
-                            cofreRelation = lastCofre.relation,
-                            coverImageUrl = lastCofre.coverImageUrl?.takeIf { it.isNotBlank() && it != "string" },
-                            onClick = {
-                                homePrefs.edit().putString("last_viewed_cofre_id", lastCofre.id).apply()
-                                onEvent(HomeEvent.ContinueCofre(lastCofre.id))
-                            }
-                        )
+                    item {
+                        NonnaStaggerItem(index = 1, stepDelayMs = 100) {
+                            ContinueSection(
+                                cofreName = lastCofre.name,
+                                cofreRelation = lastCofre.relation,
+                                coverImageUrl = lastCofre.coverImageUrl?.takeIf { it.isNotBlank() && it != "string" },
+                                onClick = {
+                                    homePrefs.edit().putString("last_viewed_cofre_id", lastCofre.id).apply()
+                                    onEvent(HomeEvent.ContinueCofre(lastCofre.id))
+                                }
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
                 }
-                
-                // Daily prompt
+
                 if (showDailyPrompt) {
-                    NonnaStaggerItem(index = 2, stepDelayMs = 100) {
-                        DailyPromptSection(
-                            onAddMemory = { onEvent(HomeEvent.AddMemory) },
-                            onDismiss = {
-                                homePrefs.edit()
-                                    .putBoolean("daily_prompt_dismissed_$todayKey", true)
-                                    .apply()
-                                showDailyPrompt = false
-                            }
+                    item {
+                        NonnaStaggerItem(index = 2, stepDelayMs = 100) {
+                            DailyPromptSection(
+                                onAddMemory = { onEvent(HomeEvent.AddMemory) },
+                                onDismiss = {
+                                    homePrefs.edit()
+                                        .putBoolean("daily_prompt_dismissed_$todayKey", true)
+                                        .apply()
+                                    showDailyPrompt = false
+                                }
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+
+                item {
+                    NonnaStaggerItem(index = 3, stepDelayMs = 100) {
+                        QuickActionsSection(
+                            onCreateCofre = { onEvent(HomeEvent.CreateCofre) },
+                            onAddMemory = { onEvent(HomeEvent.AddMemory) }
                         )
                     }
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(100.dp))
                 }
-                
-                // Quick actions
-                NonnaStaggerItem(index = 3, stepDelayMs = 100) {
-                    QuickActionsSection(
-                        onCreateCofre = { onEvent(HomeEvent.CreateCofre) },
-                        onAddMemory = { onEvent(HomeEvent.AddMemory) }
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(100.dp)) // Bottom nav padding
             }
         }
     }

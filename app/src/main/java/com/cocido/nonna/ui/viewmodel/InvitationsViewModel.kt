@@ -42,12 +42,12 @@ class InvitationsViewModel @Inject constructor(
 
             when (val result = cofreRepository.getPendingInvitations()) {
                 is ApiResult.Success -> _pendingInvitations.value = result.data
-                is ApiResult.Error -> _errorMessage.emit(result.message)
+                is ApiResult.Error -> if (result.code != 401) _errorMessage.emit(result.message)
                 ApiResult.Loading -> Unit
             }
             when (val result = cofreRepository.getSentInvitations()) {
                 is ApiResult.Success -> _sentInvitations.value = result.data
-                is ApiResult.Error -> _errorMessage.emit(result.message)
+                is ApiResult.Error -> if (result.code != 401) _errorMessage.emit(result.message)
                 ApiResult.Loading -> Unit
             }
 

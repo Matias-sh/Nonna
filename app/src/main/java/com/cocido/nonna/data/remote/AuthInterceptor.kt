@@ -1,7 +1,12 @@
 package com.cocido.nonna.data.remote
 
 import com.cocido.nonna.data.local.TokenManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -13,6 +18,18 @@ import javax.inject.Inject
 class AuthInterceptor @Inject constructor(
     private val tokenManager: TokenManager
 ) : Interceptor {
+    @Volatile
+    private var cachedToken: String? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        scope.launch {
+            tokenManager.token.collectLatest { token ->
+                cachedToken = token
+            }
+        }
+    }
+
     override fun intercept(chain: Interceptor.Chain): Response {
         val original = chain.request()
         val requestBuilder = original.newBuilder()
@@ -23,9 +40,9 @@ class AuthInterceptor @Inject constructor(
             path == "/auth/password-reset/verify-code" ||
             path == "/auth/password-reset/confirm"
 
-        val token = runCatching {
+        val token = cachedToken ?: runCatching {
             runBlocking { tokenManager.token.first() }
-        }.getOrNull()
+        }.getOrNull()?.also { cachedToken = it }
 
         if (!skipAuthHeader && !token.isNullOrBlank()) {
             requestBuilder.addHeader("Authorization", "Bearer $token")

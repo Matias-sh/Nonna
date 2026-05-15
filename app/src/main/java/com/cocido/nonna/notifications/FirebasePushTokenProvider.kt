@@ -35,5 +35,25 @@ class FirebasePushTokenProvider @Inject constructor(
             onResult(null)
         }
     }
+
+    override fun deleteToken(onComplete: (Boolean) -> Unit) {
+        val app = runCatching {
+            FirebaseApp.getApps(context).firstOrNull() ?: FirebaseApp.initializeApp(context)
+        }.getOrNull()
+
+        if (app == null) {
+            onComplete(false)
+            return
+        }
+
+        runCatching {
+            FirebaseMessaging.getInstance().deleteToken()
+                .addOnCompleteListener { task ->
+                    onComplete(task.isSuccessful)
+                }
+        }.onFailure {
+            onComplete(false)
+        }
+    }
 }
 

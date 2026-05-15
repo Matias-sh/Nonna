@@ -47,6 +47,15 @@ class NotificationTokenSyncManager @Inject constructor(
         syncIfLoggedIn()
     }
 
+    fun onLogout() {
+        val editor = sharedPreferences.edit()
+        editor.remove(KEY_PENDING_FCM_TOKEN)
+        sharedPreferences.all.keys
+            .filter { it.startsWith(KEY_LAST_SYNCED_FCM_TOKEN_PREFIX) }
+            .forEach { key -> editor.remove(key) }
+        editor.apply()
+    }
+
     private suspend fun resolveSyncScope(authToken: String): String {
         val userId = tokenManager.userId.firstOrNull()?.trim().orEmpty()
         if (userId.isNotBlank()) {

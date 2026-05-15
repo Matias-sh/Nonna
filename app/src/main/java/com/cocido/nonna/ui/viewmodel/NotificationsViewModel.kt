@@ -10,12 +10,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import android.os.SystemClock
 import javax.inject.Inject
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository
 ) : ViewModel() {
+    private val cacheTtlMs = 20_000L
+    private var lastLoadAtMs: Long = 0L
 
     private val _items = MutableStateFlow<List<NotificationUiModel>>(emptyList())
     val items: StateFlow<List<NotificationUiModel>> = _items.asStateFlow()
@@ -41,6 +44,8 @@ class NotificationsViewModel @Inject constructor(
 
     fun load(forceRefresh: Boolean = false) {
         if (_isLoading.value || _isLoadingMore.value) return
+        val now = SystemClock.elapsedRealtime()
+        if (!forceRefresh && (now - lastLoadAtMs) <= cacheTtlMs && _items.value.isNotEmpty()) return
         viewModelScope.launch {
             _isLoading.value = true
             if (forceRefresh) {
@@ -58,6 +63,7 @@ class NotificationsViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     totalPages = result.data.totalPages.coerceAtLeast(1)
                     _items.value = result.data.items
+                    lastLoadAtMs = SystemClock.elapsedRealtime()
                 }
                 is ApiResult.Error -> _errorMessage.value = result.message
                 else -> Unit

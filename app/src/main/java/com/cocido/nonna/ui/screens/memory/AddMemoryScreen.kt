@@ -45,6 +45,7 @@ import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -68,6 +69,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.cocido.nonna.ui.components.AudioRecorderComponent
@@ -120,13 +124,9 @@ fun AddMemoryScreen(
     var feedbackMessage by remember { mutableStateOf("") }
     var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
     val isLoading by viewModel.isLoading.collectAsState()
+    val uploadProgress by viewModel.uploadProgress.collectAsState()
     LaunchedEffect(Unit) {
         viewModel.saved.collectLatest { _: com.cocido.nonna.ui.components.MemoryUiModel ->
-            feedbackMessage = "Recuerdo guardado correctamente"
-            feedbackType = NonnaFeedbackType.Success
-            feedbackVisible = true
-            delay(1200)
-            feedbackVisible = false
             onSave()
         }
     }
@@ -336,6 +336,16 @@ fun AddMemoryScreen(
                 }
             }
         )
+
+        if (isLoading && uploadProgress != null) {
+            LinearProgressIndicator(
+                progress = { uploadProgress ?: 0f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = NonnaDimens.screenPaddingHorizontal)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
         
         Column(
             modifier = Modifier
@@ -522,13 +532,17 @@ fun AddMemoryScreen(
                             }
                             val galleryFiles = if (selectedType == MemoryType.Photo && extraGalleryUris.isNotEmpty()) {
                                 withContext(Dispatchers.IO) {
-                                    extraGalleryUris.mapNotNull { uri ->
-                                        ImageCompressor.compressForUpload(
-                                            context = context,
-                                            uri = uri,
-                                            maxBytes = MemoryUploadLimits.maxBytesFor(MemoryType.Photo),
-                                            maxLongEdge = 1600
-                                        )
+                                    coroutineScope {
+                                        extraGalleryUris.map { uri ->
+                                            async {
+                                                ImageCompressor.compressForUpload(
+                                                    context = context,
+                                                    uri = uri,
+                                                    maxBytes = MemoryUploadLimits.maxBytesFor(MemoryType.Photo),
+                                                    maxLongEdge = 1600
+                                                )
+                                            }
+                                        }.awaitAll().filterNotNull()
                                     }
                                 }
                             } else {

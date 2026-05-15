@@ -150,11 +150,6 @@ fun CreateCofreScreen(
 
     LaunchedEffect(Unit) {
         viewModel.created.collectLatest { _ ->
-            feedbackMessage = "Cofre creado correctamente"
-            feedbackType = NonnaFeedbackType.Success
-            feedbackVisible = true
-            delay(1200)
-            feedbackVisible = false
             onCreate(
                 NewCofre(
                     name = normalizedName,
