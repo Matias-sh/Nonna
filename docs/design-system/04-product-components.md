@@ -13,6 +13,7 @@ Estandarizar componentes compuestos especificos de Nonna usando foundation + com
 ## Ejemplos de componentes de producto
 
 - Cards de cofre y memoria.
+- Card de notificación (`NotificationItemCard`) con estado leído/no leído.
 - Headers de seccion del producto.
 - Bloques de estado vacio de cada feature.
 - Controles de filtros propios del dominio.
@@ -30,3 +31,11 @@ Estandarizar componentes compuestos especificos de Nonna usando foundation + com
 - Migrar feature por feature.
 - Evitar cambiar comportamiento de negocio durante migracion visual.
 - Documentar breaking changes de API en changelog.
+
+## Implementado en notificaciones
+
+- `NotificationItemCard`:
+  - Responsabilidad: render de notificación individual con badge, metadata y acción marcar leída.
+  - Reutiliza: `NonnaCard`, `NonnaButton`, tokens (`NonnaSpacing`, `NonnaCorners`).
+  - Estado: leído/no leído + `markingAsRead`.
+  - Sin lógica de negocio ni acceso a repositorios.

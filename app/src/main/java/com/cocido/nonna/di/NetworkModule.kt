@@ -5,6 +5,7 @@ import com.cocido.nonna.data.remote.AuthApi
 import com.cocido.nonna.data.remote.AuthInterceptor
 import com.cocido.nonna.data.remote.CofreRecuerdosApi
 import com.cocido.nonna.data.remote.EmocionesApi
+import com.cocido.nonna.data.remote.NotificationsApi
 import com.cocido.nonna.data.remote.PagosSuscripcionApi
 import com.cocido.nonna.data.remote.PlanesApi
 import com.cocido.nonna.data.remote.RecuerdosApi
@@ -100,4 +101,9 @@ object NetworkModule {
     @Singleton
     fun providePagosSuscripcionApi(retrofit: Retrofit): PagosSuscripcionApi =
         retrofit.create(PagosSuscripcionApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideNotificationsApi(retrofit: Retrofit): NotificationsApi =
+        retrofit.create(NotificationsApi::class.java)
 }

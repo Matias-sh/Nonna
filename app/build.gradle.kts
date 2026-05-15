@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    id("com.google.gms.google-services")
 }
 
 import java.util.Properties
@@ -26,7 +27,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.cocido.nonna.free"
+        applicationId = "com.cocido.nonna"
         minSdk = 24
         targetSdk = 35
         versionCode = 9
@@ -166,6 +167,10 @@ dependencies {
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
     ksp(libs.moshi.codegen)
+
+    // Firebase Cloud Messaging
+    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
+    implementation("com.google.firebase:firebase-messaging")
     
     // Gson for JSON serialization
     implementation("com.google.code.gson:gson:2.10.1")

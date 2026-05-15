@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "241984360388",
+    "project_id": "nonna-ec0fd",
+    "storage_bucket": "nonna-ec0fd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:241984360388:android:6e01d19c113f5854b09e91",
+        "android_client_info": {
+          "package_name": "com.cocido.nonna"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "241984360388-gtsenksanimuek9ghgd8uf1378v3mbid.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWVJ6JjfsA1lqMwuq8mTPgn1VUcBhuHak"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "241984360388-gtsenksanimuek9ghgd8uf1378v3mbid.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:241984360388:android:0a4d1670a8838c87b09e91",
+        "android_client_info": {
+          "package_name": "com.cocido.nonna.debug"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "241984360388-gtsenksanimuek9ghgd8uf1378v3mbid.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWVJ6JjfsA1lqMwuq8mTPgn1VUcBhuHak"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "241984360388-gtsenksanimuek9ghgd8uf1378v3mbid.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

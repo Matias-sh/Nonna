@@ -25,7 +25,11 @@ object NetworkErrorParser {
         } catch (_: Exception) {
             null
         }
-        return normalize(rawMessage ?: body)
+        return if (!rawMessage.isNullOrBlank()) {
+            normalize(rawMessage, fromBackendMessage = true)
+        } else {
+            normalize(body, fromBackendMessage = false)
+        }
     }
 
     private fun extractMessage(json: JsonObject?): String? {
@@ -77,7 +81,7 @@ object NetworkErrorParser {
     private fun mentionsCodeExpired(lower: String): Boolean =
         "expired" in lower || "expir" in lower || "venc" in lower || "caduc" in lower
 
-    private fun normalize(raw: String): String {
+    private fun normalize(raw: String, fromBackendMessage: Boolean): String {
         val value = raw.trim()
         if (value.isBlank()) return UserMessages.GENERIC_ERROR
 
@@ -87,6 +91,8 @@ object NetworkErrorParser {
                 UserMessages.INVALID_EMAIL
             "must be an email" in lower && "invitadosemails" in lower ->
                 UserMessages.INVALID_INVITE_EMAIL
+            "parentesco must be one of" in lower ->
+                "El parentesco no es válido. Elegí una opción sugerida o usá \"Otro\"."
             "already exists" in lower || "ya existe" in lower || "nombre de usuario en uso" in lower ->
                 UserMessages.DUPLICATE_ACCOUNT
             isVerificationOrResetCodeContext(lower) && mentionsCodeExpired(lower) ->
@@ -104,7 +110,7 @@ object NetworkErrorParser {
                 "Ese usuario ya forma parte del cofre."
             "no se encontró" in lower && "usuario" in lower ->
                 "No encontramos ese usuario en el sistema."
-            "bad request" in lower || "statuscode\":400" in lower ->
+            lower == "bad request" || lower == "bad request exception" || lower == "bad_request" ->
                 "Revisá los datos ingresados e intentá de nuevo."
             "unauthorized" in lower || "401" == lower || "credenciales" in lower ->
                 UserMessages.INVALID_CREDENTIALS
@@ -116,7 +122,20 @@ object NetworkErrorParser {
                 "La operación tardó demasiado. Intentá nuevamente."
             "network" in lower || "failed to connect" in lower || "enotfound" in lower ->
                 UserMessages.NO_INTERNET
-            else -> UserMessages.GENERIC_REQUEST_ERROR
+            else -> {
+                // Si viene de "message" del backend, lo mostramos para no ocultar la causa real
+                // (ej.: límite de plan, validación puntual, etc).
+                if (fromBackendMessage) {
+                    value
+                } else {
+                    // Evita exponer JSON crudo cuando no pudimos parsear estructura.
+                    if (value.startsWith("{") || value.startsWith("[")) {
+                        UserMessages.GENERIC_REQUEST_ERROR
+                    } else {
+                        value
+                    }
+                }
+            }
         }
     }
 }

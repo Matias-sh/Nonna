@@ -6,6 +6,8 @@ sealed interface ProfileEvent {
     data class SelectTab(val tab: NonnaTab) : ProfileEvent
     data object EditProfile : ProfileEvent
     data object OpenSubscriptionCenter : ProfileEvent
+    data object OpenNotifications : ProfileEvent
+    data object OpenNotificationSettings : ProfileEvent
     data object OpenInvitations : ProfileEvent
     data object Logout : ProfileEvent
 }

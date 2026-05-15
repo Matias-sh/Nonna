@@ -1,5 +1,9 @@
 package com.cocido.nonna.ui.screens.profile
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MailOutline
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Star
@@ -32,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +55,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.cocido.nonna.R
 import com.cocido.nonna.BuildConfig
@@ -73,6 +84,8 @@ fun ProfileRoute(
     onTabSelected: (NonnaTab) -> Unit,
     onEditProfile: () -> Unit,
     onOpenSubscriptionCenter: () -> Unit,
+    onOpenNotifications: () -> Unit,
+    onOpenNotificationSettings: () -> Unit,
     onOpenInvitations: () -> Unit,
     onLogout: () -> Unit,
     viewModel: com.cocido.nonna.ui.viewmodel.ProfileViewModel = hiltViewModel()
@@ -98,6 +111,8 @@ fun ProfileRoute(
                 is ProfileEvent.SelectTab -> onTabSelected(event.tab)
                 ProfileEvent.EditProfile -> onEditProfile()
                 ProfileEvent.OpenSubscriptionCenter -> onOpenSubscriptionCenter()
+                ProfileEvent.OpenNotifications -> onOpenNotifications()
+                ProfileEvent.OpenNotificationSettings -> onOpenNotificationSettings()
                 ProfileEvent.OpenInvitations -> onOpenInvitations()
                 ProfileEvent.Logout -> onLogout()
             }
@@ -111,9 +126,14 @@ fun ProfileScreen(
     onEvent: (ProfileEvent) -> Unit,
     onConsumeError: () -> Unit
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var planFeedbackVisible by remember { mutableStateOf(false) }
     var planFeedbackMessage by remember { mutableStateOf("") }
     var planFeedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
+    var shouldShowNotificationsSettingsCta by remember {
+        mutableStateOf(shouldShowNotificationsPermissionSettings(context))
+    }
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { msg ->
             planFeedbackType = NonnaFeedbackType.Error
@@ -123,6 +143,16 @@ fun ProfileScreen(
             planFeedbackVisible = false
             onConsumeError()
         }
+    }
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                shouldShowNotificationsSettingsCta =
+                    shouldShowNotificationsPermissionSettings(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val displayUser = uiState.user
@@ -255,6 +285,27 @@ fun ProfileScreen(
                     modifier = Modifier.testTag("profile_subscription_option"),
                     subtitle = stringResource(R.string.subscription_center_subtitle)
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OptionCard(
+                    icon = Icons.Outlined.NotificationsNone,
+                    title = stringResource(R.string.notifications_title),
+                    onClick = { onEvent(ProfileEvent.OpenNotifications) },
+                    modifier = Modifier.testTag("profile_notifications_option"),
+                    subtitle = stringResource(R.string.notifications_profile_subtitle)
+                )
+
+                if (shouldShowNotificationsSettingsCta) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OptionCard(
+                        icon = Icons.Outlined.NotificationsNone,
+                        title = stringResource(R.string.profile_notifications_enable_title),
+                        onClick = { onEvent(ProfileEvent.OpenNotificationSettings) },
+                        modifier = Modifier.testTag("profile_notifications_permission_option"),
+                        subtitle = stringResource(R.string.profile_notifications_enable_subtitle)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -537,6 +588,18 @@ private fun isLikelyFreeTier(plan: SuscripcionPlanDto?): Boolean {
         name.contains("gratis") || name == "free" -> true
         else -> false
     }
+}
+
+private fun shouldShowNotificationsPermissionSettings(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
+    val granted = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.POST_NOTIFICATIONS
+    ) == PackageManager.PERMISSION_GRANTED
+    if (granted) return false
+
+    val prefs = context.getSharedPreferences("nonna_notification_permission", Context.MODE_PRIVATE)
+    return prefs.getBoolean("notifications_permission_requested", false)
 }
 
 @Composable

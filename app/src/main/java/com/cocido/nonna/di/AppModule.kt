@@ -2,6 +2,8 @@ package com.cocido.nonna.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.cocido.nonna.notifications.FirebasePushTokenProvider
+import com.cocido.nonna.notifications.PushTokenProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,4 +23,10 @@ object AppModule {
     fun provideSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
         return context.getSharedPreferences("nonna_prefs", Context.MODE_PRIVATE)
     }
+
+    @Provides
+    @Singleton
+    fun providePushTokenProvider(
+        impl: FirebasePushTokenProvider
+    ): PushTokenProvider = impl
 }

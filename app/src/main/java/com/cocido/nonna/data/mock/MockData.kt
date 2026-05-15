@@ -276,4 +276,16 @@ val relationDisplayToApi: Map<String, String> = mapOf(
     "Otro" to "OTRO"
 )
 
-fun relationToApi(display: String): String = relationDisplayToApi[display] ?: display.uppercase().replace(" ", "_")
+private val allowedApiRelations: Set<String> = relationDisplayToApi.values.toSet()
+
+fun relationToApi(display: String): String {
+    val normalized = display.trim()
+    relationDisplayToApi[normalized]?.let { return it }
+
+    val normalizedApiCandidate = normalized.uppercase().replace(" ", "_")
+    return if (normalizedApiCandidate in allowedApiRelations) {
+        normalizedApiCandidate
+    } else {
+        "OTRO"
+    }
+}

@@ -10,6 +10,6 @@ data class PageDto<T>(
 data class PageMetadataDto(
     @SerializedName("pageNumber") val pageNumber: Int? = null,
     @SerializedName("pageSize") val pageSize: Int? = null,
-    @SerializedName("totalItems") val totalItems: Int? = null,
+    @SerializedName(value = "totalItems", alternate = ["count"]) val totalItems: Int? = null,
     @SerializedName("totalPages") val totalPages: Int? = null
 )

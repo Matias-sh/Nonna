@@ -32,6 +32,12 @@
 - Decision: iniciar migracion por `CofresList` como referencia para el patron MVVM + UDF.
 - Implicancia: se habilita plantilla concreta para migrar el resto por iteraciones.
 
+### 2026-05-15 - Integración de token push para notificaciones
+
+- Contexto: se implementó backend de notificaciones con endpoint de registro de token, pero el proyecto aún no tiene integración Firebase activa.
+- Decision: incorporar `NotificationTokenSyncManager` con estrategia de token pendiente + sync al detectar sesión activa.
+- Implicancia: el backend queda integrado y operativo; la fuente automática del token FCM se conecta en una iteración posterior.
+
 ## Regla para nuevas decisiones ambiguas
 
 Si surge ambiguedad de diseno/requerimiento:

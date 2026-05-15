@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.AuthRepository
+import com.cocido.nonna.data.repository.NotificationTokenSyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val notificationTokenSyncManager: NotificationTokenSyncManager
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -50,6 +52,7 @@ class MainViewModel @Inject constructor(
                                 if (user.isEmailVerified()) AuthState.LoggedInVerified
                                 else AuthState.LoggedInUnverified
                             }
+                            notificationTokenSyncManager.syncIfLoggedIn()
                         }
                         is ApiResult.Error -> _authState.update { AuthState.LoggedOut }
                         else -> _authState.update { AuthState.LoggedOut }
@@ -60,6 +63,15 @@ class MainViewModel @Inject constructor(
 
     fun onEmailVerified() {
         _authState.update { AuthState.LoggedInVerified }
+        viewModelScope.launch {
+            notificationTokenSyncManager.syncIfLoggedIn()
+        }
+    }
+
+    fun onNewPushToken(token: String) {
+        viewModelScope.launch {
+            notificationTokenSyncManager.onNewTokenAvailable(token)
+        }
     }
 
     fun logout() {

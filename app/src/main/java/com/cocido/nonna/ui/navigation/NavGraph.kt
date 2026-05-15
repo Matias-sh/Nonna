@@ -1,6 +1,7 @@
 package com.cocido.nonna.ui.navigation
 
 import android.content.Intent
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +24,9 @@ import androidx.navigation.navDeepLink
 import androidx.compose.ui.platform.LocalContext
 import com.cocido.nonna.ui.components.NonnaMotion
 import com.cocido.nonna.ui.components.NonnaTab
+import com.cocido.nonna.notifications.PUSH_COFRE_ID_KEY
+import com.cocido.nonna.notifications.PUSH_PAYMENT_ID_KEY
+import com.cocido.nonna.notifications.PUSH_TYPE_KEY
 import com.cocido.nonna.ui.screens.auth.AuthScreen
 import com.cocido.nonna.ui.screens.auth.ForgotPasswordScreen
 import com.cocido.nonna.ui.screens.auth.VerifyEmailScreen
@@ -39,6 +43,7 @@ import com.cocido.nonna.ui.screens.onboarding.OnboardingScreen
 import com.cocido.nonna.ui.screens.profile.ProfileRoute
 import com.cocido.nonna.ui.screens.profile.ProfileSettingsScreen
 import com.cocido.nonna.ui.screens.profile.InvitationsScreen
+import com.cocido.nonna.ui.screens.profile.NotificationsRoute
 import com.cocido.nonna.ui.screens.profile.SubscriptionCenterScreen
 import com.cocido.nonna.ui.screens.tree.AddPersonScreen
 import com.cocido.nonna.ui.screens.tree.FamilyTreeScreen
@@ -86,6 +91,7 @@ sealed class Screen(val route: String) {
                 "profile/invitations?invitationId=$invitationId"
             }
     }
+    data object Notifications : Screen("profile/notifications")
     
     // Detail screens
     data object CofreDetail : Screen("cofre/{cofreId}") {
@@ -128,7 +134,8 @@ fun NonnaNavHost(
     isLoggedIn: Boolean = false,
     onLogout: () -> Unit = {},
     startDestination: String? = null,
-    onEmailVerified: () -> Unit = {}
+    onEmailVerified: () -> Unit = {},
+    externalIntent: Intent? = null
 ) {
     val context = LocalContext.current
     val homePrefs = remember(context) {
@@ -142,8 +149,9 @@ fun NonnaNavHost(
     val effectiveStartDestination = startDestination ?: if (isLoggedIn) Screen.Home.route else Screen.Welcome.route
 
     val activity = LocalContext.current as? ComponentActivity
-    LaunchedEffect(navController, activity, effectiveStartDestination) {
-        val intent: Intent = activity?.intent ?: return@LaunchedEffect
+    val currentIntent = externalIntent ?: activity?.intent
+    LaunchedEffect(navController, currentIntent, effectiveStartDestination) {
+        val intent: Intent = currentIntent ?: return@LaunchedEffect
         val data = intent.data
         if (intent.action == Intent.ACTION_VIEW && data != null) {
             val handledByGraph = runCatching { navController.handleDeepLink(intent) }.getOrDefault(false)
@@ -168,6 +176,33 @@ fun NonnaNavHost(
                     )
                 }
             }
+            return@LaunchedEffect
+        }
+
+        val pushType = intent.getStringExtra(PUSH_TYPE_KEY)?.trim().orEmpty()
+        if (pushType.isBlank()) return@LaunchedEffect
+
+        val pushCofreId = intent.getStringExtra(PUSH_COFRE_ID_KEY)?.trim().orEmpty()
+        val pushPaymentId = intent.getStringExtra(PUSH_PAYMENT_ID_KEY)?.trim().orEmpty()
+        val destination = when (pushType) {
+            "invitacion_cofre" -> Screen.Invitations.createRoute()
+            "invitacion_aceptada" -> {
+                if (pushCofreId.isNotBlank()) {
+                    Screen.CofreDetail.createRoute(pushCofreId)
+                } else {
+                    Screen.Cofres.route
+                }
+            }
+            "suscripcion_renovacion_requerida" -> {
+                Screen.SubscriptionCenter.createRoute(
+                    paymentId = pushPaymentId.takeIf { it.isNotBlank() }
+                )
+            }
+            "nueva_version" -> Screen.Profile.route
+            else -> null
+        }
+        if (destination != null) {
+            navController.navigate(destination)
         }
     }
 
@@ -368,10 +403,29 @@ fun NonnaNavHost(
                 },
                 onEditProfile = { navController.navigate(Screen.ProfileEdit.route) },
                 onOpenSubscriptionCenter = { navController.navigate(Screen.SubscriptionCenter.createRoute()) },
+                onOpenNotifications = { navController.navigate(Screen.Notifications.route) },
+                onOpenNotificationSettings = {
+                    val settingsIntent = Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", context.packageName, null)
+                    )
+                    context.startActivity(settingsIntent)
+                },
                 onOpenInvitations = { navController.navigate(Screen.Invitations.createRoute()) },
                 onLogout = {
                     onLogout()
                     // key(authState) en MainActivity recrea el NavHost con startDestination=Welcome
+                }
+            )
+        }
+
+        composable(Screen.Notifications.route) {
+            NotificationsRoute(
+                onBack = { navController.popBackStack() },
+                onOpenSubscriptionCenter = { paymentId ->
+                    navController.navigate(
+                        Screen.SubscriptionCenter.createRoute(paymentId = paymentId)
+                    )
                 }
             )
         }

@@ -42,6 +42,11 @@ Estandarizar flujo de estado y eventos para todas las pantallas con ViewModel.
   - `HomeEvent`
   - `HomeRoute`
   - `HomeScreen`
+- Feature notifications:
+  - `NotificationsUiState`
+  - `NotificationsEvent`
+  - `NotificationsRoute`
+  - `NotificationsScreen`
 
 ## Beneficios
 
