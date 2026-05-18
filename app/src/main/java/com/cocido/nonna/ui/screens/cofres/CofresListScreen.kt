@@ -26,6 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.res.stringResource
@@ -54,7 +55,6 @@ import com.cocido.nonna.ui.components.NonnaStaggerItem
 import com.cocido.nonna.ui.components.NonnaMotion
 import com.cocido.nonna.ui.components.SimpleHeader
 import com.cocido.nonna.ui.components.rememberMotionInteractionSource
-import com.cocido.nonna.ui.components.relationValueLabel
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaTheme
 import androidx.compose.ui.tooling.preview.Preview
@@ -99,31 +99,19 @@ fun CofresListScreen(
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var activeFilter by rememberSaveable { mutableStateOf(CofreFilters.todos.id) }
-    var fabVisible by remember { mutableStateOf(false) }
+    val filteredCofres by remember(uiState.cofres, searchQuery, activeFilter) {
+        derivedStateOf {
+            uiState.cofres.filter { cofre ->
+                val matchesSearch = cofre.name.contains(searchQuery, ignoreCase = true) ||
+                    cofre.relation.contains(searchQuery, ignoreCase = true)
 
-    LaunchedEffect(uiState.cofres.isNotEmpty()) {
-        if (uiState.cofres.isNotEmpty()) {
-            kotlinx.coroutines.delay(300)
-            fabVisible = true
-        } else {
-            fabVisible = false
-        }
-    }
-
-    val filteredCofres = uiState.cofres.filter { cofre ->
-        val localizedRelation = relationValueLabel(cofre.relation)
-        // Apply search
-        val matchesSearch = cofre.name.contains(searchQuery, ignoreCase = true) ||
-                cofre.relation.contains(searchQuery, ignoreCase = true) ||
-                localizedRelation.contains(searchQuery, ignoreCase = true)
-        
-        if (!matchesSearch) return@filter false
-        
-        // Apply filter
-        when (activeFilter) {
-            CofreFilters.mios.id -> cofre.isOwner
-            CofreFilters.compartidos.id -> !cofre.isOwner
-            else -> true
+                if (!matchesSearch) return@filter false
+                when (activeFilter) {
+                    CofreFilters.mios.id -> cofre.isOwner
+                    CofreFilters.compartidos.id -> !cofre.isOwner
+                    else -> true
+                }
+            }
         }
     }
     
@@ -205,6 +193,7 @@ fun CofresListScreen(
                         }
                     } else {
                         LazyVerticalGrid(
+                            modifier = Modifier.weight(1f),
                             columns = GridCells.Fixed(2),
                             contentPadding = PaddingValues(
                                 start = NonnaDimens.screenPaddingHorizontal,
@@ -215,7 +204,7 @@ fun CofresListScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             itemsIndexed(filteredCofres, key = { _, cofre -> cofre.id }) { index, cofre ->
-                                NonnaStaggerItem(index = index, stepDelayMs = NonnaMotion.StaggerStepMs) {
+                                NonnaStaggerItem(index = index, stepDelayMs = 0) {
                                     CofreCard(
                                         cofre = cofre,
                                         onClick = { onEvent(CofresListEvent.OpenCofre(cofre.id)) },
@@ -240,7 +229,7 @@ fun CofresListScreen(
                     label = "cofres_fab_scale"
                 )
                 AnimatedVisibility(
-                    visible = fabVisible,
+                    visible = uiState.cofres.isNotEmpty(),
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(NonnaDimens.screenPaddingHorizontal)

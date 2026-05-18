@@ -1,6 +1,7 @@
 package com.cocido.nonna.data.repository
 
 import com.cocido.nonna.data.mock.relationToApi
+import com.cocido.nonna.data.mock.relationDisplayToApi
 import com.cocido.nonna.data.remote.CofreRecuerdosApi
 import com.cocido.nonna.data.remote.UsuarioApi
 import com.cocido.nonna.data.remote.dto.CofreCreateRequest
@@ -12,6 +13,7 @@ import com.cocido.nonna.ui.components.CofreInvitationUiModel
 import com.cocido.nonna.ui.components.CofreInviteeUiModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import com.cocido.nonna.util.NetworkFailureMessageResolver
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -41,14 +43,16 @@ class CofreRepository @Inject constructor(
                 invited.forEach { if (!merged.containsKey(it.id)) merged[it.id] = it }
                 emit(ApiResult.Success(merged.values.toList()))
             } else {
-                emit(ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code()))
+                val raw = response.errorBody()?.string()
+                emit(ApiResult.Error(NetworkErrorParser.parse(raw) ?: "Error", response.code()))
             }
         } catch (e: HttpException) {
-            emit(ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code()))
+            val raw = e.response()?.errorBody()?.string()
+            emit(ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code()))
         } catch (e: JsonParseException) {
             emit(ApiResult.Error(API_RESPONSE_PARSE_ERROR))
         } catch (e: IOException) {
-            emit(ApiResult.Error("Sin conexión. Revisá tu internet."))
+            emit(ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e)))
         }
     }
 
@@ -61,14 +65,16 @@ class CofreRepository @Inject constructor(
                 }
                     ?: ApiResult.Error("Cofre no encontrado")
             } else {
-                ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+                val raw = response.errorBody()?.string()
+                ApiResult.Error(NetworkErrorParser.parse(raw) ?: "Error", response.code())
             }
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            val raw = e.response()?.errorBody()?.string()
+            ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -108,11 +114,20 @@ class CofreRepository @Inject constructor(
         inviteEmails: List<String> = emptyList()
     ): ApiResult<CofreUiModel> {
         return try {
-            val relationApi = relationToApi(relation)
+            val relationInput = relation.trim()
+            val relationApi = relationToApi(relationInput)
+            val customRelation = relationInput.takeIf {
+                relationApi == "OTRO" &&
+                    !it.equals("OTRO", ignoreCase = true) &&
+                    !it.equals("Otro", ignoreCase = true) &&
+                    relationDisplayToApi[it] == null
+            }
             val validEmails = inviteEmails.map { it.trim() }.filter { it.contains("@") }
             val response = if (coverImageFile != null) {
                 val nombre = name.toRequestBody("text/plain".toMediaTypeOrNull())
                 val parentesco = relationApi.toRequestBody("text/plain".toMediaTypeOrNull())
+                val parentescoPersonalizado = customRelation
+                    ?.toRequestBody("text/plain".toMediaTypeOrNull())
                 val fraseDescripcion = (description ?: "").toRequestBody("text/plain".toMediaTypeOrNull())
                 val fotoPart = MultipartBody.Part.createFormData(
                     "fotoPortada",
@@ -121,12 +136,20 @@ class CofreRepository @Inject constructor(
                 )
                 // Evitamos enviar invitados en multipart porque el backend valida ese campo
                 // de forma estricta y puede rechazar valores válidos por formato de serialización.
-                api.createFull(nombre, parentesco, fraseDescripcion, fotoPart, null)
+                api.createFull(
+                    nombre = nombre,
+                    parentesco = parentesco,
+                    parentescoPersonalizado = parentescoPersonalizado,
+                    fraseDescripcion = fraseDescripcion,
+                    fotoPortada = fotoPart,
+                    invitadosEmails = null
+                )
             } else {
                 api.create(
                     CofreCreateRequest(
                         nombre = name,
                         parentesco = relationApi,
+                        parentescoPersonalizado = customRelation,
                         fraseDescripcion = description
                     )
                 )
@@ -149,13 +172,13 @@ class CofreRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(
-                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
                 e.code()
             )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -168,23 +191,42 @@ class CofreRepository @Inject constructor(
         existingCoverUrl: String? = null
     ): ApiResult<CofreUiModel> {
         return try {
-            val relationApi = relationToApi(relation)
+            val relationInput = relation.trim()
+            val relationApi = relationToApi(relationInput)
+            val customRelation = relationInput.takeIf {
+                relationApi == "OTRO" &&
+                    !it.equals("OTRO", ignoreCase = true) &&
+                    !it.equals("Otro", ignoreCase = true) &&
+                    relationDisplayToApi[it] == null
+            }
             val response = if (coverImageFile != null) {
                 val nombre = name.toRequestBody("text/plain".toMediaTypeOrNull())
                 val parentesco = relationApi.toRequestBody("text/plain".toMediaTypeOrNull())
+                val parentescoPersonalizado = customRelation
+                    ?.toRequestBody("text/plain".toMediaTypeOrNull())
                 val fraseDescripcion = (description ?: "").toRequestBody("text/plain".toMediaTypeOrNull())
                 val fotoPart = MultipartBody.Part.createFormData(
                     "fotoPortada",
                     coverImageFile.name,
                     coverImageFile.asRequestBody("image/*".toMediaTypeOrNull())
                 )
-                api.updateFull(id, nombre, parentesco, fraseDescripcion, fotoPart, null, null)
+                api.updateFull(
+                    id = id,
+                    nombre = nombre,
+                    parentesco = parentesco,
+                    parentescoPersonalizado = parentescoPersonalizado,
+                    fraseDescripcion = fraseDescripcion,
+                    fotoPortada = fotoPart,
+                    urlPortada = null,
+                    invitadosEmails = null
+                )
             } else {
                 api.update(
                     id,
                     CofreCreateRequest(
                         nombre = name,
                         parentesco = relationApi,
+                        parentescoPersonalizado = customRelation,
                         fraseDescripcion = description
                     )
                 )
@@ -200,13 +242,13 @@ class CofreRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(
-                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
                 e.code()
             )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -214,13 +256,17 @@ class CofreRepository @Inject constructor(
         return try {
             val response = api.delete(id)
             if (response.isSuccessful) ApiResult.Success(Unit)
-            else ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+            else {
+                val raw = response.errorBody()?.string()
+                ApiResult.Error(NetworkErrorParser.parse(raw) ?: "Error", response.code())
+            }
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            val raw = e.response()?.errorBody()?.string()
+            ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -237,13 +283,13 @@ class CofreRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(
-                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
                 e.code()
             )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -263,13 +309,13 @@ class CofreRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(
-                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
                 e.code()
             )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -290,13 +336,13 @@ class CofreRepository @Inject constructor(
             )
         } catch (e: HttpException) {
             ApiResult.Error(
-                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
                 e.code()
             )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -312,11 +358,14 @@ class CofreRepository @Inject constructor(
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -332,11 +381,14 @@ class CofreRepository @Inject constructor(
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -366,11 +418,14 @@ class CofreRepository @Inject constructor(
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 }

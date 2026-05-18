@@ -7,6 +7,7 @@ import com.cocido.nonna.data.remote.NotificationsApi
 import com.cocido.nonna.data.remote.dto.NotificationDeviceTokenRequest
 import com.cocido.nonna.data.remote.dto.NotificationDto
 import com.cocido.nonna.data.remote.dto.NotificationsListResponse
+import com.cocido.nonna.util.NetworkFailureMessageResolver
 import com.google.gson.JsonParseException
 import dagger.hilt.android.qualifiers.ApplicationContext
 import retrofit2.HttpException
@@ -36,33 +37,63 @@ class NotificationsRepository @Inject constructor(
     private val api: NotificationsApi,
     @ApplicationContext private val context: Context
 ) {
+    private fun tokenPayload(token: String): NotificationDeviceTokenRequest {
+        return NotificationDeviceTokenRequest(
+            fcmToken = token.trim(),
+            platform = "android",
+            deviceId = deviceId(),
+            deviceName = deviceName()
+        )
+    }
 
     suspend fun registerDeviceToken(fcmToken: String): ApiResult<Unit> {
         val cleanToken = fcmToken.trim()
         if (cleanToken.isBlank()) return ApiResult.Error("Token FCM vacío")
         return try {
-            val body = NotificationDeviceTokenRequest(
-                fcmToken = cleanToken,
-                platform = "android",
-                deviceId = deviceId(),
-                deviceName = deviceName()
-            )
+            val body = tokenPayload(cleanToken)
             val response = api.registerDeviceToken(body)
             if (response.isSuccessful) {
                 ApiResult.Success(Unit)
             } else {
                 ApiResult.Error(
-                    NetworkErrorParser.parse(response.errorBody()?.string())
-                        ?: "No se pudo registrar el token del dispositivo",
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
                     response.code()
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
+        }
+    }
+
+    suspend fun unregisterDeviceToken(fcmToken: String): ApiResult<Unit> {
+        val cleanToken = fcmToken.trim()
+        if (cleanToken.isBlank()) return ApiResult.Success(Unit)
+        return try {
+            val response = api.unregisterDeviceToken(tokenPayload(cleanToken))
+            if (response.isSuccessful) {
+                ApiResult.Success(Unit)
+            } else {
+                ApiResult.Error(
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
+                    response.code()
+                )
+            }
+        } catch (e: HttpException) {
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
+        } catch (e: JsonParseException) {
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
+        } catch (e: IOException) {
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -94,17 +125,19 @@ class NotificationsRepository @Inject constructor(
                 )
             } else {
                 ApiResult.Error(
-                    NetworkErrorParser.parse(response.errorBody()?.string())
-                        ?: "No se pudieron cargar las notificaciones",
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
                     response.code()
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -115,17 +148,19 @@ class NotificationsRepository @Inject constructor(
                 ApiResult.Success(Unit)
             } else {
                 ApiResult.Error(
-                    NetworkErrorParser.parse(response.errorBody()?.string())
-                        ?: "No se pudo marcar la notificación como leída",
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
                     response.code()
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 

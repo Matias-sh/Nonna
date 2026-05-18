@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -28,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.data.repository.NotificationTokenSyncManager
@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val mainViewModel: MainViewModel = hiltViewModel()
-                    val authState by mainViewModel.authState.collectAsState()
+                    val authState by mainViewModel.authState.collectAsStateWithLifecycle()
                     val ttiLogged = remember { mutableStateOf(false) }
 
                     when (authState) {

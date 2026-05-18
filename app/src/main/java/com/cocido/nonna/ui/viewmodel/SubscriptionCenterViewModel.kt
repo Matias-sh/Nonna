@@ -9,6 +9,7 @@ import com.cocido.nonna.analytics.AppAnalytics
 import com.cocido.nonna.analytics.PaymentsAnalytics
 import com.cocido.nonna.data.remote.dto.PagoSuscripcionResponseDto
 import com.cocido.nonna.data.remote.dto.PeriodicidadPago
+import com.cocido.nonna.data.remote.dto.BillingStateResponseDto
 import com.cocido.nonna.data.remote.dto.SuscripcionActualDto
 import com.cocido.nonna.data.remote.dto.SuscripcionPlanDto
 import com.cocido.nonna.data.repository.ApiResult
@@ -50,6 +51,9 @@ class SubscriptionCenterViewModel @Inject constructor(
     private val _suscripcion = MutableStateFlow<SuscripcionActualDto?>(null)
     val suscripcion: StateFlow<SuscripcionActualDto?> = _suscripcion.asStateFlow()
 
+    private val _billingState = MutableStateFlow<BillingStateResponseDto?>(null)
+    val billingState: StateFlow<BillingStateResponseDto?> = _billingState.asStateFlow()
+
     private val _planes = MutableStateFlow<List<SuscripcionPlanDto>>(emptyList())
     val planes: StateFlow<List<SuscripcionPlanDto>> = _planes.asStateFlow()
 
@@ -80,6 +84,7 @@ class SubscriptionCenterViewModel @Inject constructor(
             analytics.track(AnalyticsEvent(PaymentsAnalytics.SCREEN_OPENED))
             _isLoading.value = true
             loadSuscripcion()
+            loadBillingState()
             loadPlanes()
             loadPagos()
             loadPagoPendiente()
@@ -273,6 +278,17 @@ class SubscriptionCenterViewModel @Inject constructor(
                         )
                     )
                     _infoMessage.emit("Pago pendiente cancelado.")
+                    _pendingPayment.value = null
+                    _pagos.value = _pagos.value.map { pago ->
+                        if (pago.id == paymentId) {
+                            pago.copy(
+                                estadoInterno = "CANCELADO",
+                                autoRenovar = false
+                            )
+                        } else {
+                            pago
+                        }
+                    }
                     clearLastCheckoutPagoIdIfMatches(paymentId)
                     refreshAfterCheckout()
                 }
@@ -308,7 +324,10 @@ class SubscriptionCenterViewModel @Inject constructor(
                             mapOf("pago_id" to paymentId.toString())
                         )
                     )
-                    _infoMessage.emit("Auto-renovación cancelada correctamente.")
+                    _infoMessage.emit(
+                        result.data.message?.takeIf { it.isNotBlank() }
+                            ?: "Auto-renovación cancelada correctamente."
+                    )
                     refreshAfterCheckout()
                 }
                 is ApiResult.Error -> {
@@ -364,6 +383,7 @@ class SubscriptionCenterViewModel @Inject constructor(
         viewModelScope.launch {
             analytics.track(AnalyticsEvent(PaymentsAnalytics.CHECKOUT_REFRESH_AFTER_RETURN))
             loadSuscripcion()
+            loadBillingState()
             loadPagoPendiente()
             loadPagos()
             lastPassiveRefreshAt = SystemClock.elapsedRealtime()
@@ -376,6 +396,7 @@ class SubscriptionCenterViewModel @Inject constructor(
         if (now - lastPassiveRefreshAt < minIntervalMs) return
         viewModelScope.launch {
             loadSuscripcion()
+            loadBillingState()
             loadPagoPendiente()
             loadPagos()
             lastPassiveRefreshAt = SystemClock.elapsedRealtime()
@@ -430,7 +451,10 @@ class SubscriptionCenterViewModel @Inject constructor(
             when (val result = pagosRepository.cancelarAutoRenovacion(preferredPagoId)) {
                 is ApiResult.Success -> {
                     val planName = currentSubscription?.plan?.nombre?.ifBlank { "actual" } ?: "actual"
-                    _infoMessage.emit("Auto-renovación cancelada. Tu $planName sigue activo hasta el próximo vencimiento.")
+                    _infoMessage.emit(
+                        result.data.message?.takeIf { it.isNotBlank() }
+                            ?: "Auto-renovación cancelada. Tu $planName sigue activo hasta el próximo vencimiento."
+                    )
                     refreshAfterCheckout()
                 }
                 is ApiResult.Error -> _errorMessage.emit(result.message)
@@ -482,7 +506,10 @@ class SubscriptionCenterViewModel @Inject constructor(
                         )
                     )
                     val planName = currentSubscription?.plan?.nombre?.ifBlank { "plan" } ?: "plan"
-                    _infoMessage.emit("Renovación automática reactivada para tu $planName.")
+                    _infoMessage.emit(
+                        result.data.message?.takeIf { it.isNotBlank() }
+                            ?: "Renovación automática reactivada para tu $planName."
+                    )
                     refreshAfterCheckout()
                 }
                 is ApiResult.Error -> {
@@ -522,7 +549,10 @@ class SubscriptionCenterViewModel @Inject constructor(
                             mapOf("pago_id" to paymentId.toString())
                         )
                     )
-                    _infoMessage.emit("Renovación automática reactivada para este pago.")
+                    _infoMessage.emit(
+                        result.data.message?.takeIf { it.isNotBlank() }
+                            ?: "Renovación automática reactivada para este pago."
+                    )
                     refreshAfterCheckout()
                 }
                 is ApiResult.Error -> {
@@ -565,6 +595,14 @@ class SubscriptionCenterViewModel @Inject constructor(
         when (val result = suscripcionRepository.getMiSuscripcion()) {
             is ApiResult.Success -> _suscripcion.value = result.data
             is ApiResult.Error -> _errorMessage.emit(result.message)
+            else -> Unit
+        }
+    }
+
+    private suspend fun loadBillingState() {
+        when (val result = suscripcionRepository.getBillingState()) {
+            is ApiResult.Success -> _billingState.value = result.data
+            is ApiResult.Error -> Unit
             else -> Unit
         }
     }
@@ -652,8 +690,9 @@ class SubscriptionCenterViewModel @Inject constructor(
     private fun startPendingPolling() {
         if (pendingPollingJob?.isActive == true) return
         pendingPollingJob = viewModelScope.launch {
-            repeat(6) {
-                delay(15000)
+            val scheduleMs = listOf(10_000L, 20_000L, 30_000L, 45_000L)
+            for (waitMs in scheduleMs) {
+                delay(waitMs)
                 loadPagoPendiente()
                 loadSuscripcion()
                 loadPagos()

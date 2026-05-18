@@ -2,6 +2,7 @@ package com.cocido.nonna.data.repository
 
 import com.cocido.nonna.data.remote.PlanesApi
 import com.cocido.nonna.data.remote.dto.SuscripcionPlanDto
+import com.cocido.nonna.util.NetworkFailureMessageResolver
 import com.google.gson.JsonParseException
 import retrofit2.HttpException
 import java.io.IOException
@@ -20,16 +21,19 @@ class PlanesRepository @Inject constructor(
                 ApiResult.Success(planes)
             } else {
                 ApiResult.Error(
-                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudieron cargar los planes.",
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
                     response.code()
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 }

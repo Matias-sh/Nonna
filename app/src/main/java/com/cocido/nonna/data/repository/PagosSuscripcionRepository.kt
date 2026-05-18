@@ -5,9 +5,11 @@ import com.cocido.nonna.data.remote.dto.CheckoutSuscripcionResponseDto
 import com.cocido.nonna.data.remote.dto.PagoSuscripcionResponseDto
 import com.cocido.nonna.data.remote.dto.PeriodicidadPago
 import com.cocido.nonna.data.remote.dto.CancelarAutoRenovacionRequestDto
+import com.cocido.nonna.data.remote.dto.AutoRenewMutationResponseDto
 import com.cocido.nonna.data.remote.dto.CrearCheckoutSuscripcionRequestDto
 import com.cocido.nonna.data.remote.dto.SincronizarPagoRequestDto
 import com.cocido.nonna.data.remote.dto.SincronizarPagoResponseDto
+import com.cocido.nonna.util.NetworkFailureMessageResolver
 import com.google.gson.JsonParseException
 import retrofit2.HttpException
 import java.io.IOException
@@ -34,57 +36,67 @@ class PagosSuscripcionRepository @Inject constructor(
                     ?: ApiResult.Error("No se pudo iniciar el checkout.")
             } else {
                 ApiResult.Error(
-                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudo iniciar el checkout.",
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
                     response.code()
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
-    suspend fun cancelarAutoRenovacion(pagoId: Int): ApiResult<Unit> {
+    suspend fun cancelarAutoRenovacion(pagoId: Int): ApiResult<AutoRenewMutationResponseDto> {
         return try {
             val response = api.cancelarAutoRenovacion(CancelarAutoRenovacionRequestDto(pagoId))
             if (response.isSuccessful) {
-                ApiResult.Success(Unit)
+                response.body()?.let { ApiResult.Success(it) }
+                    ?: ApiResult.Error("No se pudo confirmar el estado de la auto-renovación.")
             } else {
                 ApiResult.Error(
-                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudo cancelar la auto-renovación.",
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
                     response.code()
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
-    suspend fun reactivarAutoRenovacion(pagoId: Int): ApiResult<Unit> {
+    suspend fun reactivarAutoRenovacion(pagoId: Int): ApiResult<AutoRenewMutationResponseDto> {
         return try {
             val response = api.reactivarAutoRenovacion(CancelarAutoRenovacionRequestDto(pagoId))
             if (response.isSuccessful) {
-                ApiResult.Success(Unit)
+                response.body()?.let { ApiResult.Success(it) }
+                    ?: ApiResult.Error("No se pudo confirmar el estado de la auto-renovación.")
             } else {
                 ApiResult.Error(
-                    NetworkErrorParser.parse(response.errorBody()?.string())
-                        ?: "No se pudo reactivar la auto-renovación.",
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
                     response.code()
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -95,16 +107,19 @@ class PagosSuscripcionRepository @Inject constructor(
                 ApiResult.Success(Unit)
             } else {
                 ApiResult.Error(
-                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudo cancelar el pago pendiente.",
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
                     response.code()
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -115,16 +130,19 @@ class PagosSuscripcionRepository @Inject constructor(
                 ApiResult.Success(response.body().orEmpty())
             } else {
                 ApiResult.Error(
-                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudo cargar el historial de pagos.",
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
                     response.code()
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -135,16 +153,19 @@ class PagosSuscripcionRepository @Inject constructor(
                 ApiResult.Success(response.body())
             } else {
                 ApiResult.Error(
-                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudo consultar el pago pendiente.",
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
                     response.code()
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -161,16 +182,19 @@ class PagosSuscripcionRepository @Inject constructor(
                     ?: ApiResult.Error("No se pudo sincronizar el pago.")
             } else {
                 ApiResult.Error(
-                    NetworkErrorParser.parse(response.errorBody()?.string()) ?: "No se pudo sincronizar el pago.",
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
                     response.code()
                 )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 }

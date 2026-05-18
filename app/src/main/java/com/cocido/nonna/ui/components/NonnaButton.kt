@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
@@ -248,7 +249,12 @@ private fun ButtonContent(
             Spacer(modifier = Modifier.width(NonnaSpacing.sm))
         }
         
-        Text(text = text)
+        Text(
+            text = text,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
+        )
         
         if (icon != null && iconPosition == IconPosition.End) {
             Spacer(modifier = Modifier.width(NonnaSpacing.sm))

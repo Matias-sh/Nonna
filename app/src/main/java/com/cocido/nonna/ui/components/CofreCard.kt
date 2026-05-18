@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -178,6 +179,31 @@ fun CofreCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                Spacer(modifier = Modifier.height(6.dp))
+                Surface(
+                    shape = NonnaCorners.Full,
+                    color = if (cofre.isOwner) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                    } else {
+                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+                    }
+                ) {
+                    Text(
+                        text = if (cofre.isOwner) {
+                            stringResource(R.string.chest_owner_badge)
+                        } else {
+                            stringResource(R.string.chest_shared_badge)
+                        },
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (cofre.isOwner) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        }
+                    )
+                }
                 
                 Spacer(modifier = Modifier.height(12.dp))
                 

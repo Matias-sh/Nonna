@@ -1,11 +1,11 @@
 package com.cocido.nonna.ui.screens.cofres
 
-import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.platform.app.InstrumentationRegistry
 import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.CofreUiModel
 import com.cocido.nonna.ui.theme.NonnaTheme
@@ -16,11 +16,11 @@ import org.junit.Test
 class CofresListScreenTest {
 
     @get:Rule
-    val composeRule = createAndroidComposeRule<ComponentActivity>()
+    val composeRule = createComposeRule()
 
     @Test
     fun emptyState_showsTitleAndCta() {
-        val context = composeRule.activity
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
         composeRule.setContent {
             NonnaTheme {
                 CofresListScreen(
@@ -36,7 +36,6 @@ class CofresListScreenTest {
 
     @Test
     fun whenHasData_fabCreate_emitsEvent() {
-        val context = composeRule.activity
         val emitted = mutableListOf<CofresListEvent>()
         composeRule.setContent {
             NonnaTheme {

@@ -38,6 +38,7 @@ interface CofreRecuerdosApi {
     suspend fun createFull(
         @Part("nombre") nombre: RequestBody,
         @Part("parentesco") parentesco: RequestBody,
+        @Part("parentescoPersonalizado") parentescoPersonalizado: RequestBody? = null,
         @Part("fraseDescripcion") fraseDescripcion: RequestBody,
         @Part fotoPortada: MultipartBody.Part? = null,
         @Part("invitadosEmails") invitadosEmails: RequestBody? = null
@@ -55,6 +56,7 @@ interface CofreRecuerdosApi {
         @Path("id") id: String,
         @Part("nombre") nombre: RequestBody,
         @Part("parentesco") parentesco: RequestBody,
+        @Part("parentescoPersonalizado") parentescoPersonalizado: RequestBody? = null,
         @Part("fraseDescripcion") fraseDescripcion: RequestBody,
         @Part fotoPortada: MultipartBody.Part? = null,
         @Part("urlPortada") urlPortada: RequestBody? = null,

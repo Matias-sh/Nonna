@@ -14,6 +14,7 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import com.cocido.nonna.util.MemoryMediaUrlHeuristics
+import com.cocido.nonna.util.NetworkFailureMessageResolver
 import com.google.gson.JsonParseException
 import retrofit2.HttpException
 import java.io.File
@@ -39,15 +40,20 @@ class RecuerdosRepository @Inject constructor(
                     val body = response.body()
                     (body?.list() ?: emptyList()).map { it.toUiModel() }
                 }
-                else -> emptyList()
+                else -> {
+                    val raw = response.errorBody()?.string()
+                    emit(ApiResult.Error(NetworkErrorParser.parse(raw) ?: "No se pudieron cargar los recuerdos", response.code()))
+                    return@flow
+                }
             }
             emit(ApiResult.Success(list))
         } catch (e: HttpException) {
-            emit(ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code()))
+            val raw = e.response()?.errorBody()?.string()
+            emit(ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code()))
         } catch (e: JsonParseException) {
             emit(ApiResult.Error(API_RESPONSE_PARSE_ERROR))
         } catch (e: IOException) {
-            emit(ApiResult.Error("Sin conexión. Revisá tu internet."))
+            emit(ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e)))
         }
     }
 
@@ -58,14 +64,16 @@ class RecuerdosRepository @Inject constructor(
                 response.body()?.let { ApiResult.Success(it.toUiModel()) }
                     ?: ApiResult.Error("Recuerdo no encontrado")
             } else {
-                ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+                val raw = response.errorBody()?.string()
+                ApiResult.Error(NetworkErrorParser.parse(raw) ?: "Error", response.code())
             }
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            val raw = e.response()?.errorBody()?.string()
+            ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -168,7 +176,7 @@ class RecuerdosRepository @Inject constructor(
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -250,7 +258,7 @@ class RecuerdosRepository @Inject constructor(
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -258,13 +266,17 @@ class RecuerdosRepository @Inject constructor(
         return try {
             val response = api.delete(id)
             if (response.isSuccessful) ApiResult.Success(Unit)
-            else ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+            else {
+                val raw = response.errorBody()?.string()
+                ApiResult.Error(NetworkErrorParser.parse(raw) ?: "Error", response.code())
+            }
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            val raw = e.response()?.errorBody()?.string()
+            ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 }
@@ -313,6 +325,10 @@ private fun normalizeRecuerdoDate(raw: String): String {
 
 private fun mapRecuerdoBackendError(raw: String, code: Int?): String {
     val normalized = raw.lowercase()
+    val parsed = NetworkErrorParser.parse(raw, code)
+    if (!parsed.isNullOrBlank() && !parsed.equals("Datos de entrada no válidos.", ignoreCase = true)) {
+        return parsed
+    }
     if (code == 413 || normalized.contains("too large") || normalized.contains("payload too large")) {
         val type = detectUploadType(normalized)
         val max = extractMaxSizeLabel(raw) ?: "No informado por servidor"
@@ -321,7 +337,7 @@ private fun mapRecuerdoBackendError(raw: String, code: Int?): String {
     if (normalized.contains("cofr03_descripcion") || normalized.contains("descripcion")) {
         return "La descripción es demasiado larga. Reducí el texto e intentá nuevamente."
     }
-    return raw
+    return parsed ?: NetworkErrorParser.parseOrGeneric(null, code)
 }
 
 private fun detectUploadType(normalizedRaw: String): String {

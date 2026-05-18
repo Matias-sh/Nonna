@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.CofreRepository
+import com.cocido.nonna.data.repository.SuscripcionRepository
 import com.cocido.nonna.ui.components.CofreUiModel
 import com.cocido.nonna.util.ImageCompressor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,7 +26,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CreateCofreViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val cofreRepository: CofreRepository
+    private val cofreRepository: CofreRepository,
+    private val suscripcionRepository: SuscripcionRepository
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -46,6 +48,10 @@ class CreateCofreViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             _isLoading.value = true
+            if (!canCreateAnotherCofre()) {
+                _isLoading.value = false
+                return@launch
+            }
             val coverFile = coverImageUri?.let { uri -> uriToTempFile(uri) }
             when (val result = cofreRepository.createCofre(
                 name = name,
@@ -60,6 +66,28 @@ class CreateCofreViewModel @Inject constructor(
             }
             coverFile?.delete()
             _isLoading.value = false
+        }
+    }
+
+    private suspend fun canCreateAnotherCofre(): Boolean {
+        return when (val subResult = suscripcionRepository.getMiSuscripcion()) {
+            is ApiResult.Success -> {
+                val limites = subResult.data.limites
+                val uso = subResult.data.uso
+                val maxCofres = (limites?.maxCofres ?: subResult.data.plan?.maxCofres)?.coerceAtLeast(0)
+                val cofresCreados = (uso?.cofresCreados ?: 0).coerceAtLeast(0)
+                if (maxCofres != null && maxCofres > 0 && cofresCreados >= maxCofres) {
+                    val planName = subResult.data.plan?.nombre?.trim().orEmpty().ifBlank { "actual" }
+                    _errorMessage.emit(
+                        "Alcanzaste el límite de $maxCofres cofre(s) para tu plan $planName. " +
+                            "Para crear más, necesitás cambiar de plan."
+                    )
+                    false
+                } else {
+                    true
+                }
+            }
+            else -> true
         }
     }
 

@@ -50,6 +50,8 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -65,9 +67,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
 import coil.compose.AsyncImage
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.res.stringResource
 import com.cocido.nonna.R
@@ -109,13 +109,13 @@ fun CofreDetailScreen(
     viewModel: com.cocido.nonna.ui.viewmodel.CofreDetailViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val cofreState by viewModel.cofre.collectAsState()
-    val currentUser by viewModel.currentUser.collectAsState()
-    val memoriesState by viewModel.memories.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val leaveInProgress by viewModel.leaveInProgress.collectAsState()
-    val removeInviteeInProgress by viewModel.removeInviteeInProgress.collectAsState()
+    val cofreState by viewModel.cofre.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val memoriesState by viewModel.memories.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val leaveInProgress by viewModel.leaveInProgress.collectAsStateWithLifecycle()
+    val removeInviteeInProgress by viewModel.removeInviteeInProgress.collectAsStateWithLifecycle()
     val cofre = cofreState
     var showInviteModal by remember { mutableStateOf(false) }
     var inviteeIdPendingRemoval by remember { mutableStateOf<String?>(null) }
@@ -132,7 +132,7 @@ fun CofreDetailScreen(
             feedbackMessage = context.getString(R.string.chest_deleted_success)
             feedbackType = NonnaFeedbackType.Success
             feedbackVisible = true
-            delay(1200)
+            delay(900)
             feedbackVisible = false
             onBack()
         }
@@ -142,7 +142,7 @@ fun CofreDetailScreen(
             feedbackMessage = context.getString(R.string.chest_invite_sent)
             feedbackType = NonnaFeedbackType.Success
             feedbackVisible = true
-            delay(1400)
+            delay(1000)
             feedbackVisible = false
         }
     }
@@ -153,7 +153,7 @@ fun CofreDetailScreen(
             feedbackMessage = context.getString(R.string.chest_member_removed_success)
             feedbackType = NonnaFeedbackType.Success
             feedbackVisible = true
-            delay(1400)
+            delay(1000)
             feedbackVisible = false
         }
     }
@@ -163,7 +163,7 @@ fun CofreDetailScreen(
             feedbackMessage = context.getString(R.string.chest_leave_shared_success)
             feedbackType = NonnaFeedbackType.Success
             feedbackVisible = true
-            delay(1200)
+            delay(900)
             feedbackVisible = false
             onBack()
         }
@@ -174,7 +174,7 @@ fun CofreDetailScreen(
             feedbackType = NonnaFeedbackType.Error
             feedbackVisible = true
             scope.launch {
-                delay(1800)
+                delay(1200)
                 feedbackVisible = false
             }
             viewModel.clearError()
@@ -185,17 +185,30 @@ fun CofreDetailScreen(
     var memoryFilter by remember { mutableStateOf(MemoryFilters.todos.id) }
     var viewMode by remember { mutableStateOf(MemoryCardViewMode.Grid) }
     
-    val filteredMemories = memoriesState.filter { memory ->
-        when (memoryFilter) {
-            MemoryFilters.fotos.id -> memory.type == MemoryType.Photo
-            MemoryFilters.audios.id -> memory.type == MemoryType.Audio
-            MemoryFilters.textos.id -> memory.type == MemoryType.Text
-            else -> true
+    val filteredMemories by remember(memoriesState, memoryFilter) {
+        derivedStateOf {
+            memoriesState.filter { memory ->
+                when (memoryFilter) {
+                    MemoryFilters.fotos.id -> memory.type == MemoryType.Photo
+                    MemoryFilters.audios.id -> memory.type == MemoryType.Audio
+                    MemoryFilters.textos.id -> memory.type == MemoryType.Text
+                    else -> true
+                }
+            }
         }
     }
-    val realPhotoCount = memoriesState.count { it.type == MemoryType.Photo }
-    val realAudioCount = memoriesState.count { it.type == MemoryType.Audio }
-    val realTextCount = memoriesState.count { it.type == MemoryType.Text }
+    val memoryCounts by remember(memoriesState) {
+        derivedStateOf {
+            Triple(
+                memoriesState.count { it.type == MemoryType.Photo },
+                memoriesState.count { it.type == MemoryType.Audio },
+                memoriesState.count { it.type == MemoryType.Text }
+            )
+        }
+    }
+    val realPhotoCount = memoryCounts.first
+    val realAudioCount = memoryCounts.second
+    val realTextCount = memoryCounts.third
     
     Box(modifier = Modifier.fillMaxSize()) {
     Column(
@@ -237,8 +250,11 @@ fun CofreDetailScreen(
                 }
             }
             else -> {
-        val memberStatCount = remember(cofre, currentUser) {
-            familiaListedMemberCount(cofre, currentUser)
+        val familyMembers = remember(cofre, currentUser) {
+            buildFamiliaMembers(cofre, currentUser)
+        }
+        val memberStatCount = remember(familyMembers, cofre, currentUser) {
+            if (familyMembers.isNotEmpty()) familyMembers.size else familiaListedMemberCount(cofre, currentUser)
         }
         // Cover image
         val coverUrl = cofre.coverImageUrl?.takeIf { it.isNotBlank() && it != "string" }
@@ -388,7 +404,7 @@ fun CofreDetailScreen(
                 onAddMemory = onAddMemory
             )
             1 -> FamiliaTab(
-                members = buildFamiliaMembers(cofre, currentUser),
+                members = familyMembers,
                 canInvite = canManageCofre(cofre),
                 onInvite = { showInviteModal = true },
                 removeMemberInProgress = removeInviteeInProgress,
@@ -651,13 +667,14 @@ private fun RecuerdosTab(
                 }
             } else if (viewMode == MemoryCardViewMode.Grid) {
                 LazyVerticalGrid(
+                    modifier = Modifier.weight(1f),
                     columns = GridCells.Fixed(2),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
                     itemsIndexed(filteredMemories, key = { _, memory -> memory.id }) { index, memory ->
-                        NonnaStaggerItem(index = index, stepDelayMs = 50) {
+                        NonnaStaggerItem(index = index, stepDelayMs = 0) {
                             MemoryCard(
                                 memory = memory,
                                 onClick = { onMemoryClick(memory.id, cofreName, cofreCreatorDisplay) },
@@ -668,11 +685,12 @@ private fun RecuerdosTab(
                 }
             } else {
                 LazyColumn(
+                    modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
                     itemsIndexed(filteredMemories, key = { _, memory -> memory.id }) { index, memory ->
-                        NonnaStaggerItem(index = index, stepDelayMs = 50) {
+                        NonnaStaggerItem(index = index, stepDelayMs = 0) {
                             MemoryCard(
                                 memory = memory,
                                 onClick = { onMemoryClick(memory.id, cofreName, cofreCreatorDisplay) },
@@ -867,10 +885,11 @@ private fun FamiliaTab(
             }
         } else {
             LazyColumn(
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(members, key = { _, member -> member.email }) { index, member ->
-                    NonnaStaggerItem(index = index, stepDelayMs = 60) {
+                    NonnaStaggerItem(index = index, stepDelayMs = 0) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = NonnaCorners.Card,

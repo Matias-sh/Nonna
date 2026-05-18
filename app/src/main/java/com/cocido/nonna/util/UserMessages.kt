@@ -53,7 +53,19 @@ object UserMessages {
         get() = tr(R.string.msg_invalid_credentials, "Tus credenciales no son correctas.")
 
     val NO_INTERNET: String
-        get() = tr(R.string.msg_no_internet, "Sin conexión. Revisá tu internet.")
+        get() = tr(R.string.msg_no_internet, "Parece que tu dispositivo está sin internet. Revisá tu conexión y reintentá.")
+
+    val SERVER_UNREACHABLE: String
+        get() = tr(
+            R.string.msg_server_unreachable,
+            "No pudimos conectar con el servidor. Intentá nuevamente en unos minutos."
+        )
+
+    val REQUEST_TIMEOUT: String
+        get() = tr(
+            R.string.msg_request_timeout,
+            "El servidor tardó demasiado en responder. Intentá nuevamente."
+        )
 
     val GENERIC_ERROR: String
         get() = tr(R.string.msg_generic_error, "Ocurrió un error. Intentá nuevamente.")

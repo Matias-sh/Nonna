@@ -5,6 +5,7 @@ import com.cocido.nonna.data.remote.dto.NotificationsListResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -14,6 +15,11 @@ interface NotificationsApi {
 
     @POST("notifications/device-token")
     suspend fun registerDeviceToken(
+        @Body body: NotificationDeviceTokenRequest
+    ): Response<Unit>
+
+    @HTTP(method = "DELETE", path = "notifications/device-token", hasBody = true)
+    suspend fun unregisterDeviceToken(
         @Body body: NotificationDeviceTokenRequest
     ): Response<Unit>
 

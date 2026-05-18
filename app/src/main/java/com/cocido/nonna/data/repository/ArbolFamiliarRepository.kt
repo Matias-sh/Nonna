@@ -5,6 +5,7 @@ import com.cocido.nonna.data.remote.ArbolFamiliarApi
 import com.cocido.nonna.data.remote.dto.ArbolFamiliarResponseDto
 import com.cocido.nonna.data.remote.dto.PersonaArbolCreateRequest
 import com.cocido.nonna.data.remote.dto.PersonaArbolDto
+import com.cocido.nonna.util.NetworkFailureMessageResolver
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import com.google.gson.JsonParseException
@@ -27,14 +28,16 @@ class ArbolFamiliarRepository @Inject constructor(
                 val nodes = body?.personas?.map { it.toTreeNode() } ?: emptyList()
                 emit(ApiResult.Success(nodes))
             } else {
-                emit(ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code()))
+                val raw = response.errorBody()?.string()
+                emit(ApiResult.Error(NetworkErrorParser.parse(raw) ?: "Error", response.code()))
             }
         } catch (e: HttpException) {
-            emit(ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code()))
+            val raw = e.response()?.errorBody()?.string()
+            emit(ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code()))
         } catch (e: JsonParseException) {
             emit(ApiResult.Error(API_RESPONSE_PARSE_ERROR))
         } catch (e: IOException) {
-            emit(ApiResult.Error("Sin conexión. Revisá tu internet."))
+            emit(ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e)))
         }
     }
 
@@ -64,14 +67,16 @@ class ArbolFamiliarRepository @Inject constructor(
                 response.body()?.let { ApiResult.Success(it.toTreeNode()) }
                     ?: ApiResult.Error("Error al crear persona")
             } else {
-                ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+                val raw = response.errorBody()?.string()
+                ApiResult.Error(NetworkErrorParser.parse(raw) ?: "Error", response.code())
             }
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            val raw = e.response()?.errorBody()?.string()
+            ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -102,14 +107,16 @@ class ArbolFamiliarRepository @Inject constructor(
                 response.body()?.let { ApiResult.Success(it.toTreeNode()) }
                     ?: ApiResult.Error("Error al actualizar persona")
             } else {
-                ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+                val raw = response.errorBody()?.string()
+                ApiResult.Error(NetworkErrorParser.parse(raw) ?: "Error", response.code())
             }
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            val raw = e.response()?.errorBody()?.string()
+            ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -122,14 +129,16 @@ class ArbolFamiliarRepository @Inject constructor(
             if (response.isSuccessful) {
                 ApiResult.Success(Unit)
             } else {
-                ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+                val raw = response.errorBody()?.string()
+                ApiResult.Error(NetworkErrorParser.parse(raw) ?: "Error", response.code())
             }
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            val raw = e.response()?.errorBody()?.string()
+            ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 
@@ -142,14 +151,16 @@ class ArbolFamiliarRepository @Inject constructor(
             if (response.isSuccessful) {
                 ApiResult.Success(Unit)
             } else {
-                ApiResult.Error(response.errorBody()?.string() ?: "Error", response.code())
+                val raw = response.errorBody()?.string()
+                ApiResult.Error(NetworkErrorParser.parse(raw) ?: "Error", response.code())
             }
         } catch (e: HttpException) {
-            ApiResult.Error(e.response()?.errorBody()?.string() ?: e.message(), e.code())
+            val raw = e.response()?.errorBody()?.string()
+            ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code())
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
 }

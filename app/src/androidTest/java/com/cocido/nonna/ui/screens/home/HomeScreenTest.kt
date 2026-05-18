@@ -1,11 +1,11 @@
 package com.cocido.nonna.ui.screens.home
 
-import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.platform.app.InstrumentationRegistry
 import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaTheme
 import org.junit.Assert.assertTrue
@@ -15,11 +15,11 @@ import org.junit.Test
 class HomeScreenTest {
 
     @get:Rule
-    val composeRule = createAndroidComposeRule<ComponentActivity>()
+    val composeRule = createComposeRule()
 
     @Test
     fun emptyState_showsExpectedTexts() {
-        val context = composeRule.activity
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
         composeRule.setContent {
             NonnaTheme {
                 HomeScreen(
@@ -35,7 +35,6 @@ class HomeScreenTest {
 
     @Test
     fun emptyStateCta_emitsCreateCofreEvent() {
-        val context = composeRule.activity
         val events = mutableListOf<HomeEvent>()
         composeRule.setContent {
             NonnaTheme {

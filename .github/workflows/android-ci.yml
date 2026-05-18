@@ -70,20 +70,19 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         
-    - name: Run security scan
+    - name: Run static security scan
       run: |
-        # Instalar herramientas de seguridad
-        sudo apt-get update
-        sudo apt-get install -y findsecbugs
+        ./gradlew lint test
         
-        # Ejecutar análisis de seguridad
-        ./gradlew findbugsMain
-        
-    - name: Check for hardcoded secrets
+    - name: Check for hardcoded secrets (strict patterns)
       run: |
-        # Buscar posibles secretos hardcodeados
-        if grep -r "password\|secret\|key\|token" app/src/main/java/ --include="*.kt" --include="*.java"; then
-          echo "⚠️  Posibles secretos hardcodeados encontrados"
+        if rg --hidden \
+          --glob '!**/build/**' \
+          --glob '!**/*.md' \
+          --glob '!**/google-services.json' \
+          "(?i)(api[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token|password)\\s*[:=]\\s*[\"'][A-Za-z0-9_\\-\\/=+]{20,}[\"']" \
+          app ; then
+          echo "Posibles secretos hardcodeados encontrados"
           exit 1
         fi
 
@@ -101,17 +100,34 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         
-    - name: Build release APK
-      run: ./gradlew assembleRelease
-      
-    - name: Sign APK
+    - name: Build QA release-like artifact
+      run: ./gradlew bundleQa
+
+    - name: Prepare release signing config
+      if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
       run: |
-        # Aquí se implementaría la firma del APK
-        echo "APK signed successfully"
-        
-    - name: Upload release APK
+        echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > release-keystore.jks
+        cat <<EOF > keystore.properties
+        storeFile=release-keystore.jks
+        storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+        keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+        EOF
+
+    - name: Build signed release bundle (when keys are available)
+      if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+      run: ./gradlew bundleRelease
+
+    - name: Upload QA bundle
       uses: actions/upload-artifact@v3
       with:
-        name: release-apk
-        path: app/build/outputs/apk/release/
+        name: qa-aab
+        path: app/build/outputs/bundle/qa/
+
+    - name: Upload release bundle
+      if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-aab
+        path: app/build/outputs/bundle/release/
 

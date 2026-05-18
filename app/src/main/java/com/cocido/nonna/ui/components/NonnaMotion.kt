@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import kotlinx.coroutines.delay
+import kotlin.math.min
 
 object NonnaMotion {
     const val DurationFastMs = 150
@@ -77,9 +78,11 @@ fun NonnaStaggerItem(
     stepDelayMs: Int = NonnaMotion.StaggerStepMs,
     content: @Composable () -> Unit
 ) {
-    var visible by remember(index) { mutableStateOf(false) }
-    LaunchedEffect(index) {
-        delay((baseDelayMs + (index * stepDelayMs)).toLong())
+    val effectiveDelayMs = (baseDelayMs + min(index, 3) * stepDelayMs).coerceAtLeast(0)
+    var visible by remember(index, effectiveDelayMs) { mutableStateOf(effectiveDelayMs == 0) }
+    LaunchedEffect(index, effectiveDelayMs) {
+        if (effectiveDelayMs == 0) return@LaunchedEffect
+        delay(effectiveDelayMs.toLong())
         visible = true
     }
     AnimatedVisibility(

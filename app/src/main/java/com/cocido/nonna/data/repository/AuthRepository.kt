@@ -9,6 +9,7 @@ import com.cocido.nonna.data.remote.dto.ResetPasswordWithCodeDto
 import com.cocido.nonna.data.remote.dto.UserDto
 import com.cocido.nonna.data.remote.dto.VerifyEmailRequest
 import com.cocido.nonna.data.remote.dto.VerifyPasswordResetCodeDto
+import com.cocido.nonna.util.NetworkFailureMessageResolver
 import com.cocido.nonna.util.UserMessages
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -53,15 +54,21 @@ class AuthRepository @Inject constructor(
                     ApiResult.Error("No se recibió token del servidor")
                 }
             } else {
-                ApiResult.Error(NetworkErrorParser.parse(response.errorBody()?.string()) ?: "Error al iniciar sesión", response.code())
+                ApiResult.Error(
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
+                    response.code()
+                )
             }
         } catch (e: HttpException) {
             if (e.code() == 401) ApiResult.Error("Email o contraseña incorrectos")
-            else ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            else ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         } catch (e: Exception) {
             val detail = e.localizedMessage?.takeIf { it.isNotBlank() }
             ApiResult.Error(
@@ -105,14 +112,20 @@ class AuthRepository @Inject constructor(
                     ApiResult.Error("No se recibió token del servidor")
                 }
             } else {
-                ApiResult.Error(NetworkErrorParser.parse(response.errorBody()?.string()) ?: "Error al registrarse", response.code())
+                ApiResult.Error(
+                    NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
+                    response.code()
+                )
             }
         } catch (e: HttpException) {
-            ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+            ApiResult.Error(
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                e.code()
+            )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error("Sin conexión. Revisá tu internet.")
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         } catch (e: Exception) {
             ApiResult.Error("No se pudo completar el registro. Probá de nuevo en unos minutos.")
         }
@@ -140,7 +153,10 @@ class AuthRepository @Inject constructor(
                         cachedMeAtMs = 0L
                         tokenManager.clear()
                     }
-                    ApiResult.Error(NetworkErrorParser.parse(response.errorBody()?.string()) ?: "Error", response.code())
+                    ApiResult.Error(
+                        NetworkErrorParser.parseOrGeneric(response.errorBody()?.string(), response.code()),
+                        response.code()
+                    )
                 }
             } catch (e: HttpException) {
                 if (e.code() == 401) {
@@ -149,12 +165,15 @@ class AuthRepository @Inject constructor(
                     tokenManager.clear()
                     ApiResult.Error("Sesión expirada")
                 } else {
-                    ApiResult.Error(NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(), e.code())
+                    ApiResult.Error(
+                        NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
+                        e.code()
+                    )
                 }
             } catch (e: JsonParseException) {
                 ApiResult.Error(API_RESPONSE_PARSE_ERROR)
             } catch (e: IOException) {
-                ApiResult.Error("Sin conexión. Revisá tu internet.")
+                ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
             } catch (e: Exception) {
                 ApiResult.Error("No se pudo cargar tu perfil. Probá de nuevo en unos minutos.")
             }
@@ -188,7 +207,7 @@ class AuthRepository @Inject constructor(
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error(UserMessages.NO_INTERNET)
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         } catch (e: Exception) {
             ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
         }
@@ -232,7 +251,7 @@ class AuthRepository @Inject constructor(
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error(UserMessages.NO_INTERNET)
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         } catch (e: Exception) {
             ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
         }
@@ -286,7 +305,7 @@ class AuthRepository @Inject constructor(
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error(UserMessages.NO_INTERNET)
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         } catch (e: Exception) {
             ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
         }
@@ -306,13 +325,13 @@ class AuthRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(
-                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
                 e.code()
             )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error(UserMessages.NO_INTERNET)
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         } catch (e: Exception) {
             ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
         }
@@ -348,7 +367,7 @@ class AuthRepository @Inject constructor(
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error(UserMessages.NO_INTERNET)
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         } catch (e: Exception) {
             ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
         }
@@ -375,13 +394,13 @@ class AuthRepository @Inject constructor(
             }
         } catch (e: HttpException) {
             ApiResult.Error(
-                NetworkErrorParser.parse(e.response()?.errorBody()?.string()) ?: e.message(),
+                NetworkErrorParser.parseOrGeneric(e.response()?.errorBody()?.string(), e.code()),
                 e.code()
             )
         } catch (e: JsonParseException) {
             ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            ApiResult.Error(UserMessages.NO_INTERNET)
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         } catch (e: Exception) {
             ApiResult.Error(UserMessages.GENERIC_REQUEST_ERROR)
         }

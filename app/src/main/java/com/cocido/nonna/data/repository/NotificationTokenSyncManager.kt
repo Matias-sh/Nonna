@@ -47,13 +47,26 @@ class NotificationTokenSyncManager @Inject constructor(
         syncIfLoggedIn()
     }
 
-    fun onLogout() {
+    suspend fun onLogout() {
+        val authToken = tokenManager.token.firstOrNull()?.takeIf { it.isNotBlank() }
+        val tokenToUnregister = resolveTokenForUnregister(authToken)
+        if (!tokenToUnregister.isNullOrBlank()) {
+            notificationsRepository.unregisterDeviceToken(tokenToUnregister)
+        }
         val editor = sharedPreferences.edit()
         editor.remove(KEY_PENDING_FCM_TOKEN)
         sharedPreferences.all.keys
             .filter { it.startsWith(KEY_LAST_SYNCED_FCM_TOKEN_PREFIX) }
             .forEach { key -> editor.remove(key) }
         editor.apply()
+    }
+
+    private suspend fun resolveTokenForUnregister(authToken: String?): String? {
+        val pending = sharedPreferences.getString(KEY_PENDING_FCM_TOKEN, null)?.trim().orEmpty()
+        if (pending.isNotBlank()) return pending
+        val scope = authToken?.let { resolveSyncScope(it) } ?: return null
+        val lastSyncedKey = "$KEY_LAST_SYNCED_FCM_TOKEN_PREFIX$scope"
+        return sharedPreferences.getString(lastSyncedKey, null)?.trim()?.takeIf { it.isNotBlank() }
     }
 
     private suspend fun resolveSyncScope(authToken: String): String {

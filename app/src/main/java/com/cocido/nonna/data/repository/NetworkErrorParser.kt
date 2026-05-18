@@ -2,6 +2,7 @@ package com.cocido.nonna.data.repository
 
 import com.google.gson.Gson
 import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.cocido.nonna.util.UserMessages
 
@@ -12,12 +13,13 @@ import com.cocido.nonna.util.UserMessages
 object NetworkErrorParser {
     private val gson = Gson()
     private val CODE_WORD_REGEX = Regex("\\bcode\\b")
+    private val HTML_TAG_REGEX = Regex("<\\s*(html|head|body|script|title|!doctype)", RegexOption.IGNORE_CASE)
 
     /**
      * Intenta extraer y normalizar mensaje de error desde un body JSON.
      * Nunca devuelve JSON crudo ni detalles internos del backend.
      */
-    fun parse(body: String?): String? {
+    fun parse(body: String?, statusCode: Int? = null): String? {
         if (body.isNullOrBlank()) return null
         val rawMessage = try {
             val json = gson.fromJson(body, JsonObject::class.java)
@@ -25,34 +27,51 @@ object NetworkErrorParser {
         } catch (_: Exception) {
             null
         }
-        return if (!rawMessage.isNullOrBlank()) {
+        val normalized = if (!rawMessage.isNullOrBlank()) {
             normalize(rawMessage, fromBackendMessage = true)
         } else {
             normalize(body, fromBackendMessage = false)
         }
+        return sanitize(normalized, statusCode)
+    }
+
+    fun parseOrGeneric(body: String?, statusCode: Int? = null): String {
+        return parse(body, statusCode) ?: fallbackByStatus(statusCode)
     }
 
     private fun extractMessage(json: JsonObject?): String? {
         if (json == null) return null
 
-        val detailsMessage = json.getAsJsonObject("errorDetails")?.get("message")
-        if (detailsMessage != null) {
-            if (detailsMessage.isJsonPrimitive) return detailsMessage.asString
-            if (detailsMessage.isJsonArray) return joinArray(detailsMessage.asJsonArray)
-        }
-
-        val message = json.get("message")
-        if (message != null) {
-            if (message.isJsonPrimitive) return message.asString
-            if (message.isJsonArray) return joinArray(message.asJsonArray)
-        }
-        return null
+        // Prioridad: "details"/"detail" (mensaje accionable de negocio) por encima de "message" genérico.
+        val candidates = listOf(
+            json.get("details"),
+            json.get("detail"),
+            json.getAsJsonObject("errorDetails")?.get("details"),
+            json.getAsJsonObject("errorDetails")?.get("detail"),
+            json.getAsJsonObject("errorDetails")?.get("message"),
+            json.get("message")
+        )
+        return candidates.firstNotNullOfOrNull(::extractReadableString)
     }
 
     private fun joinArray(array: JsonArray): String {
         return array.joinToString(separator = " ") { element ->
             runCatching { element.asString }.getOrNull().orEmpty()
         }.trim()
+    }
+
+    private fun extractReadableString(element: JsonElement?): String? {
+        if (element == null || element.isJsonNull) return null
+        return when {
+            element.isJsonPrimitive -> element.asString.trim().takeIf { it.isNotBlank() }
+            element.isJsonArray -> joinArray(element.asJsonArray).takeIf { it.isNotBlank() }
+            element.isJsonObject -> {
+                val obj = element.asJsonObject
+                listOf("message", "detail", "details", "error")
+                    .firstNotNullOfOrNull { key -> extractReadableString(obj.get(key)) }
+            }
+            else -> null
+        }
     }
 
     /** "codigo" / "código" o la palabra inglesa "code" como palabra completa. */
@@ -87,6 +106,8 @@ object NetworkErrorParser {
 
         val lower = value.lowercase()
         return when {
+            "service unavailable" in lower || "503" == lower || ("503" in lower && "unavailable" in lower) ->
+                UserMessages.SERVER_UNREACHABLE
             "email must be an email" in lower || "email inválido" in lower ->
                 UserMessages.INVALID_EMAIL
             "must be an email" in lower && "invitadosemails" in lower ->
@@ -110,8 +131,12 @@ object NetworkErrorParser {
                 "Ese usuario ya forma parte del cofre."
             "no se encontró" in lower && "usuario" in lower ->
                 "No encontramos ese usuario en el sistema."
+            "límite de" in lower || "limite de" in lower ->
+                value
             lower == "bad request" || lower == "bad request exception" || lower == "bad_request" ->
                 "Revisá los datos ingresados e intentá de nuevo."
+            "datos de entrada no válidos" in lower || "datos de entrada no validos" in lower ->
+                "No pudimos procesar la solicitud. Revisá los datos y, si es por límite del plan, actualizá tu suscripción."
             "unauthorized" in lower || "401" == lower || "credenciales" in lower ->
                 UserMessages.INVALID_CREDENTIALS
             "forbidden" in lower || "403" == lower ->
@@ -136,6 +161,44 @@ object NetworkErrorParser {
                     }
                 }
             }
+        }
+    }
+
+    private fun sanitize(message: String?, statusCode: Int?): String? {
+        val value = message?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        val lower = value.lowercase()
+        if (looksSensitive(lower, value)) {
+            return fallbackByStatus(statusCode)
+        }
+        return value
+    }
+
+    private fun looksSensitive(lower: String, raw: String): Boolean {
+        if (HTML_TAG_REGEX.containsMatchIn(raw)) return true
+        if (raw.length > 320) return true
+        return "<!doctype" in lower ||
+            "<html" in lower ||
+            "<body" in lower ||
+            "</" in lower ||
+            "exception" in lower ||
+            "stacktrace" in lower ||
+            "traceback" in lower ||
+            "sqlstate" in lower ||
+            "org.springframework" in lower ||
+            "nestjs" in lower ||
+            "at com." in lower ||
+            " at " in lower && "line " in lower
+    }
+
+    private fun fallbackByStatus(statusCode: Int?): String {
+        return when (statusCode) {
+            401 -> UserMessages.INVALID_CREDENTIALS
+            403 -> "No tenés permisos para realizar esta acción."
+            404 -> "No encontramos lo que estás buscando."
+            408, 504 -> UserMessages.REQUEST_TIMEOUT
+            429 -> "Hay demasiadas solicitudes. Esperá unos segundos e intentá nuevamente."
+            500, 502, 503 -> UserMessages.SERVER_UNREACHABLE
+            else -> UserMessages.GENERIC_REQUEST_ERROR
         }
     }
 }

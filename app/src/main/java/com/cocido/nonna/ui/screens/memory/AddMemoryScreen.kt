@@ -51,6 +51,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,11 +64,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -123,8 +123,8 @@ fun AddMemoryScreen(
     var feedbackVisible by remember { mutableStateOf(false) }
     var feedbackMessage by remember { mutableStateOf("") }
     var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
-    val isLoading by viewModel.isLoading.collectAsState()
-    val uploadProgress by viewModel.uploadProgress.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val uploadProgress by viewModel.uploadProgress.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
         viewModel.saved.collectLatest { _: com.cocido.nonna.ui.components.MemoryUiModel ->
             onSave()
@@ -180,19 +180,24 @@ fun AddMemoryScreen(
     val cameraPreviewLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
-        bitmap?.let {
-            val imageFile = File.createTempFile("nonna_camera_", ".jpg", context.cacheDir)
-            FileOutputStream(imageFile).use { out ->
-                it.compress(Bitmap.CompressFormat.JPEG, 92, out)
-            }
-            cropLauncher.launch(
-                NonnaCropRequest(
-                    sourceUri = Uri.fromFile(imageFile),
-                    aspectRatio = 4f / 5f,
-                    title = context.getString(R.string.memory_edit_image_title),
-                    lockAspectRatio = false
+        bitmap?.let { capturedBitmap ->
+            scope.launch {
+                val imageFile = withContext(Dispatchers.Default) {
+                    val file = File.createTempFile("nonna_camera_", ".jpg", context.cacheDir)
+                    FileOutputStream(file).use { out ->
+                        capturedBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+                    }
+                    file
+                }
+                cropLauncher.launch(
+                    NonnaCropRequest(
+                        sourceUri = Uri.fromFile(imageFile),
+                        aspectRatio = 4f / 5f,
+                        title = context.getString(R.string.memory_edit_image_title),
+                        lockAspectRatio = false
+                    )
                 )
-            )
+            }
         }
     }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -206,7 +211,7 @@ fun AddMemoryScreen(
             if (permanentlyDenied) {
                 showCameraSettingsDialog = true
             } else {
-                feedbackMessage = "Necesitás habilitar el permiso de cámara"
+                feedbackMessage = context.getString(R.string.camera_permission_required_message)
                 feedbackType = NonnaFeedbackType.Error
                 feedbackVisible = true
                 scope.launch {
@@ -240,7 +245,7 @@ fun AddMemoryScreen(
                 hasAudioRecording = true
                 selectedAudioLabel = resolveDisplayName(context, uri) ?: copied.name
             } else {
-                feedbackMessage = "No se pudo cargar el archivo de audio."
+                feedbackMessage = context.getString(R.string.memory_audio_file_load_error)
                 feedbackType = NonnaFeedbackType.Error
                 feedbackVisible = true
                 delay(1800)
@@ -249,7 +254,7 @@ fun AddMemoryScreen(
         }
     }
 
-    val maxArchivosPlan by viewModel.maxArchivosPorRecuerdo.collectAsState()
+    val maxArchivosPlan by viewModel.maxArchivosPorRecuerdo.collectAsStateWithLifecycle()
     val maxGalleryExtra = remember(maxArchivosPlan) {
         (maxArchivosPlan - 1).coerceIn(0, 2)
     }
@@ -460,7 +465,10 @@ fun AddMemoryScreen(
                             return@DetailsStep
                         }
                         if (description.length > MAX_MEMORY_DESCRIPTION_LENGTH) {
-                            feedbackMessage = "La descripción es muy larga (máximo $MAX_MEMORY_DESCRIPTION_LENGTH caracteres)."
+                            feedbackMessage = context.getString(
+                                R.string.memory_description_too_long,
+                                MAX_MEMORY_DESCRIPTION_LENGTH
+                            )
                             feedbackType = NonnaFeedbackType.Error
                             feedbackVisible = true
                             scope.launch {
@@ -857,7 +865,11 @@ private fun PhotoContent(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             NonnaButton(
-                text = if (hasImage) "Cambiar imagen" else "Galería",
+                text = if (hasImage) {
+                    stringResource(R.string.memory_change_image)
+                } else {
+                    stringResource(R.string.memory_gallery)
+                },
                 onClick = onPickImageClick
             )
             NonnaButton(text = stringResource(R.string.common_camera), onClick = onCaptureImageClick, style = NonnaButtonStyle.Outline)
@@ -876,7 +888,7 @@ private fun AudioContent(
             onRecordingComplete = { file, _ -> onRecorded(file) }
         )
         NonnaButton(
-            text = "Subir archivo de audio",
+            text = stringResource(R.string.memory_upload_audio_file),
             onClick = onPickAudioFile,
             style = NonnaButtonStyle.Outline,
             icon = Icons.Outlined.Upload,
@@ -884,7 +896,7 @@ private fun AudioContent(
         )
         selectedAudioLabel?.takeIf { it.isNotBlank() }?.let { name ->
             Text(
-                text = "Audio seleccionado: $name",
+                text = stringResource(R.string.memory_audio_selected, name),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -906,7 +918,7 @@ private fun TextContent(
             placeholder = stringResource(R.string.memory_write_placeholder),
             minLines = 12,
             maxLines = 12,
-            helperText = "Escribí con calma o dictalo con el micrófono.",
+            helperText = stringResource(R.string.memory_text_helper),
             modifier = Modifier.fillMaxWidth()
         )
         NonnaButton(
@@ -1178,7 +1190,10 @@ private fun DetailsStep(
                 helperText = "$descriptionLength/$MAX_MEMORY_DESCRIPTION_LENGTH",
                 isError = descriptionIsTooLong,
                 errorMessage = if (descriptionIsTooLong) {
-                    "Supera el máximo de $MAX_MEMORY_DESCRIPTION_LENGTH caracteres."
+                    stringResource(
+                        R.string.memory_description_limit_exceeded,
+                        MAX_MEMORY_DESCRIPTION_LENGTH
+                    )
                 } else {
                     null
                 },

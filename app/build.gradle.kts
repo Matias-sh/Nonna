@@ -27,11 +27,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.cocido.nonna"
+        applicationId = "com.cocido.nonna.free"
         minSdk = 24
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.0.0"
+        versionCode = 11
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -65,8 +65,11 @@ android {
         create("qa") {
             initWith(getByName("release"))
             // Variante release-like para validar R8/obfuscación sin keystore de producción.
-            isDebuggable = true
-            applicationIdSuffix = ".qa"
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            // Reutiliza cliente Firebase existente del paquete free.debug para CI release-like.
+            applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
         }
@@ -93,6 +96,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
     
     kotlinOptions {
@@ -105,11 +109,17 @@ android {
         dataBinding = false
         compose = true
     }
+
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
 }
 
 dependencies {
     // Core Android
     implementation(libs.androidx.core.ktx)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.fragment.ktx)

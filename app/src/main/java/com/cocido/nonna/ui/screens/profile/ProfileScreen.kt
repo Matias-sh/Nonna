@@ -408,6 +408,31 @@ private fun SubscriptionSummaryCard(
     val upsellBg = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
     val upsellBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
     val upsellText = MaterialTheme.colorScheme.onPrimaryContainer
+    val maxCofres = resolveDisplayedLimit(
+        limite = limites?.maxCofres,
+        planLimit = plan?.maxCofres,
+        used = uso?.cofresCreados
+    )
+    val maxRecuerdos = resolveDisplayedLimit(
+        limite = limites?.maxRecuerdos,
+        planLimit = plan?.maxRecuerdos,
+        used = uso?.recuerdosCreados
+    )
+    val maxMiembrosPorCofre = resolveDisplayedLimit(
+        limite = limites?.maxMiembrosPorCofre,
+        planLimit = plan?.maxMiembrosPorCofre,
+        used = null
+    )
+    val maxCofresInvitado = resolveDisplayedLimit(
+        limite = limites?.maxCofresInvitado,
+        planLimit = plan?.maxCofresInvitado,
+        used = null
+    )
+    val maxArchivosPorRecuerdo = resolveDisplayedLimit(
+        limite = limites?.maxArchivosPorRecuerdo,
+        planLimit = plan?.maxArchivosPorRecuerdo,
+        used = null
+    )
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -441,14 +466,17 @@ private fun SubscriptionSummaryCard(
                 }
             }
             Spacer(modifier = Modifier.height(6.dp))
-            plan?.descripcion?.takeIf { it.isNotBlank() }?.let { desc ->
-                Text(
-                    text = desc,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-            }
+            Text(
+                text = stringResource(
+                    R.string.subscription_plan_summary_format,
+                    maxCofres ?: 0,
+                    maxRecuerdos ?: 0,
+                    maxCofresInvitado ?: 0
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(4.dp))
             suscripcion.estado?.takeIf { it.isNotBlank() }?.let { est ->
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -502,31 +530,31 @@ private fun SubscriptionSummaryCard(
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(8.dp))
-            limites?.maxCofres?.let {
+            maxCofres?.let {
                 PlanStatRow(
                     label = stringResource(R.string.subscription_limit_cofres),
                     value = it.toString()
                 )
             }
-            limites?.maxRecuerdos?.let {
+            maxRecuerdos?.let {
                 PlanStatRow(
                     label = stringResource(R.string.subscription_limit_recuerdos),
                     value = it.toString()
                 )
             }
-            limites?.maxMiembrosPorCofre?.let {
+            maxMiembrosPorCofre?.let {
                 PlanStatRow(
                     label = stringResource(R.string.subscription_limit_miembros),
                     value = it.toString()
                 )
             }
-            limites?.maxCofresInvitado?.let {
+            maxCofresInvitado?.let {
                 PlanStatRow(
                     label = stringResource(R.string.subscription_limit_invitado_cofres),
                     value = it.toString()
                 )
             }
-            limites?.maxArchivosPorRecuerdo?.let {
+            maxArchivosPorRecuerdo?.let {
                 PlanStatRow(
                     label = stringResource(R.string.subscription_limit_archivos_recuerdo),
                     value = it.toString()
@@ -540,6 +568,12 @@ private fun SubscriptionSummaryCard(
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.subscription_usage_scope_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(6.dp))
             uso?.cofresCreados?.let {
                 PlanStatRow(
                     label = stringResource(R.string.subscription_usage_cofres),
@@ -588,6 +622,16 @@ private fun isLikelyFreeTier(plan: SuscripcionPlanDto?): Boolean {
         name.contains("gratis") || name == "free" -> true
         else -> false
     }
+}
+
+private fun resolveDisplayedLimit(
+    limite: Int?,
+    planLimit: Int?,
+    used: Int?
+): Int? {
+    val candidates = listOfNotNull(limite, planLimit, used)
+        .map { it.coerceAtLeast(0) }
+    return candidates.maxOrNull()
 }
 
 private fun shouldShowNotificationsPermissionSettings(context: Context): Boolean {

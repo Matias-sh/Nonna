@@ -15,7 +15,9 @@
     <string name="msg_password_mismatch">Las contraseñas no coinciden.</string>
     <string name="msg_invalid_password_rules">La contraseña no cumple los requisitos.</string>
     <string name="msg_invalid_credentials">Tus credenciales no son correctas.</string>
-    <string name="msg_no_internet">Sin conexión. Revisá tu internet.</string>
+    <string name="msg_no_internet">Parece que tu dispositivo está sin internet. Revisá tu conexión y reintentá.</string>
+    <string name="msg_server_unreachable">No pudimos conectar con el servidor. Intentá nuevamente en unos minutos.</string>
+    <string name="msg_request_timeout">El servidor tardó demasiado en responder. Intentá nuevamente.</string>
     <string name="msg_generic_error">Ocurrió un error. Intentá nuevamente.</string>
     <string name="msg_generic_request_error">Ocurrió un error al procesar la solicitud. Intentá nuevamente.</string>
 
@@ -105,6 +107,7 @@
     <string name="subscription_upsell_title">Desbloqueá más funciones</string>
     <string name="subscription_upsell_description">Con Premium vas a poder crear cofres ilimitados, exportar fotolibros y más. Pronto vas a poder suscribirte desde la app.</string>
     <string name="subscription_usage_title">Uso actual</string>
+    <string name="subscription_usage_scope_note">Los \"cofres creados\" cuentan solo cofres propios. En la pestaña \"Todos\" también se muestran cofres compartidos.</string>
     <string name="subscription_limit_cofres">Cofres propios</string>
     <string name="subscription_limit_recuerdos">Recuerdos</string>
     <string name="subscription_limit_miembros">Miembros por cofre</string>
@@ -125,6 +128,8 @@
     <string name="subscription_checkout_subtitle">Al continuar vas a Mercado Pago para completar el checkout.</string>
     <string name="subscription_checkout_monthly_cta">Mensual %1$s</string>
     <string name="subscription_checkout_yearly_cta">Anual %1$s</string>
+    <string name="subscription_checkout_monthly_short_cta">Mes %1$s</string>
+    <string name="subscription_checkout_yearly_short_cta">Año %1$s</string>
     <string name="subscription_checkout_open_error">No se pudo abrir el checkout.</string>
     <string name="subscription_payments_history_title">Historial de pagos</string>
     <string name="subscription_payments_empty">Todavía no tenés pagos registrados.</string>
@@ -278,6 +283,7 @@
     <string name="create_chest_name_required">Nombre del cofre *</string>
     <string name="relation_presets_disabled_hint">Las opciones sugeridas se desactivan mientras escribís un parentesco personalizado.</string>
     <string name="relation_custom_placeholder">O escribí otro...</string>
+    <string name="relation_custom_saved_as_other_hint">Por contrato del backend, un parentesco personalizado se guarda como "Otro".</string>
     <string name="relation_custom_enabled_hint">El campo personalizado se habilita al deseleccionar el parentesco sugerido.</string>
     <string name="create_chest_description_required">Una frase que la/lo describe *</string>
     <string name="chest_privacy_note">Este cofre es privado por defecto. Solo las personas que invites podrán verlo.</string>
@@ -319,6 +325,7 @@
     <string name="add_memory_step_details">Agregá los detalles</string>
     <string name="camera_permission_blocked_title">Permiso de cámara bloqueado</string>
     <string name="camera_permission_blocked_text">Para usar la cámara, activá el permiso desde Ajustes de la app.</string>
+    <string name="camera_permission_required_message">Necesitás habilitar el permiso de cámara.</string>
     <string name="open_settings">Abrir ajustes</string>
     <string name="add_memory_title">Agregar Recuerdo</string>
     <string name="add_memory_type_question">¿Qué tipo de recuerdo querés guardar?</string>
@@ -327,11 +334,17 @@
     <string name="add_memory_type_text_desc">Una anécdota, receta o carta</string>
     <string name="memory_selected_image_cd">Imagen seleccionada</string>
     <string name="memory_tap_image_change">Tocá la imagen para cambiarla</string>
+    <string name="memory_change_image">Cambiar imagen</string>
+    <string name="memory_gallery">Galería</string>
     <string name="memory_upload_photo">Subir foto</string>
+    <string name="memory_upload_audio_file">Subir archivo de audio</string>
+    <string name="memory_audio_selected">Audio seleccionado: %1$s</string>
+    <string name="memory_audio_file_load_error">No se pudo cargar el archivo de audio.</string>
     <string name="memory_tap_choose_gallery">Tocá aquí para elegir desde galería</string>
     <string name="common_camera">Cámara</string>
     <string name="memory_write_label">Escribí el recuerdo</string>
     <string name="memory_write_placeholder">Contá la historia, la receta, la anécdota...</string>
+    <string name="memory_text_helper">Escribí con calma o dictalo con el micrófono.</string>
     <string name="memory_dictate_button">Dictar con micrófono</string>
     <string name="memory_photo_selected">Foto seleccionada</string>
     <string name="memory_audio_recorded">Audio grabado</string>
@@ -339,6 +352,8 @@
     <string name="memory_title_placeholder">Ej: Cumpleaños de los 80, Receta de fideos...</string>
     <string name="memory_context_optional_label">Contexto o historia (opcional)</string>
     <string name="memory_context_optional_placeholder">Contá algo sobre este recuerdo...</string>
+    <string name="memory_description_too_long">La descripción es muy larga (máximo %1$d caracteres).</string>
+    <string name="memory_description_limit_exceeded">Supera el máximo de %1$d caracteres.</string>
     <string name="memory_date_approx_label">Fecha (aproximada)</string>
     <string name="memory_emotion_optional_question">¿Cómo te hace sentir? (opcional)</string>
     <string name="emotion_presets_disabled_hint">Las emociones sugeridas se desactivan mientras escribís una emoción personalizada.</string>
@@ -394,11 +409,21 @@
     <string name="memory_audio_cover_cd">Portada del recuerdo de audio</string>
     <string name="memory_gallery_too_many">Tu plan permite como máximo %1$d archivos por recuerdo (incluida la foto principal). Reducí la cantidad de fotos extra.</string>
     <string name="subscription_limit_archivos_recuerdo">Archivos por recuerdo (máx.)</string>
+    <string name="subscription_plan_summary_format">%1$d cofres, %2$d recuerdos y hasta %3$d cofres compartidos</string>
+    <string name="chest_owner_badge">Propio</string>
+    <string name="chest_shared_badge">Compartido</string>
     <string name="chest_remove_invitee">Quitar del cofre</string>
     <string name="chest_remove_invitee_confirm_title">¿Quitar a este miembro?</string>
     <string name="chest_remove_invitee_confirm_body">Ya no podrá acceder a este cofre. Podés volver a invitarlo por email después.</string>
     <string name="chest_member_removed_success">Miembro quitado del cofre</string>
     <string name="memory_text_no_visible_content">Este recuerdo de texto no tiene contenido visible todavía.</string>
+    <string name="memory_loading_file_content">Cargando contenido del archivo...</string>
+    <string name="memory_pause_audio_cd">Pausar audio</string>
+    <string name="memory_play_audio_cd">Reproducir audio</string>
+    <string name="memory_audio_playback_error">No se pudo reproducir este audio.</string>
+    <string name="memory_audio_download_error_with_code">No se pudo descargar el audio (%1$d).</string>
+    <string name="memory_audio_empty_server_content">El servidor no devolvió contenido de audio.</string>
+    <string name="memory_audio_corrupted_server_content">Este audio está vacío o dañado en el servidor.</string>
     <string name="memory_detail_info_note">Este recuerdo fue guardado para preservar la memoria familiar. Podés editarlo o compartirlo con tu familia.</string>
     <string name="memory_detail_media_photo">Fotografía</string>
     <string name="memory_detail_media_audio">Audio</string>
@@ -424,6 +449,7 @@
     <string name="common_close">Cerrar</string>
     <string name="common_accept">Aceptar</string>
     <string name="common_apply">Aplicar</string>
+    <string name="common_separator_dot">·</string>
     <string name="common_applying">Aplicando...</string>
     <string name="common_preview">Vista previa</string>
     <string name="common_zoom">Zoom</string>

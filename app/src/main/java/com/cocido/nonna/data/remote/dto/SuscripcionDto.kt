@@ -41,6 +41,28 @@ data class SuscripcionActualDto(
     @SerializedName("periodicidad") val periodicidad: String? = null
 )
 
+data class BillingStatePlanDto(
+    @SerializedName("id") val id: Int? = null,
+    @SerializedName("codigo") val codigo: String? = null,
+    @SerializedName("nombre") val nombre: String? = null
+)
+
+data class BillingStateLastOperationDto(
+    @SerializedName("tipo") val tipo: String? = null,
+    @SerializedName("at") val at: String? = null
+)
+
+data class BillingStateResponseDto(
+    @SerializedName("subscriptionId") val subscriptionId: Int? = null,
+    @SerializedName("estado") val estado: String? = null,
+    @SerializedName("plan") val plan: BillingStatePlanDto? = null,
+    @SerializedName("autoRenovar") val autoRenovar: Boolean? = null,
+    @SerializedName("fechaInicio") val fechaInicio: String? = null,
+    @SerializedName("fechaFin") val fechaFin: String? = null,
+    @SerializedName("proximoCobro") val proximoCobro: String? = null,
+    @SerializedName("ultimaOperacion") val ultimaOperacion: BillingStateLastOperationDto? = null
+)
+
 data class CambiarPlanRequestDto(
     @SerializedName("codigoPlan") val codigoPlan: String
 )

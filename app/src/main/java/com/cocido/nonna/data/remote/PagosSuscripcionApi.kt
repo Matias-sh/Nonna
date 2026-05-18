@@ -1,6 +1,7 @@
 package com.cocido.nonna.data.remote
 
 import com.cocido.nonna.data.remote.dto.CancelarAutoRenovacionRequestDto
+import com.cocido.nonna.data.remote.dto.AutoRenewMutationResponseDto
 import com.cocido.nonna.data.remote.dto.CheckoutSuscripcionResponseDto
 import com.cocido.nonna.data.remote.dto.CrearCheckoutSuscripcionRequestDto
 import com.cocido.nonna.data.remote.dto.PagoSuscripcionResponseDto
@@ -21,13 +22,13 @@ interface PagosSuscripcionApi {
     @POST("pagos-suscripcion/auto-renovacion/cancelar")
     suspend fun cancelarAutoRenovacion(
         @Body body: CancelarAutoRenovacionRequestDto
-    ): Response<Unit>
+    ): Response<AutoRenewMutationResponseDto>
 
     /** Habilita de nuevo la renovación automática (mismo body que cancelar: `pagoId`). */
     @POST("pagos-suscripcion/auto-renovacion/reactivar")
     suspend fun reactivarAutoRenovacion(
         @Body body: CancelarAutoRenovacionRequestDto
-    ): Response<Unit>
+    ): Response<AutoRenewMutationResponseDto>
 
     @POST("pagos-suscripcion/{id}/cancelar")
     suspend fun cancelarPagoPendiente(

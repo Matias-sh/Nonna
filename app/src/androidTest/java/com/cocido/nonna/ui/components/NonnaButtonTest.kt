@@ -1,8 +1,7 @@
 package com.cocido.nonna.ui.components
 
-import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.cocido.nonna.ui.theme.NonnaTheme
@@ -13,7 +12,7 @@ import org.junit.Test
 class NonnaButtonTest {
 
     @get:Rule
-    val composeRule = createAndroidComposeRule<ComponentActivity>()
+    val composeRule = createComposeRule()
 
     @Test
     fun primaryButton_emitsClick_whenEnabled() {

@@ -26,28 +26,29 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocido.nonna.R
 import com.cocido.nonna.data.remote.dto.PagoSuscripcionResponseDto
 import com.cocido.nonna.data.remote.dto.PeriodicidadPago
 import com.cocido.nonna.data.remote.dto.SuscripcionPlanDto
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
 import com.cocido.nonna.ui.components.NonnaButton
+import com.cocido.nonna.ui.components.NonnaButtonSize
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.PageHeader
@@ -78,15 +79,22 @@ fun SubscriptionCenterScreen(
     viewModel: SubscriptionCenterViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val isLoading by viewModel.isLoading.collectAsState()
-    val isProcessingCheckout by viewModel.isProcessingCheckout.collectAsState()
-    val suscripcion by viewModel.suscripcion.collectAsState()
-    val planes by viewModel.planes.collectAsState()
-    val pendingPayment by viewModel.pendingPayment.collectAsState()
-    val pagos by viewModel.pagos.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isProcessingCheckout by viewModel.isProcessingCheckout.collectAsStateWithLifecycle()
+    val suscripcion by viewModel.suscripcion.collectAsStateWithLifecycle()
+    val billingState by viewModel.billingState.collectAsStateWithLifecycle()
+    val planes by viewModel.planes.collectAsStateWithLifecycle()
+    val pendingPayment by viewModel.pendingPayment.collectAsStateWithLifecycle()
+    val pagos by viewModel.pagos.collectAsStateWithLifecycle()
     val isPendingBlocking = remember(pendingPayment) { viewModel.isBlockingPending(pendingPayment) }
-    val currentPlanCode = suscripcion?.plan?.codigo?.trim()?.uppercase(Locale.getDefault())
-    val currentPlanName = suscripcion?.plan?.nombre?.ifBlank { "plan actual" } ?: "plan actual"
+    val currentPlanCode = (
+        billingState?.plan?.codigo
+            ?: suscripcion?.plan?.codigo
+        )?.trim()?.uppercase(Locale.getDefault())
+    val currentPlanName = (
+        billingState?.plan?.nombre?.ifBlank { null }
+            ?: suscripcion?.plan?.nombre
+        )?.ifBlank { "plan actual" } ?: "plan actual"
     val historyPayments = remember(pagos, pendingPayment) {
         val mergedById = LinkedHashMap<Int, PagoSuscripcionResponseDto>()
         pendingPayment?.let { pending -> mergedById[pending.id] = pending }
@@ -107,7 +115,7 @@ fun SubscriptionCenterScreen(
             }
             .firstOrNull()
     }
-    val autoRenewEnabled = latestCurrentPlanPayment?.autoRenovar
+    val autoRenewEnabled = billingState?.autoRenovar ?: latestCurrentPlanPayment?.autoRenovar
     val canCancelCurrentPlan = currentPlanCode != null && currentPlanCode != "FREE" && autoRenewEnabled != false
     val canResumeAutoRenewal =
         currentPlanCode != null && currentPlanCode != "FREE" && autoRenewEnabled == false
@@ -479,6 +487,8 @@ private fun PendingPaymentCard(
     onResumeAutoRenewRequest: () -> Unit
 ) {
     if (pendingPayment == null) return
+    val canManageAutoRenew = !isBlockingPending &&
+        pendingPayment.planCodigo?.trim()?.uppercase(Locale.getDefault()) != "FREE"
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = NonnaCorners.Card,
@@ -536,22 +546,24 @@ private fun PendingPaymentCard(
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
-            when (pendingPayment.autoRenovar) {
-                true -> {
-                    NonnaButton(
-                        text = stringResource(R.string.subscription_cancel_auto_renew),
-                        onClick = onCancelAutoRenew,
-                        style = NonnaButtonStyle.Outline
-                    )
+            if (canManageAutoRenew) {
+                when (pendingPayment.autoRenovar) {
+                    true -> {
+                        NonnaButton(
+                            text = stringResource(R.string.subscription_cancel_auto_renew),
+                            onClick = onCancelAutoRenew,
+                            style = NonnaButtonStyle.Outline
+                        )
+                    }
+                    false -> {
+                        NonnaButton(
+                            text = stringResource(R.string.subscription_resume_auto_renew_cta),
+                            onClick = onResumeAutoRenewRequest,
+                            style = NonnaButtonStyle.Primary
+                        )
+                    }
+                    null -> Unit
                 }
-                false -> {
-                    NonnaButton(
-                        text = stringResource(R.string.subscription_resume_auto_renew_cta),
-                        onClick = onResumeAutoRenewRequest,
-                        style = NonnaButtonStyle.Primary
-                    )
-                }
-                null -> Unit
             }
         }
     }
@@ -661,26 +673,34 @@ private fun PlanCheckoutRow(
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val monthlyPrice = formatMoney(plan.precioMensual, plan.moneda)
-            val yearlyPrice = formatMoney(plan.precioAnual, plan.moneda)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val monthlyPrice = formatMoneyCompact(plan.precioMensual, plan.moneda)
+            val yearlyAmount = plan.precioAnual ?: plan.precioMensual?.times(12)
+            val yearlyPrice = formatMoneyCompact(yearlyAmount, plan.moneda)
             NonnaButton(
                 text = stringResource(
-                    R.string.subscription_checkout_monthly_cta,
+                    R.string.subscription_checkout_monthly_short_cta,
                     monthlyPrice
                 ),
                 onClick = onMonthly,
                 enabled = enabled,
-                style = NonnaButtonStyle.Primary
+                style = NonnaButtonStyle.Primary,
+                size = NonnaButtonSize.Small,
+                modifier = Modifier.weight(1f)
             )
             NonnaButton(
                 text = stringResource(
-                    R.string.subscription_checkout_yearly_cta,
+                    R.string.subscription_checkout_yearly_short_cta,
                     yearlyPrice
                 ),
                 onClick = onYearly,
                 enabled = enabled,
-                style = NonnaButtonStyle.Outline
+                style = NonnaButtonStyle.Outline,
+                size = NonnaButtonSize.Small,
+                modifier = Modifier.weight(1f)
             )
         }
         if (blockedByPending && !isCurrentPlan && !enabled) {
@@ -804,6 +824,20 @@ private fun formatMoney(amount: Double?, currency: String?): String {
     if (amount == null) return "—"
     val locale = Locale("es", "AR")
     val fmt = NumberFormat.getCurrencyInstance(locale)
+    val code = currency?.trim()?.uppercase(Locale.getDefault())
+    if (!code.isNullOrBlank()) {
+        runCatching { fmt.currency = java.util.Currency.getInstance(code) }
+    }
+    return fmt.format(amount)
+}
+
+private fun formatMoneyCompact(amount: Double?, currency: String?): String {
+    if (amount == null) return "—"
+    val locale = Locale("es", "AR")
+    val fmt = NumberFormat.getCurrencyInstance(locale).apply {
+        maximumFractionDigits = 0
+        minimumFractionDigits = 0
+    }
     val code = currency?.trim()?.uppercase(Locale.getDefault())
     if (!code.isNullOrBlank()) {
         runCatching { fmt.currency = java.util.Currency.getInstance(code) }

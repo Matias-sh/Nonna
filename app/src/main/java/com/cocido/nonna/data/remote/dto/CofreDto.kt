@@ -8,6 +8,8 @@ data class CofreDto(
     @SerializedName("nombre") val nombre: String? = null,
     @SerializedName("name") val name: String? = null,
     @SerializedName("parentesco") val parentesco: String? = null,
+    @SerializedName(value = "parentescoPersonalizado", alternate = ["parentescoOtro", "parentescoCustom", "relacionPersonalizada", "relacionPersonal"])
+    val parentescoPersonalizado: String? = null,
     @SerializedName("relation") val relation: String? = null,
     @SerializedName("descripcion") val descripcion: String? = null,
     @SerializedName("fraseDescripcion") val fraseDescripcion: String? = null,
@@ -30,7 +32,15 @@ data class CofreDto(
 ) {
     fun idValue(): String = idRaw.primitiveIdString()
     fun displayName(): String = nombre ?: name ?: ""
-    fun displayRelation(): String = parentesco ?: relation ?: ""
+    fun displayRelation(): String {
+        val normalizedParentesco = (parentesco ?: relation).orEmpty().trim()
+        val custom = parentescoPersonalizado?.trim().orEmpty()
+        return if (normalizedParentesco.equals("OTRO", ignoreCase = true) && custom.isNotBlank()) {
+            custom
+        } else {
+            normalizedParentesco
+        }
+    }
     fun coverUrl(): String? = imagenPortada ?: imagenUrl ?: coverImageUrl ?: urlPortada
     fun isOwnerValue(): Boolean = isOwner ?: esPropietario ?: true
     fun invitedList(): List<InvitadoCofreDto> = invitadosEmails ?: invitados ?: emptyList()
@@ -102,6 +112,7 @@ data class CofreCreateRequest(
     @SerializedName("nombre") val nombre: String? = null,
     @SerializedName("name") val name: String? = null,
     @SerializedName("parentesco") val parentesco: String? = null,
+    @SerializedName("parentescoPersonalizado") val parentescoPersonalizado: String? = null,
     @SerializedName("relation") val relation: String? = null,
     @SerializedName("descripcion") val descripcion: String? = null,
     @SerializedName("fraseDescripcion") val fraseDescripcion: String? = null,

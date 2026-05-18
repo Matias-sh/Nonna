@@ -79,7 +79,10 @@ class ProfileViewModel @Inject constructor(
                     response.body()
                 } else {
                     // Si falla, nos quedamos con basicUser pero guardamos el mensaje para depurar si hace falta
-                    _errorMessage.value = NetworkErrorParser.parse(response.errorBody()?.string())
+                    _errorMessage.value = NetworkErrorParser.parseOrGeneric(
+                        response.errorBody()?.string(),
+                        response.code()
+                    )
                         ?: _errorMessage.value
                     null
                 }
@@ -166,11 +169,13 @@ class ProfileViewModel @Inject constructor(
                     _user.value = response.body()
                     _updateSuccess.emit(Unit)
                 } else {
-                    _errorMessage.value = NetworkErrorParser.parse(response.errorBody()?.string())
-                        ?: "No se pudo actualizar el perfil"
+                    _errorMessage.value = NetworkErrorParser.parseOrGeneric(
+                        response.errorBody()?.string(),
+                        response.code()
+                    )
                 }
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al actualizar el perfil"
+                _errorMessage.value = "No se pudo actualizar el perfil. Intentá nuevamente."
             } finally {
                 _isLoading.value = false
             }

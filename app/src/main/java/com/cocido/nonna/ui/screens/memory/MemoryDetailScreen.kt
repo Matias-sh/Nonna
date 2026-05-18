@@ -91,7 +91,7 @@ import androidx.core.content.FileProvider
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultDataSource
@@ -133,8 +133,8 @@ fun MemoryDetailScreen(
     onEdit: (String) -> Unit = {},
     viewModel: com.cocido.nonna.ui.viewmodel.MemoryDetailViewModel = hiltViewModel()
 ) {
-    val memory by viewModel.memory.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val memory by viewModel.memory.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     when {
         isLoading && memory == null -> {
@@ -302,7 +302,7 @@ private fun MemoryDetailContent(
                     )
                     if (memory.emotionalTag != null || !memory.emotionalCustomLabel.isNullOrBlank()) {
                         Text(
-                            text = "·",
+                            text = stringResource(R.string.common_separator_dot),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -447,7 +447,7 @@ private fun MemoryDetailContent(
                 )
                 if (!cofreCreatorDisplayName.isNullOrBlank()) {
                     Text(
-                        text = "·",
+                        text = stringResource(R.string.common_separator_dot),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -546,7 +546,7 @@ private fun MemoryDetailContent(
                         Text(
                             text = when {
                                 !textContent.isNullOrBlank() -> textContent
-                                isLoadingFallbackText -> "Cargando contenido del archivo..."
+                                isLoadingFallbackText -> stringResource(R.string.memory_loading_file_content)
                                 else -> stringResource(R.string.memory_text_no_visible_content)
                             },
                             style = MaterialTheme.typography.bodyLarge.copy(
@@ -1012,11 +1012,11 @@ private fun SpotifyStyleAudioPlayer(
                             errorMessage = null
                         } else {
                             errorMessage = fallback.errorMessage
-                                ?: "No se pudo reproducir este audio."
+                                ?: context.getString(R.string.memory_audio_playback_error)
                         }
                     }
                 } else {
-                    errorMessage = "No se pudo reproducir este audio."
+                    errorMessage = context.getString(R.string.memory_audio_playback_error)
                 }
                 isPlaying = false
             }
@@ -1244,7 +1244,11 @@ private fun SpotifyStyleAudioPlayer(
                             }) {
                                 Icon(
                                     imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                                    contentDescription = if (isPlaying) "Pausar audio" else "Reproducir audio",
+                                    contentDescription = if (isPlaying) {
+                                        stringResource(R.string.memory_pause_audio_cd)
+                                    } else {
+                                        stringResource(R.string.memory_play_audio_cd)
+                                    },
                                     tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(34.dp)
                                 )
@@ -1291,19 +1295,19 @@ private fun downloadAudioToCache(
             if (!response.isSuccessful) {
                 return AudioFallbackResult(
                     localPath = null,
-                    errorMessage = "No se pudo descargar el audio (${response.code})."
+                    errorMessage = context.getString(R.string.memory_audio_download_error_with_code, response.code)
                 )
             }
             val body = response.body
                 ?: return AudioFallbackResult(
                     localPath = null,
-                    errorMessage = "El servidor no devolvió contenido de audio."
+                    errorMessage = context.getString(R.string.memory_audio_empty_server_content)
                 )
             val bytes = body.bytes()
             if (bytes.isEmpty()) {
                 return AudioFallbackResult(
                     localPath = null,
-                    errorMessage = "Este audio está vacío o dañado en el servidor."
+                    errorMessage = context.getString(R.string.memory_audio_corrupted_server_content)
                 )
             }
             val output = File.createTempFile("nonna_audio_", ".bin", context.cacheDir)
@@ -1313,7 +1317,7 @@ private fun downloadAudioToCache(
     }.getOrElse {
         AudioFallbackResult(
             localPath = null,
-            errorMessage = "No se pudo reproducir este audio."
+            errorMessage = context.getString(R.string.memory_audio_playback_error)
         )
     }
 }

@@ -66,6 +66,7 @@ class AddMemoryViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             val startMs = SystemClock.elapsedRealtime()
+            if (!canCreateAnotherMemory()) return@launch
             _isLoading.value = true
             _uploadProgress.value = 0f
             when (val result = recuerdosRepository.createRecuerdo(
@@ -105,6 +106,28 @@ class AddMemoryViewModel @Inject constructor(
             }
             _isLoading.value = false
             _uploadProgress.value = null
+        }
+    }
+
+    private suspend fun canCreateAnotherMemory(): Boolean {
+        return when (val subResult = suscripcionRepository.getMiSuscripcion()) {
+            is ApiResult.Success -> {
+                val limites = subResult.data.limites
+                val uso = subResult.data.uso
+                val maxRecuerdos = (limites?.maxRecuerdos ?: subResult.data.plan?.maxRecuerdos)?.coerceAtLeast(0)
+                val recuerdosCreados = (uso?.recuerdosCreados ?: 0).coerceAtLeast(0)
+                if (maxRecuerdos != null && maxRecuerdos > 0 && recuerdosCreados >= maxRecuerdos) {
+                    val planName = subResult.data.plan?.nombre?.trim().orEmpty().ifBlank { "actual" }
+                    _errorMessage.emit(
+                        "Alcanzaste el límite de $maxRecuerdos recuerdo(s) para tu plan $planName. " +
+                            "Para seguir creando recuerdos, necesitás cambiar de plan."
+                    )
+                    false
+                } else {
+                    true
+                }
+            }
+            else -> true
         }
     }
 

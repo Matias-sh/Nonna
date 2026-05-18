@@ -333,6 +333,14 @@ fun EditCofreScreen(
                         errorMessage = if (relationError) UserMessages.INVALID_RELATION else null,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (customRelation.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(R.string.relation_custom_saved_as_other_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     Spacer(modifier = Modifier.height(24.dp))
 
                     NonnaTextArea(
