@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.mock.TreeNode
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.ArbolFamiliarRepository
+import com.cocido.nonna.data.repository.DataRefreshCoordinator
+import android.os.SystemClock
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,33 +24,49 @@ data class FamilyTreeUiState(
 
 @HiltViewModel
 class FamilyTreeViewModel @Inject constructor(
-    private val repository: ArbolFamiliarRepository
+    private val repository: ArbolFamiliarRepository,
+    private val refreshCoordinator: DataRefreshCoordinator
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FamilyTreeUiState())
     val state: StateFlow<FamilyTreeUiState> = _state.asStateFlow()
 
     private var isLoadingInProgress = false
+    private var lastPassiveRefreshAt: Long = 0L
 
     init {
-        // Cargamos el árbol una sola vez cuando se crea el ViewModel
         load()
+        viewModelScope.launch {
+            refreshCoordinator.events.collect { event ->
+                if (event is DataRefreshCoordinator.Event.FamilyTree) {
+                    load(forceRefresh = true, showLoading = false)
+                }
+            }
+        }
     }
 
-    fun load() {
-        // Evitar múltiples llamadas simultáneas
-        if (isLoadingInProgress) return
-
-        // Solo cargar si no hay datos y no está cargando
-        if (_state.value.isLoading || (_state.value.nodes.isNotEmpty() && _state.value.errorMessage == null)) {
+    fun load(forceRefresh: Boolean = false, showLoading: Boolean? = null) {
+        if (isLoadingInProgress && !forceRefresh) return
+        if (
+            !forceRefresh &&
+            (_state.value.nodes.isNotEmpty() && _state.value.errorMessage == null)
+        ) {
             return
         }
 
         isLoadingInProgress = true
+        val shouldShowLoading = showLoading ?: _state.value.nodes.isEmpty()
         viewModelScope.launch {
+            if (shouldShowLoading) {
+                _state.update { it.copy(isLoading = true, errorMessage = null) }
+            }
             repository.miArbol().collect { result ->
                 when (result) {
-                    is ApiResult.Loading -> _state.update { it.copy(isLoading = true, errorMessage = null) }
+                    is ApiResult.Loading -> {
+                        if (shouldShowLoading) {
+                            _state.update { it.copy(isLoading = true, errorMessage = null) }
+                        }
+                    }
                     is ApiResult.Success -> {
                         _state.update {
                             it.copy(
@@ -71,6 +89,13 @@ class FamilyTreeViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun refreshOnResume(minIntervalMs: Long = 2500L) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastPassiveRefreshAt < minIntervalMs) return
+        lastPassiveRefreshAt = now
+        load(forceRefresh = true, showLoading = false)
     }
 
     fun clearError() {
@@ -115,11 +140,10 @@ class FamilyTreeViewModel @Inject constructor(
                 )
             ) {
                 is ApiResult.Success -> {
-                    // Avisamos éxito al formulario para que pueda cerrar,
-                    // y refrescamos el árbol en segundo plano.
                     onFinished(true, null)
+                    refreshCoordinator.invalidateFamilyTree()
+                    if (createCofre) refreshCoordinator.invalidateCofresList()
 
-                    // Refresco del árbol (no bloquea la UI ni cambia el resultado de onFinished)
                     when (val treeResult = repository.miArbol().first()) {
                         is ApiResult.Success -> {
                             _state.update {

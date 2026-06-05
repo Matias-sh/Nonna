@@ -100,6 +100,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.ui.components.CustomEmotionBadge
+import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.components.EmotionalTagBadge
 import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.ui.components.PlaceholderCover
@@ -135,6 +136,7 @@ fun MemoryDetailScreen(
 ) {
     val memory by viewModel.memory.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    RefreshOnResume { viewModel.refreshOnResume() }
 
     when {
         isLoading && memory == null -> {

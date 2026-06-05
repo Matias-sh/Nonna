@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
+import com.cocido.nonna.data.repository.DataRefreshCoordinator
 import com.cocido.nonna.data.repository.EmocionesRepository
 import com.cocido.nonna.data.repository.RecuerdosRepository
 import com.cocido.nonna.data.repository.SuscripcionRepository
@@ -26,7 +27,8 @@ class EditMemoryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val recuerdosRepository: RecuerdosRepository,
     private val emocionesRepository: EmocionesRepository,
-    private val suscripcionRepository: SuscripcionRepository
+    private val suscripcionRepository: SuscripcionRepository,
+    private val refreshCoordinator: DataRefreshCoordinator
 ) : ViewModel() {
 
     private val memoryId: String = savedStateHandle.get<String>("memoryId") ?: ""
@@ -124,7 +126,10 @@ class EditMemoryViewModel @Inject constructor(
                     limpiarImagenesGaleria = limpiar
                 )
             ) {
-                is ApiResult.Success -> _updated.emit(Unit)
+                is ApiResult.Success -> {
+                    refreshCoordinator.invalidateMemory(memoryId)
+                    _updated.emit(Unit)
+                }
                 is ApiResult.Error -> _errorMessage.emit(result.message)
                 else -> Unit
             }

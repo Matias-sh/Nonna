@@ -15,6 +15,7 @@ import com.cocido.nonna.data.remote.dto.SuscripcionPlanDto
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.PagosSuscripcionRepository
 import com.cocido.nonna.data.repository.PlanesRepository
+import com.cocido.nonna.data.repository.DataRefreshCoordinator
 import com.cocido.nonna.data.repository.SuscripcionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,6 +26,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.os.SystemClock
@@ -36,6 +40,7 @@ class SubscriptionCenterViewModel @Inject constructor(
     private val planesRepository: PlanesRepository,
     private val pagosRepository: PagosSuscripcionRepository,
     private val analytics: AppAnalytics,
+    private val refreshCoordinator: DataRefreshCoordinator,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     private companion object {
@@ -83,11 +88,15 @@ class SubscriptionCenterViewModel @Inject constructor(
         viewModelScope.launch {
             analytics.track(AnalyticsEvent(PaymentsAnalytics.SCREEN_OPENED))
             _isLoading.value = true
-            loadSuscripcion()
-            loadBillingState()
-            loadPlanes()
-            loadPagos()
-            loadPagoPendiente()
+            coroutineScope {
+                awaitAll(
+                    async { loadSuscripcion() },
+                    async { loadBillingState() },
+                    async { loadPlanes() },
+                    async { loadPagos() },
+                    async { loadPagoPendiente() }
+                )
+            }
             maybeStartPendingPolling()
             _isLoading.value = false
         }
@@ -382,10 +391,7 @@ class SubscriptionCenterViewModel @Inject constructor(
     fun refreshAfterCheckout() {
         viewModelScope.launch {
             analytics.track(AnalyticsEvent(PaymentsAnalytics.CHECKOUT_REFRESH_AFTER_RETURN))
-            loadSuscripcion()
-            loadBillingState()
-            loadPagoPendiente()
-            loadPagos()
+            refreshCoreData()
             lastPassiveRefreshAt = SystemClock.elapsedRealtime()
             maybeStartPendingPolling()
         }
@@ -395,13 +401,22 @@ class SubscriptionCenterViewModel @Inject constructor(
         val now = SystemClock.elapsedRealtime()
         if (now - lastPassiveRefreshAt < minIntervalMs) return
         viewModelScope.launch {
-            loadSuscripcion()
-            loadBillingState()
-            loadPagoPendiente()
-            loadPagos()
+            refreshCoreData()
             lastPassiveRefreshAt = SystemClock.elapsedRealtime()
             maybeStartPendingPolling()
         }
+    }
+
+    private suspend fun refreshCoreData() {
+        coroutineScope {
+            awaitAll(
+                async { loadSuscripcion() },
+                async { loadBillingState() },
+                async { loadPagoPendiente() },
+                async { loadPagos() }
+            )
+        }
+        refreshCoordinator.invalidateProfile()
     }
 
     fun trackCheckoutOpenBrowserSuccess() {

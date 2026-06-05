@@ -92,6 +92,7 @@ import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.PrimaryGradientEnd
 import com.cocido.nonna.ui.theme.PrimaryGradientStart
 import com.cocido.nonna.ui.components.InviteFamilyModal
+import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.components.relationValueLabel
 import com.cocido.nonna.ui.permissions.canManageCofre
 import kotlinx.coroutines.flow.collectLatest
@@ -123,6 +124,7 @@ fun CofreDetailScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showLeaveCofreConfirm by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    RefreshOnResume { viewModel.refreshOnResume() }
     var feedbackVisible by remember { mutableStateOf(false) }
     var feedbackMessage by remember { mutableStateOf("") }
     var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }

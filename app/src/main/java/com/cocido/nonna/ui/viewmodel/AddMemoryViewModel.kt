@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
+import com.cocido.nonna.data.repository.DataRefreshCoordinator
 import com.cocido.nonna.data.repository.EmocionesRepository
 import com.cocido.nonna.data.repository.RecuerdosRepository
 import com.cocido.nonna.data.repository.SuscripcionRepository
@@ -25,7 +26,8 @@ import javax.inject.Inject
 class AddMemoryViewModel @Inject constructor(
     private val recuerdosRepository: RecuerdosRepository,
     private val emocionesRepository: EmocionesRepository,
-    private val suscripcionRepository: SuscripcionRepository
+    private val suscripcionRepository: SuscripcionRepository,
+    private val refreshCoordinator: DataRefreshCoordinator
 ) : ViewModel() {
     companion object {
         private const val PERF_TAG = "NonnaPerf"
@@ -92,6 +94,7 @@ class AddMemoryViewModel @Inject constructor(
                         "save_recuerdo_success_ms=${SystemClock.elapsedRealtime() - startMs} " +
                             "gallery_count=${galleryImages.size}"
                     )
+                    refreshCoordinator.invalidateCofre(cofreRecuerdosId)
                     _saved.emit(result.data)
                 }
                 is ApiResult.Error -> {

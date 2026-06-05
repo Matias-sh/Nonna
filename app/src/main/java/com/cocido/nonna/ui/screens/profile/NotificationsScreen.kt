@@ -28,6 +28,7 @@ import com.cocido.nonna.ui.components.NonnaButtonSize
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaSpacing
 import com.cocido.nonna.ui.viewmodel.NotificationsViewModel
@@ -58,6 +59,7 @@ fun NotificationsRoute(
     LaunchedEffect(Unit) {
         viewModel.load()
     }
+    RefreshOnResume(minIntervalMs = 2000L) { viewModel.refreshOnResume() }
 
     NotificationsScreen(
         uiState = uiState,

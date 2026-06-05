@@ -1,11 +1,13 @@
 package com.cocido.nonna.ui.viewmodel
 
+import android.os.SystemClock
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.AuthRepository
 import com.cocido.nonna.data.repository.CofreRepository
+import com.cocido.nonna.data.repository.DataRefreshCoordinator
 import com.cocido.nonna.data.repository.RecuerdosRepository
 import com.cocido.nonna.data.remote.dto.UserDto
 import com.cocido.nonna.ui.components.CofreUiModel
@@ -13,6 +15,8 @@ import com.cocido.nonna.ui.components.MemoryUiModel
 import com.cocido.nonna.ui.permissions.canManageCofre
 import com.cocido.nonna.ui.permissions.resolveOwnership
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -27,7 +31,8 @@ class CofreDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val authRepository: AuthRepository,
     private val cofreRepository: CofreRepository,
-    private val recuerdosRepository: RecuerdosRepository
+    private val recuerdosRepository: RecuerdosRepository,
+    private val refreshCoordinator: DataRefreshCoordinator
 ) : ViewModel() {
 
     val cofreId: String = savedStateHandle.get<String>("cofreId") ?: ""
@@ -65,37 +70,68 @@ class CofreDetailViewModel @Inject constructor(
     private val _removeInviteeInProgress = MutableStateFlow(false)
     val removeInviteeInProgress: StateFlow<Boolean> = _removeInviteeInProgress.asStateFlow()
 
+    private var lastPassiveRefreshAt: Long = 0L
+    private var loadInProgress = false
+
     init {
         load()
+        viewModelScope.launch {
+            refreshCoordinator.events.collect { event ->
+                if (event is DataRefreshCoordinator.Event.CofreDetail && event.cofreId == cofreId) {
+                    load(forceRefresh = true, showLoading = false)
+                }
+            }
+        }
     }
 
-    fun load() {
+    fun load(forceRefresh: Boolean = false, showLoading: Boolean? = null) {
+        if (loadInProgress && !forceRefresh) return
         viewModelScope.launch {
-            _isLoading.value = true
+            loadInProgress = true
+            val shouldShowLoading = showLoading ?: (_cofre.value == null && _memories.value.isEmpty())
+            if (shouldShowLoading) {
+                _isLoading.value = true
+            }
             _errorMessage.value = null
-            var me: UserDto? = null
-            when (val result = authRepository.getMe()) {
-                is ApiResult.Success -> {
-                    me = result.data
-                    _currentUser.value = result.data
+            try {
+                coroutineScope {
+                    val meDeferred = async { authRepository.getMe() }
+                    val cofreDeferred = async { cofreRepository.getCofre(cofreId) }
+                    val memoriesDeferred = async { recuerdosRepository.recuerdosByCofreOnce(cofreId) }
+
+                    when (val meResult = meDeferred.await()) {
+                        is ApiResult.Success -> _currentUser.value = meResult.data
+                        is ApiResult.Error -> { }
+                        else -> { }
+                    }
+
+                    val me = _currentUser.value
+                    when (val cofreResult = cofreDeferred.await()) {
+                        is ApiResult.Success -> _cofre.value = resolveOwnership(cofreResult.data, me)
+                        is ApiResult.Error -> _errorMessage.value = cofreResult.message
+                        else -> { }
+                    }
+
+                    when (val memoriesResult = memoriesDeferred.await()) {
+                        is ApiResult.Success -> _memories.value = memoriesResult.data
+                        is ApiResult.Error -> {
+                            if (_errorMessage.value == null) _errorMessage.value = memoriesResult.message
+                        }
+                        else -> { }
+                    }
                 }
-                is ApiResult.Error -> { }
-                else -> { }
+            } finally {
+                _isLoading.value = false
+                loadInProgress = false
             }
-            when (val result = cofreRepository.getCofre(cofreId)) {
-                is ApiResult.Success -> _cofre.value = resolveOwnership(result.data, me)
-                is ApiResult.Error -> _errorMessage.value = result.message
-                else -> { }
-            }
-            recuerdosRepository.recuerdosByCofre(cofreId).collect { result ->
-                when (result) {
-                    is ApiResult.Success -> _memories.value = result.data
-                    is ApiResult.Error -> if (_errorMessage.value == null) _errorMessage.value = result.message
-                    else -> { }
-                }
-            }
-            _isLoading.value = false
         }
+    }
+
+    fun refreshOnResume(minIntervalMs: Long = 1500L) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastPassiveRefreshAt < minIntervalMs) return
+        lastPassiveRefreshAt = now
+        load(forceRefresh = true, showLoading = false)
     }
 
     fun clearError() {
@@ -111,7 +147,10 @@ class CofreDetailViewModel @Inject constructor(
             _isLoading.value = true
             _errorMessage.value = null
             when (val result = cofreRepository.deleteCofre(cofreId)) {
-                is ApiResult.Success -> _deleteSuccess.emit(Unit)
+                is ApiResult.Success -> {
+                    refreshCoordinator.invalidateCofresList()
+                    _deleteSuccess.emit(Unit)
+                }
                 is ApiResult.Error -> _errorMessage.value = result.message
                 else -> { }
             }
@@ -149,7 +188,10 @@ class CofreDetailViewModel @Inject constructor(
             _leaveInProgress.value = true
             _errorMessage.value = null
             when (val result = cofreRepository.abandonarCofreCompartido(cofreId)) {
-                is ApiResult.Success -> _abandonSuccess.emit(Unit)
+                is ApiResult.Success -> {
+                    refreshCoordinator.invalidateCofresList()
+                    _abandonSuccess.emit(Unit)
+                }
                 is ApiResult.Error -> _errorMessage.value = result.message
                 else -> { }
             }

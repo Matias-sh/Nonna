@@ -126,5 +126,11 @@ class NotificationsViewModel @Inject constructor(
     fun clearError() {
         _errorMessage.value = null
     }
+
+    fun refreshOnResume(minIntervalMs: Long = 2000L) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastLoadAtMs < minIntervalMs && _items.value.isNotEmpty()) return
+        load(forceRefresh = true)
+    }
 }
 

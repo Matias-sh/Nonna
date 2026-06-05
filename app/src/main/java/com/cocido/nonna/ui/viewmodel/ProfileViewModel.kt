@@ -9,8 +9,12 @@ import com.cocido.nonna.data.remote.dto.UserDto
 import com.cocido.nonna.data.remote.dto.SuscripcionActualDto
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.AuthRepository
+import com.cocido.nonna.data.repository.DataRefreshCoordinator
 import com.cocido.nonna.data.repository.NetworkErrorParser
 import com.cocido.nonna.data.repository.SuscripcionRepository
+import android.os.SystemClock
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import com.cocido.nonna.util.ImageCompressor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,8 +38,10 @@ class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val usuarioApi: UsuarioApi,
     private val suscripcionRepository: SuscripcionRepository,
+    private val refreshCoordinator: DataRefreshCoordinator,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
+    private var lastPassiveRefreshAt: Long = 0L
 
     private val _user = MutableStateFlow<UserDto?>(null)
     val user: StateFlow<UserDto?> = _user.asStateFlow()
@@ -52,15 +58,23 @@ class ProfileViewModel @Inject constructor(
     private val _updateSuccess = MutableSharedFlow<Unit>()
     val updateSuccess: SharedFlow<Unit> = _updateSuccess.asSharedFlow()
 
-    fun load() {
+    init {
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
-            // 1) Datos básicos desde /auth/me (siempre se usa para saber si hay sesión)
-            val basicUser = when (val result = authRepository.getMe()) {
-                is ApiResult.Success -> {
-                    result.data
+            refreshCoordinator.events.collect { event ->
+                if (event is DataRefreshCoordinator.Event.Profile) {
+                    load(showLoading = false)
                 }
+            }
+        }
+    }
+
+    fun load(showLoading: Boolean? = null) {
+        viewModelScope.launch {
+            val shouldShowLoading = showLoading ?: (_user.value == null)
+            if (shouldShowLoading) _isLoading.value = true
+            _errorMessage.value = null
+            val basicUser = when (val result = authRepository.getMe()) {
+                is ApiResult.Success -> result.data
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
                     _isLoading.value = false
@@ -72,38 +86,42 @@ class ProfileViewModel @Inject constructor(
                 }
             }
 
-            // 2) Intentar enriquecer con /usuario/{id}, que suele traer campos como fotoPerfil / urlFotoPerfil
-            val detailedUser = try {
-                val response = usuarioApi.getById(basicUser.id)
-                if (response.isSuccessful) {
-                    response.body()
-                } else {
-                    // Si falla, nos quedamos con basicUser pero guardamos el mensaje para depurar si hace falta
-                    _errorMessage.value = NetworkErrorParser.parseOrGeneric(
-                        response.errorBody()?.string(),
-                        response.code()
-                    )
-                        ?: _errorMessage.value
-                    null
+            coroutineScope {
+                val detailedDeferred = async {
+                    try {
+                        val response = usuarioApi.getById(basicUser.id)
+                        if (response.isSuccessful) {
+                            response.body()
+                        } else {
+                            _errorMessage.value = NetworkErrorParser.parseOrGeneric(
+                                response.errorBody()?.string(),
+                                response.code()
+                            ) ?: _errorMessage.value
+                            null
+                        }
+                    } catch (_: Exception) {
+                        null
+                    }
                 }
-            } catch (e: Exception) {
-                // No rompemos la pantalla de perfil por un fallo puntual de este endpoint
-                null
-            }
+                val suscripcionDeferred = async { suscripcionRepository.getMiSuscripcion() }
 
-            _user.value = detailedUser ?: basicUser
-
-            when (val sub = suscripcionRepository.getMiSuscripcion()) {
-                is ApiResult.Success -> _suscripcion.value = sub.data
-                is ApiResult.Error -> {
-                    // No bloqueamos el perfil si la suscripción falla (p. ej. seed de planes)
-                    _suscripcion.value = null
+                _user.value = detailedDeferred.await() ?: basicUser
+                when (val sub = suscripcionDeferred.await()) {
+                    is ApiResult.Success -> _suscripcion.value = sub.data
+                    is ApiResult.Error -> _suscripcion.value = null
+                    else -> { }
                 }
-                else -> { }
             }
 
             _isLoading.value = false
         }
+    }
+
+    fun refreshOnResume(minIntervalMs: Long = 2500L) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastPassiveRefreshAt < minIntervalMs) return
+        lastPassiveRefreshAt = now
+        load(showLoading = false)
     }
 
     fun clearError() {
@@ -166,7 +184,9 @@ class ProfileViewModel @Inject constructor(
                     urlFotoPerfil = null
                 )
                 if (response.isSuccessful) {
+                    authRepository.invalidateMeCache()
                     _user.value = response.body()
+                    refreshCoordinator.invalidateProfile()
                     _updateSuccess.emit(Unit)
                 } else {
                     _errorMessage.value = NetworkErrorParser.parseOrGeneric(

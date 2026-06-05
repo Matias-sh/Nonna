@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.CofreCard
+import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.PageHeader
 import com.cocido.nonna.ui.theme.NonnaDimens
@@ -51,7 +52,8 @@ fun SelectCofreScreen(
 ) {
     val cofres by viewModel.cofres.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    LaunchedEffect(Unit) { viewModel.load() }
+    LaunchedEffect(Unit) { viewModel.load(forceRefresh = true) }
+    RefreshOnResume { viewModel.refreshOnResume() }
 
     Column(
         modifier = Modifier

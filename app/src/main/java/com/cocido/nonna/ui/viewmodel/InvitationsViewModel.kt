@@ -4,6 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.CofreRepository
+import com.cocido.nonna.data.repository.DataRefreshCoordinator
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import android.os.SystemClock
 import com.cocido.nonna.ui.components.CofreInvitationUiModel
 import com.cocido.nonna.util.UserMessages
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,8 +22,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class InvitationsViewModel @Inject constructor(
-    private val cofreRepository: CofreRepository
+    private val cofreRepository: CofreRepository,
+    private val refreshCoordinator: DataRefreshCoordinator
 ) : ViewModel() {
+    private var lastPassiveRefreshAt: Long = 0L
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -36,31 +42,44 @@ class InvitationsViewModel @Inject constructor(
     private val _successMessage = MutableSharedFlow<String>()
     val successMessage: SharedFlow<String> = _successMessage.asSharedFlow()
 
-    fun load() {
+    fun load(showLoading: Boolean = true) {
         viewModelScope.launch {
-            _isLoading.value = true
+            if (showLoading) _isLoading.value = true
 
-            when (val result = cofreRepository.getPendingInvitations()) {
-                is ApiResult.Success -> _pendingInvitations.value = result.data
-                is ApiResult.Error -> if (result.code != 401) _errorMessage.emit(result.message)
-                ApiResult.Loading -> Unit
-            }
-            when (val result = cofreRepository.getSentInvitations()) {
-                is ApiResult.Success -> _sentInvitations.value = result.data
-                is ApiResult.Error -> if (result.code != 401) _errorMessage.emit(result.message)
-                ApiResult.Loading -> Unit
+            coroutineScope {
+                val pendingDeferred = async { cofreRepository.getPendingInvitations() }
+                val sentDeferred = async { cofreRepository.getSentInvitations() }
+
+                when (val result = pendingDeferred.await()) {
+                    is ApiResult.Success -> _pendingInvitations.value = result.data
+                    is ApiResult.Error -> if (result.code != 401) _errorMessage.emit(result.message)
+                    ApiResult.Loading -> Unit
+                }
+                when (val result = sentDeferred.await()) {
+                    is ApiResult.Success -> _sentInvitations.value = result.data
+                    is ApiResult.Error -> if (result.code != 401) _errorMessage.emit(result.message)
+                    ApiResult.Loading -> Unit
+                }
             }
 
             _isLoading.value = false
         }
     }
 
+    fun refreshOnResume(minIntervalMs: Long = 2000L) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastPassiveRefreshAt < minIntervalMs) return
+        lastPassiveRefreshAt = now
+        load(showLoading = false)
+    }
+
     fun acceptInvitation(invitationId: String) {
         viewModelScope.launch {
             when (val result = cofreRepository.acceptInvitation(invitationId)) {
                 is ApiResult.Success -> {
+                    refreshCoordinator.invalidateCofresList()
                     _successMessage.emit(UserMessages.INVITATION_ACCEPTED)
-                    load()
+                    load(showLoading = false)
                 }
                 is ApiResult.Error -> _errorMessage.emit(result.message)
                 ApiResult.Loading -> Unit

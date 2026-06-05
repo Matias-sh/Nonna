@@ -48,7 +48,11 @@ import com.cocido.nonna.ui.screens.profile.SubscriptionCenterScreen
 import com.cocido.nonna.ui.screens.tree.AddPersonScreen
 import com.cocido.nonna.ui.screens.tree.FamilyTreeScreen
 import com.cocido.nonna.ui.screens.welcome.WelcomeScreen
+import com.cocido.nonna.ui.viewmodel.CofreDetailViewModel
 import com.cocido.nonna.ui.viewmodel.FamilyTreeViewModel
+import com.cocido.nonna.ui.viewmodel.MemoryDetailViewModel
+import com.cocido.nonna.ui.viewmodel.ProfileViewModel
+import com.cocido.nonna.ui.components.RefreshOnResume
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -340,6 +344,7 @@ fun NonnaNavHost(
         composable(Screen.FamilyTree.route) {
             val viewModel: FamilyTreeViewModel = hiltViewModel()
             val uiState by viewModel.state.collectAsStateWithLifecycle()
+            RefreshOnResume(minIntervalMs = 2500L) { viewModel.refreshOnResume() }
 
             FamilyTreeScreen(
                 onTabSelected = { tab ->
@@ -458,8 +463,17 @@ fun NonnaNavHost(
 
         // Profile Edit Screen
         composable(Screen.ProfileEdit.route) {
+            val parentProfileEntry = remember(navController) {
+                runCatching {
+                    navController.getBackStackEntry(Screen.Profile.route)
+                }.getOrNull()
+            }
+            val profileViewModel: ProfileViewModel = parentProfileEntry?.let {
+                hiltViewModel(it)
+            } ?: hiltViewModel()
             ProfileSettingsScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                viewModel = profileViewModel
             )
         }
 
@@ -526,10 +540,18 @@ fun NonnaNavHost(
             )
         ) { backStackEntry ->
             val cofreId = backStackEntry.arguments?.getString("cofreId") ?: ""
+            val parentCofreEntry = remember(navController, cofreId) {
+                runCatching {
+                    navController.getBackStackEntry(Screen.CofreDetail.createRoute(cofreId))
+                }.getOrNull()
+            }
+            val cofreDetailViewModel: CofreDetailViewModel? = parentCofreEntry?.let {
+                hiltViewModel(it)
+            }
             EditCofreScreen(
                 cofreId = cofreId,
                 onBack = { navController.popBackStack() },
-                onUpdated = { }
+                onUpdated = { cofreDetailViewModel?.load(forceRefresh = true, showLoading = false) }
             )
         }
         
@@ -568,10 +590,21 @@ fun NonnaNavHost(
             )
         ) { backStackEntry ->
             val cofreId = backStackEntry.arguments?.getString("cofreId")
+            val parentCofreEntry = remember(navController, cofreId) {
+                cofreId?.let { id ->
+                    runCatching {
+                        navController.getBackStackEntry(Screen.CofreDetail.createRoute(id))
+                    }.getOrNull()
+                }
+            }
+            val cofreDetailViewModel: CofreDetailViewModel? = parentCofreEntry?.let {
+                hiltViewModel(it)
+            }
             AddMemoryScreen(
                 cofreId = cofreId,
                 onBack = { navController.popBackStack() },
                 onSave = {
+                    cofreDetailViewModel?.load(forceRefresh = true, showLoading = false)
                     navController.popBackStack()
                 }
             )
@@ -614,10 +647,23 @@ fun NonnaNavHost(
             )
         ) { backStackEntry ->
             val memoryId = backStackEntry.arguments?.getString("memoryId") ?: ""
+            val parentMemoryEntry = remember(navController, memoryId) {
+                runCatching {
+                    navController.getBackStackEntry(
+                        Screen.MemoryDetail.createRoute(memoryId)
+                    )
+                }.getOrNull()
+            }
+            val memoryDetailViewModel: MemoryDetailViewModel? = parentMemoryEntry?.let {
+                hiltViewModel(it)
+            }
             EditMemoryScreen(
                 memoryId = memoryId,
                 onBack = { navController.popBackStack() },
-                onSaved = { navController.popBackStack() }
+                onSaved = {
+                    memoryDetailViewModel?.load(showLoading = false)
+                    navController.popBackStack()
+                }
             )
         }
     }

@@ -46,6 +46,7 @@ import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.viewmodel.InvitationsViewModel
@@ -68,6 +69,7 @@ fun InvitationsScreen(
     var feedbackMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) { viewModel.load() }
+    RefreshOnResume(minIntervalMs = 2000L) { viewModel.refreshOnResume() }
     LaunchedEffect(deepLinkedInvitationId) {
         if (!deepLinkedInvitationId.isNullOrBlank()) {
             selectedTab = InviteTab.Received

@@ -31,29 +31,36 @@ class RecuerdosRepository @Inject constructor(
         const val TOMCAT_EMOTION_TAG = "TomcatEmotionCheck"
     }
 
-    fun recuerdosByCofre(cofreId: String): Flow<ApiResult<List<MemoryUiModel>>> = flow {
-        emit(ApiResult.Loading)
-        try {
+    suspend fun recuerdosByCofreOnce(cofreId: String): ApiResult<List<MemoryUiModel>> {
+        return try {
             val response = api.search(cofreRecuerdosId = cofreId)
-            val list = when {
-                response.isSuccessful -> {
-                    val body = response.body()
-                    (body?.list() ?: emptyList()).map { it.toUiModel() }
-                }
-                else -> {
-                    val raw = response.errorBody()?.string()
-                    emit(ApiResult.Error(NetworkErrorParser.parse(raw) ?: "No se pudieron cargar los recuerdos", response.code()))
-                    return@flow
-                }
+            if (response.isSuccessful) {
+                val body = response.body()
+                val list = (body?.list() ?: emptyList()).map { it.toUiModel() }
+                ApiResult.Success(list)
+            } else {
+                val raw = response.errorBody()?.string()
+                ApiResult.Error(
+                    NetworkErrorParser.parse(raw) ?: "No se pudieron cargar los recuerdos",
+                    response.code()
+                )
             }
-            emit(ApiResult.Success(list))
         } catch (e: HttpException) {
             val raw = e.response()?.errorBody()?.string()
-            emit(ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code()))
+            ApiResult.Error(NetworkErrorParser.parseOrGeneric(raw, e.code()), e.code())
         } catch (e: JsonParseException) {
-            emit(ApiResult.Error(API_RESPONSE_PARSE_ERROR))
+            ApiResult.Error(API_RESPONSE_PARSE_ERROR)
         } catch (e: IOException) {
-            emit(ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e)))
+            ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
+        }
+    }
+
+    fun recuerdosByCofre(cofreId: String): Flow<ApiResult<List<MemoryUiModel>>> = flow {
+        emit(ApiResult.Loading)
+        when (val result = recuerdosByCofreOnce(cofreId)) {
+            is ApiResult.Success -> emit(result)
+            is ApiResult.Error -> emit(result)
+            else -> Unit
         }
     }
 

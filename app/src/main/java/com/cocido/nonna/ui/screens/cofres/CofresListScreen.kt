@@ -44,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import com.cocido.nonna.R
 import com.cocido.nonna.ui.viewmodel.CofresListViewModel
 import com.cocido.nonna.ui.components.AppShell
+import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.components.CofreCard
 import com.cocido.nonna.ui.components.CofreFilters
 import com.cocido.nonna.ui.components.EmptyStateWithButton
@@ -79,6 +80,7 @@ fun CofresListRoute(
     }
 
     LaunchedEffect(Unit) { viewModel.load() }
+    RefreshOnResume { viewModel.refreshOnResume() }
 
     CofresListScreen(
         uiState = uiState,

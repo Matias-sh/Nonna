@@ -11,6 +11,9 @@ import com.cocido.nonna.data.remote.dto.CofreInvitationDto
 import com.cocido.nonna.ui.components.CofreUiModel
 import com.cocido.nonna.ui.components.CofreInvitationUiModel
 import com.cocido.nonna.ui.components.CofreInviteeUiModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import com.cocido.nonna.util.NetworkFailureMessageResolver
@@ -86,20 +89,25 @@ class CofreRepository @Inject constructor(
         if (unresolvedEmails.isEmpty()) return cofre
 
         val resolvedByEmail = mutableMapOf<String, String>()
-        unresolvedEmails.forEach { email ->
-            inviteeAvatarCacheByEmail[email]?.let {
-                resolvedByEmail[email] = it
-                return@forEach
-            }
-            runCatching {
-                val search = usuarioApi.search(query = email)
-                if (!search.isSuccessful) return@runCatching
-                val user = search.body()?.list()?.firstOrNull { it.email.equals(email, ignoreCase = true) }
-                    ?: return@runCatching
-                user.profileImageUrl()?.let {
-                    inviteeAvatarCacheByEmail[email] = it
-                    resolvedByEmail[email] = it
+        coroutineScope {
+            unresolvedEmails.map { email ->
+                async {
+                    inviteeAvatarCacheByEmail[email]?.let { cached ->
+                        email to cached
+                    } ?: runCatching {
+                        val search = usuarioApi.search(query = email)
+                        if (!search.isSuccessful) return@runCatching null
+                        val user = search.body()?.list()?.firstOrNull {
+                            it.email.equals(email, ignoreCase = true)
+                        } ?: return@runCatching null
+                        user.profileImageUrl()?.let { url ->
+                            inviteeAvatarCacheByEmail[email] = url
+                            email to url
+                        }
+                    }.getOrNull()
                 }
+            }.awaitAll().filterNotNull().forEach { (email, url) ->
+                resolvedByEmail[email] = url
             }
         }
         if (resolvedByEmail.isEmpty()) return cofre

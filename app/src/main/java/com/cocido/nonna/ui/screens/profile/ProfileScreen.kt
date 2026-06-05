@@ -65,6 +65,7 @@ import coil.compose.AsyncImage
 import com.cocido.nonna.R
 import com.cocido.nonna.BuildConfig
 import com.cocido.nonna.ui.components.AppShell
+import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTab
@@ -102,6 +103,7 @@ fun ProfileRoute(
     )
 
     LaunchedEffect(Unit) { viewModel.load() }
+    RefreshOnResume(minIntervalMs = 2500L) { viewModel.refreshOnResume() }
 
     ProfileScreen(
         uiState = uiState,

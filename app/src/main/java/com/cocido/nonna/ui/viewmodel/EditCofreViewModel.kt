@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.CofreRepository
+import com.cocido.nonna.data.repository.DataRefreshCoordinator
 import com.cocido.nonna.ui.components.CofreUiModel
 import com.cocido.nonna.util.ImageCompressor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +28,8 @@ import javax.inject.Inject
 class EditCofreViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     @ApplicationContext private val context: Context,
-    private val cofreRepository: CofreRepository
+    private val cofreRepository: CofreRepository,
+    private val refreshCoordinator: DataRefreshCoordinator
 ) : ViewModel() {
 
     val cofreId: String = savedStateHandle.get<String>("cofreId") ?: ""
@@ -74,6 +76,7 @@ class EditCofreViewModel @Inject constructor(
             )) {
                 is ApiResult.Success -> {
                     _cofre.value = result.data
+                    refreshCoordinator.invalidateCofre(cofreId)
                     _updateSuccess.emit(result.data)
                 }
                 is ApiResult.Error -> _errorMessage.emit(result.message)

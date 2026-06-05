@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
 import com.cocido.nonna.data.repository.CofreRepository
+import com.cocido.nonna.data.repository.DataRefreshCoordinator
 import com.cocido.nonna.data.repository.SuscripcionRepository
 import com.cocido.nonna.ui.components.CofreUiModel
 import com.cocido.nonna.util.ImageCompressor
@@ -27,7 +28,8 @@ import javax.inject.Inject
 class CreateCofreViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val cofreRepository: CofreRepository,
-    private val suscripcionRepository: SuscripcionRepository
+    private val suscripcionRepository: SuscripcionRepository,
+    private val refreshCoordinator: DataRefreshCoordinator
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -60,7 +62,10 @@ class CreateCofreViewModel @Inject constructor(
                 coverImageFile = coverFile,
                 inviteEmails = inviteEmails
             )) {
-                is ApiResult.Success -> _created.emit(result.data)
+                is ApiResult.Success -> {
+                    refreshCoordinator.invalidateCofresList()
+                    _created.emit(result.data)
+                }
                 is ApiResult.Error -> _errorMessage.emit(result.message)
                 else -> { }
             }

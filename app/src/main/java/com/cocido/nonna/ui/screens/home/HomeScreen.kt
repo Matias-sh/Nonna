@@ -65,6 +65,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.AppShell
+import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaStaggerItem
@@ -137,6 +138,7 @@ fun HomeRoute(
     }
 
     LaunchedEffect(Unit) { viewModel.load() }
+    RefreshOnResume { viewModel.refreshOnResume() }
 
     HomeScreen(
         uiState = uiState,

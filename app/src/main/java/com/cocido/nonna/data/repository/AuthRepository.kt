@@ -180,9 +180,13 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun logout() {
+    fun invalidateMeCache() {
         cachedMeUser = null
         cachedMeAtMs = 0L
+    }
+
+    suspend fun logout() {
+        invalidateMeCache()
         tokenManager.clear()
     }
 
