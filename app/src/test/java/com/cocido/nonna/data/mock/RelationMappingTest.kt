@@ -20,4 +20,18 @@ class RelationMappingTest {
     fun `fallback de relacion personalizada envia OTRO`() {
         assertEquals("OTRO", relationToApi("Mascota"))
     }
+
+    @Test
+    fun `resuelve codigo api a chip predefinido en formulario de edicion`() {
+        val (preset, custom) = resolveRelationForEditForm("PADRE")
+        assertEquals("Padre", preset)
+        assertEquals("", custom)
+    }
+
+    @Test
+    fun `resuelve parentesco personalizado sin chip`() {
+        val (preset, custom) = resolveRelationForEditForm("Vecino querido")
+        assertEquals(null, preset)
+        assertEquals("Vecino querido", custom)
+    }
 }

@@ -164,7 +164,7 @@ fun AddMemoryScreen(
     }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = PickVisualMedia()
     ) { uri: Uri? ->
         uri?.let {
             cropLauncher.launch(
@@ -256,7 +256,7 @@ fun AddMemoryScreen(
 
     val maxArchivosPlan by viewModel.maxArchivosPorRecuerdo.collectAsStateWithLifecycle()
     val maxGalleryExtra = remember(maxArchivosPlan) {
-        (maxArchivosPlan - 1).coerceIn(0, 2)
+        (maxArchivosPlan - 1).coerceAtLeast(0)
     }
     var extraGalleryUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var audioCoverUri by remember { mutableStateOf<Uri?>(null) }
@@ -282,7 +282,7 @@ fun AddMemoryScreen(
     }
 
     val galleryPickerLauncher = rememberLauncherForActivityResult(
-        contract = PickMultipleVisualMedia(maxGalleryExtra.coerceIn(1, 2))
+        contract = PickMultipleVisualMedia(maxOf(maxGalleryExtra, 1))
     ) { uris ->
         if (maxGalleryExtra > 0 && uris.isNotEmpty()) {
             // Acumular: muchas galerías solo devuelven la última tanda; el usuario puede sumar con varios toques.
@@ -376,7 +376,11 @@ fun AddMemoryScreen(
                     selectedAudioLabel = selectedAudioLabel,
                     hasImageSelected = hasImageSelected,
                     selectedImageUri = selectedImageUri,
-                    onRequestPickImage = { imagePickerLauncher.launch("image/*") },
+                    onRequestPickImage = {
+                        imagePickerLauncher.launch(
+                            PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+                        )
+                    },
                     onRequestCaptureImage = {
                         val granted = ContextCompat.checkSelfPermission(
                             context,
@@ -1082,15 +1086,13 @@ private fun DetailsStep(
         if (type == MemoryType.Photo && maxGalleryExtra > 0) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = stringResource(R.string.memory_carousel_optional_title),
+                text = if (maxGalleryExtra <= 2) {
+                    stringResource(R.string.memory_gallery_extra_up_to_two)
+                } else {
+                    stringResource(R.string.memory_gallery_extra_plan_limit, maxGalleryExtra)
+                },
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = stringResource(R.string.memory_carousel_optional_subtitle, maxGalleryExtra),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(10.dp))
             FlowRow(

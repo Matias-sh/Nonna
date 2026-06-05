@@ -2,7 +2,8 @@ package com.cocido.nonna.ui.screens.cofres
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,12 +46,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.cocido.nonna.data.mock.relationOptionsByCategory
+import com.cocido.nonna.data.mock.resolveRelationForEditForm
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
 import com.cocido.nonna.ui.components.NonnaCropContract
 import com.cocido.nonna.ui.components.NonnaCropRequest
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
+import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTextArea
 import com.cocido.nonna.ui.components.NonnaTextField
@@ -86,22 +89,17 @@ fun EditCofreScreen(
     var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
     var attemptedSubmit by remember { mutableStateOf(false) }
 
-    var hasInitialized by remember { mutableStateOf(false) }
+    var loadedCofreKey by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(cofre) {
-        if (!hasInitialized && cofre != null) {
-            name = cofre!!.name
-            val initialRelation = cofre!!.relation
-            val predefined = relationOptionsByCategory.values.flatten().toSet()
-            if (initialRelation in predefined) {
-                selectedRelationOption = initialRelation
-                customRelation = ""
-            } else {
-                selectedRelationOption = null
-                customRelation = initialRelation
-            }
-            description = cofre!!.descriptionPhrase.orEmpty()
-            hasInitialized = true
-        }
+        val current = cofre ?: return@LaunchedEffect
+        val key = "${current.id}:${current.updatedAtIso}:${current.relation}"
+        if (loadedCofreKey == key) return@LaunchedEffect
+        name = current.name
+        val (preset, custom) = resolveRelationForEditForm(current.relation)
+        selectedRelationOption = preset
+        customRelation = custom
+        description = current.descriptionPhrase.orEmpty()
+        loadedCofreKey = key
     }
 
     val normalizedName = name.trim()
@@ -116,7 +114,7 @@ fun EditCofreScreen(
         result?.let { coverImageUri = it }
     }
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
             cropLauncher.launch(
@@ -128,6 +126,8 @@ fun EditCofreScreen(
             )
         }
     }
+
+    RefreshOnResume { viewModel.load() }
 
     LaunchedEffect(Unit) {
         viewModel.updateSuccess.collectLatest {
@@ -220,7 +220,11 @@ fun EditCofreScreen(
                                     color = MaterialTheme.colorScheme.outline,
                                     shape = NonnaCorners.Large
                                 )
-                                .clickable { imagePickerLauncher.launch("image/*") },
+                                .clickable {
+                                    imagePickerLauncher.launch(
+                                        PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+                                    )
+                                },
                             contentAlignment = Alignment.Center
                         ) {
                             if (cofre?.coverImageUrl != null) {
@@ -333,14 +337,6 @@ fun EditCofreScreen(
                         errorMessage = if (relationError) UserMessages.INVALID_RELATION else null,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    if (customRelation.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = stringResource(R.string.relation_custom_saved_as_other_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                     Spacer(modifier = Modifier.height(24.dp))
 
                     NonnaTextArea(

@@ -2,7 +2,9 @@ package com.cocido.nonna.ui.screens.cofres
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -127,7 +129,7 @@ fun CreateCofreScreen(
         result?.let { coverImageUri = it }
     }
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
             cropLauncher.launch(
@@ -250,7 +252,11 @@ fun CreateCofreScreen(
                             color = MaterialTheme.colorScheme.outline,
                             shape = NonnaCorners.Large
                         )
-                        .clickable { imagePickerLauncher.launch("image/*") },
+                        .clickable {
+                            imagePickerLauncher.launch(
+                                PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+                            )
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -368,15 +374,6 @@ fun CreateCofreScreen(
                 errorMessage = if (relationError) UserMessages.INVALID_RELATION else null,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (customRelation.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = stringResource(R.string.relation_custom_saved_as_other_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
             Spacer(modifier = Modifier.height(24.dp))
             
             // Description

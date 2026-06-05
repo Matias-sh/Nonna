@@ -101,15 +101,19 @@ sealed class Screen(val route: String) {
     data object CofreDetail : Screen("cofre/{cofreId}") {
         fun createRoute(cofreId: String) = "cofre/$cofreId"
     }
-    data object MemoryDetail : Screen("memory/{memoryId}?cofreContext={cofreContext}&cofreCreator={cofreCreator}") {
+    data object MemoryDetail : Screen(
+        "memory/{memoryId}?cofreContext={cofreContext}&cofreCreator={cofreCreator}&cofreId={cofreId}"
+    ) {
         fun createRoute(
             memoryId: String,
             cofreContext: String? = null,
-            cofreCreator: String? = null
+            cofreCreator: String? = null,
+            cofreId: String? = null
         ): String {
             val ctx = Uri.encode(cofreContext.orEmpty())
             val creator = Uri.encode(cofreCreator.orEmpty())
-            return "memory/$memoryId?cofreContext=$ctx&cofreCreator=$creator"
+            val chestId = Uri.encode(cofreId.orEmpty())
+            return "memory/$memoryId?cofreContext=$ctx&cofreCreator=$creator&cofreId=$chestId"
         }
     }
     data object EditMemory : Screen("memory/{memoryId}/edit") {
@@ -523,7 +527,12 @@ fun NonnaNavHost(
                 },
                 onMemoryClick = { memoryId, cofreName, cofreCreator ->
                     navController.navigate(
-                        Screen.MemoryDetail.createRoute(memoryId, cofreName, cofreCreator)
+                        Screen.MemoryDetail.createRoute(
+                            memoryId = memoryId,
+                            cofreContext = cofreName,
+                            cofreCreator = cofreCreator,
+                            cofreId = cofreId
+                        )
                     )
                 },
                 onEditCofre = { id ->
@@ -622,6 +631,10 @@ fun NonnaNavHost(
                 navArgument("cofreCreator") {
                     type = NavType.StringType
                     defaultValue = ""
+                },
+                navArgument("cofreId") {
+                    type = NavType.StringType
+                    defaultValue = ""
                 }
             )
         ) { backStackEntry ->
@@ -630,12 +643,27 @@ fun NonnaNavHost(
                 ?.takeIf { it.isNotBlank() }
             val cofreCreator = backStackEntry.arguments?.getString("cofreCreator")
                 ?.takeIf { it.isNotBlank() }
+            val memoryCofreId = backStackEntry.arguments?.getString("cofreId")
+                ?.takeIf { it.isNotBlank() }
+            val parentCofreEntry = remember(navController, memoryCofreId) {
+                memoryCofreId?.let { id ->
+                    runCatching {
+                        navController.getBackStackEntry(Screen.CofreDetail.createRoute(id))
+                    }.getOrNull()
+                }
+            }
+            val cofreDetailViewModel: CofreDetailViewModel? = parentCofreEntry?.let {
+                hiltViewModel(it)
+            }
             MemoryDetailScreen(
                 memoryId = memoryId,
                 cofreContextName = cofreContext,
                 cofreCreatorDisplayName = cofreCreator,
                 onBack = { navController.popBackStack() },
-                onDelete = { navController.popBackStack() },
+                onDelete = {
+                    cofreDetailViewModel?.load(forceRefresh = true, showLoading = false)
+                    navController.popBackStack()
+                },
                 onEdit = { id -> navController.navigate(Screen.EditMemory.createRoute(id)) }
             )
         }

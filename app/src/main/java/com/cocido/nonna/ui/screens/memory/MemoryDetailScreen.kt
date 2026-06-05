@@ -136,9 +136,18 @@ fun MemoryDetailScreen(
 ) {
     val memory by viewModel.memory.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isDeleting by viewModel.isDeleting.collectAsStateWithLifecycle()
     RefreshOnResume { viewModel.refreshOnResume() }
 
     when {
+        isDeleting -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.CircularProgressIndicator()
+            }
+        }
         isLoading && memory == null -> {
             Box(
                 modifier = Modifier.fillMaxSize(),

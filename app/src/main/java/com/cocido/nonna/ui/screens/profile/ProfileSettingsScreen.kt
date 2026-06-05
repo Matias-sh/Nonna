@@ -2,7 +2,9 @@ package com.cocido.nonna.ui.screens.profile
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -83,7 +85,7 @@ fun ProfileSettingsScreen(
     }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
             cropLauncher.launch(
@@ -157,7 +159,11 @@ fun ProfileSettingsScreen(
                         .size(80.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { imagePickerLauncher.launch("image/*") },
+                        .clickable {
+                            imagePickerLauncher.launch(
+                                PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+                            )
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     val model: Any? = avatarUri ?: currentAvatarUrl
@@ -265,7 +271,7 @@ fun ProfileSettingsScreen(
             NonnaButton(
                 text = stringResource(R.string.common_cancel),
                 onClick = onBack,
-                style = NonnaButtonStyle.Secondary,
+                style = NonnaButtonStyle.Outline,
                 modifier = Modifier.fillMaxWidth()
             )
         }

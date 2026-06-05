@@ -19,7 +19,7 @@ import androidx.compose.ui.res.stringResource
 import com.cocido.nonna.R
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 private val ISO_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
@@ -39,8 +39,8 @@ fun NonnaDatePickerField(
     var showDatePicker by remember { mutableStateOf(false) }
     val initialDateMillis = remember(value) { parseDateToUtcMillis(value) }
     val todayUtcMillis = remember {
-        LocalDate.now()
-            .atStartOfDay(ZoneId.systemDefault())
+        LocalDate.now(ZoneOffset.UTC)
+            .atStartOfDay(ZoneOffset.UTC)
             .toInstant()
             .toEpochMilli()
     }
@@ -98,13 +98,13 @@ private fun parseDateToUtcMillis(value: String): Long? {
         .getOrNull()
         ?: return null
     return parsedDate
-        .atStartOfDay(ZoneId.systemDefault())
+        .atStartOfDay(ZoneOffset.UTC)
         .toInstant()
         .toEpochMilli()
 }
 
 private fun formatUtcMillisToIsoDate(utcMillis: Long): String {
-    val localDate = Instant.ofEpochMilli(utcMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+    val localDate = Instant.ofEpochMilli(utcMillis).atZone(ZoneOffset.UTC).toLocalDate()
     return ISO_DATE_FORMATTER.format(localDate)
 }
 

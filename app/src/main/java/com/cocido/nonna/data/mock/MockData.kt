@@ -278,6 +278,31 @@ val relationDisplayToApi: Map<String, String> = mapOf(
 
 private val allowedApiRelations: Set<String> = relationDisplayToApi.values.toSet()
 
+/**
+ * Convierte el parentesco guardado (código API o etiqueta) al estado del formulario de edición.
+ * @return par (opción predefinida seleccionada, texto personalizado)
+ */
+fun resolveRelationForEditForm(relation: String): Pair<String?, String> {
+    val trimmed = relation.trim()
+    if (trimmed.isBlank()) return null to ""
+
+    val predefined = relationOptionsByCategory.values.flatten().toSet()
+    if (trimmed in predefined) return trimmed to ""
+
+    relationDisplayToApi[trimmed]?.let { return trimmed to "" }
+
+    val apiToDisplay = relationDisplayToApi.entries.associate { (display, api) ->
+        api.uppercase() to display
+    }
+    apiToDisplay[trimmed.uppercase()]?.let { return it to "" }
+
+    relationDisplayToApi.entries.firstOrNull { (display, api) ->
+        trimmed.equals(display, ignoreCase = true) || trimmed.equals(api, ignoreCase = true)
+    }?.let { (display, _) -> return display to "" }
+
+    return null to trimmed
+}
+
 fun relationToApi(display: String): String {
     val normalized = display.trim()
     relationDisplayToApi[normalized]?.let { return it }

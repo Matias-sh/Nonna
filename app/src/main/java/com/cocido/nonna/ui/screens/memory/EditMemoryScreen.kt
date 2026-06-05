@@ -104,7 +104,7 @@ fun EditMemoryScreen(
     var attemptedSave by remember { mutableStateOf(false) }
     val maxArchivosPlan by viewModel.maxArchivosPorRecuerdo.collectAsState()
     val maxGalleryExtra = remember(maxArchivosPlan) {
-        (maxArchivosPlan - 1).coerceIn(0, 2)
+        (maxArchivosPlan - 1).coerceAtLeast(0)
     }
     var extraGalleryUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var newCoverUri by remember { mutableStateOf<Uri?>(null) }
@@ -112,7 +112,7 @@ fun EditMemoryScreen(
     var markClearGalleryExtras by remember { mutableStateOf(false) }
 
     val galleryPickerLauncher = rememberLauncherForActivityResult(
-        contract = PickMultipleVisualMedia(maxGalleryExtra.coerceIn(1, 2))
+        contract = PickMultipleVisualMedia(maxOf(maxGalleryExtra, 1))
     ) { uris ->
         if (maxGalleryExtra > 0 && uris.isNotEmpty()) {
             extraGalleryUris = (extraGalleryUris + uris)
@@ -150,7 +150,20 @@ fun EditMemoryScreen(
         replacementUri = result
         replacementDisplayName = result?.let { resolveDisplayName(context, it) }
     }
-    val filePickerLauncher = rememberLauncherForActivityResult(
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = PickVisualMedia()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        cropLauncher.launch(
+            NonnaCropRequest(
+                sourceUri = uri,
+                aspectRatio = 4f / 5f,
+                title = context.getString(R.string.memory_edit_new_image_title),
+                lockAspectRatio = false
+            )
+        )
+    }
+    val genericFilePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         val current = memory ?: return@rememberLauncherForActivityResult
@@ -288,12 +301,13 @@ fun EditMemoryScreen(
                 NonnaButton(
                     text = stringResource(R.string.common_upload_file),
                     onClick = {
-                        val mime = when (currentMemory.type) {
-                            MemoryType.Photo -> "image/*"
-                            MemoryType.Audio -> "audio/*"
-                            MemoryType.Text -> "text/*"
+                        when (currentMemory.type) {
+                            MemoryType.Photo -> imagePickerLauncher.launch(
+                                PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+                            )
+                            MemoryType.Audio -> genericFilePickerLauncher.launch("audio/*")
+                            MemoryType.Text -> genericFilePickerLauncher.launch("text/*")
                         }
-                        filePickerLauncher.launch(mime)
                     },
                     style = if (replacementUri != null) NonnaButtonStyle.Primary else NonnaButtonStyle.Outline
                 )
@@ -309,15 +323,13 @@ fun EditMemoryScreen(
                 if (currentMemory.type == MemoryType.Photo && maxGalleryExtra > 0) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = stringResource(R.string.memory_carousel_optional_title),
+                        text = if (maxGalleryExtra <= 2) {
+                            stringResource(R.string.memory_gallery_extra_up_to_two)
+                        } else {
+                            stringResource(R.string.memory_gallery_extra_plan_limit, maxGalleryExtra)
+                        },
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(R.string.memory_carousel_optional_subtitle, maxGalleryExtra),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     FlowRow(

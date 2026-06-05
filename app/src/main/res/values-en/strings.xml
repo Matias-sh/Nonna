@@ -378,7 +378,8 @@
     <string name="memory_photo_page_counter">%1$d of %2$d</string>
     <string name="memory_photos_title">Memory photos</string>
     <string name="memory_carousel_optional_title">More photos (carousel)</string>
-    <string name="memory_carousel_optional_subtitle">You can add up to %1$d extra photos depending on your plan (in addition to the main one). Select several at once in the gallery, or tap «Choose extra photos» again to add another.</string>
+    <string name="memory_gallery_extra_up_to_two">Up to 2 extra photos</string>
+    <string name="memory_gallery_extra_plan_limit">Up to %1$d extra photos depending on your plan</string>
     <string name="memory_carousel_pick">Choose extra photos</string>
     <string name="memory_carousel_clear">Remove extras</string>
     <string name="memory_audio_cover_optional_title">Audio cover image (optional)</string>
