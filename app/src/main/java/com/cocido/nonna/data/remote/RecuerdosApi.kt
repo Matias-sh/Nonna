@@ -35,7 +35,7 @@ interface RecuerdosApi {
         @Part("emocionId") emocionId: RequestBody? = null,
         @Part("emocionPersonalizada") emocionPersonalizada: RequestBody? = null,
         @Part portadaAudio: MultipartBody.Part? = null,
-        @Part imagenesGaleria: List<MultipartBody.Part>? = null
+        @Part imagenesGaleria: List<@JvmSuppressWildcards MultipartBody.Part>? = null
     ): Response<RecuerdoDto>
 
     @Multipart
@@ -46,7 +46,7 @@ interface RecuerdosApi {
         @Part("urlArchivo") urlArchivo: RequestBody? = null,
         @Part portadaAudio: MultipartBody.Part? = null,
         @Part("urlPortadaAudio") urlPortadaAudio: RequestBody? = null,
-        @Part imagenesGaleria: List<MultipartBody.Part>? = null,
+        @Part imagenesGaleria: List<@JvmSuppressWildcards MultipartBody.Part>? = null,
         @Part("limpiarImagenesGaleria") limpiarImagenesGaleria: RequestBody? = null,
         @Part("titulo") titulo: RequestBody? = null,
         @Part("descripcion") descripcion: RequestBody? = null,

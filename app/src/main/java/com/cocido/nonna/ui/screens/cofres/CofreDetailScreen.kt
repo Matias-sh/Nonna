@@ -220,8 +220,6 @@ fun CofreDetailScreen(
             .navigationBarsPadding()
     ) {
         PageHeader(
-            title = cofre?.name ?: "",
-            subtitle = cofre?.relation?.let { relationValueLabel(it) } ?: "",
             onBack = onBack,
             action = HeaderAction(
                 label = stringResource(R.string.common_add),

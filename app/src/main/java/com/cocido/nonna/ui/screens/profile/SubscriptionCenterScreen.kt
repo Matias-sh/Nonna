@@ -52,6 +52,7 @@ import com.cocido.nonna.ui.components.NonnaButtonSize
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.ScreenTitleSection
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.viewmodel.SubscriptionCenterViewModel
@@ -235,8 +236,6 @@ fun SubscriptionCenterScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         PageHeader(
-            title = stringResource(R.string.subscription_center_title),
-            subtitle = stringResource(R.string.subscription_center_subtitle),
             onBack = onBack
         )
         Column(
@@ -245,6 +244,10 @@ fun SubscriptionCenterScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = NonnaDimens.screenPaddingHorizontal)
         ) {
+            ScreenTitleSection(
+                title = stringResource(R.string.subscription_center_title),
+                subtitle = stringResource(R.string.subscription_center_subtitle)
+            )
             Spacer(modifier = Modifier.height(12.dp))
             if (isLoading) {
                 Row(

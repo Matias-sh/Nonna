@@ -333,7 +333,16 @@
     <string name="add_memory_type_audio_desc">Su voz, una canción o historia</string>
     <string name="add_memory_type_text_desc">Una anécdota, receta o carta</string>
     <string name="memory_selected_image_cd">Imagen seleccionada</string>
-    <string name="memory_tap_image_change">Tocá la imagen para cambiarla</string>
+    <string name="memory_photos_select_hint">Seleccioná hasta %1$d fotos para este recuerdo</string>
+    <string name="memory_photos_add_slot">Agregar fotos</string>
+    <string name="memory_photos_main_badge">Principal</string>
+    <string name="memory_photos_count">%1$d de %2$d fotos</string>
+    <string name="memory_photos_drag_reorder">Mantené presionada una miniatura y arrastrala para reordenar. La primera es la principal.</string>
+    <string name="memory_photo_source_title">Agregar fotos</string>
+    <string name="memory_photo_source_gallery">Elegir de la galería</string>
+    <string name="memory_photo_source_camera">Tomar foto</string>
+    <string name="memory_photo_remove_cd">Quitar foto</string>
+    <string name="memory_tap_image_change">Tocá para agregar o cambiar fotos</string>
     <string name="memory_change_image">Cambiar imagen</string>
     <string name="memory_gallery">Galería</string>
     <string name="memory_upload_photo">Subir foto</string>
@@ -390,6 +399,7 @@
     <string name="memory_no_emotion">Sin emoción</string>
     <string name="memory_not_found">Recuerdo no encontrado</string>
     <string name="memory_detail_title">Recuerdo</string>
+    <string name="memory_edit_forbidden">Solo podés editar los recuerdos que vos creaste.</string>
     <string name="memory_more_options_cd">Más opciones</string>
     <string name="common_edit">Editar</string>
     <string name="memory_audio_fallback_subtitle">Recuerdo de audio</string>
@@ -405,6 +415,9 @@
     <string name="memory_audio_cover_optional_title">Portada del audio (opcional)</string>
     <string name="memory_audio_cover_section_subtitle">Se muestra en el reproductor y en la tarjeta del recuerdo. Si no elegís una, se usa la vista por defecto.</string>
     <string name="memory_audio_cover_crop_title">Recortar portada</string>
+    <string name="memory_photo_crop_title">Recortar foto del recuerdo</string>
+    <string name="photo_crop_action">Recortar</string>
+    <string name="photo_prepare_error">No se pudo preparar la imagen. Probá con otra foto.</string>
     <string name="memory_audio_cover_pick">Elegir imagen de portada</string>
     <string name="memory_audio_cover_clear">Quitar portada</string>
     <string name="memory_audio_cover_cd">Portada del recuerdo de audio</string>

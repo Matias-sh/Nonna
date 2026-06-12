@@ -40,6 +40,7 @@ import com.cocido.nonna.ui.components.CofreCard
 import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.components.EmptyStateWithButton
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.ScreenTitleSection
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 
@@ -62,41 +63,45 @@ fun SelectCofreScreen(
             .navigationBarsPadding()
     ) {
         PageHeader(
-            title = stringResource(R.string.select_chest_title),
-            subtitle = stringResource(R.string.select_chest_subtitle),
             onBack = onBack
         )
-        
-        if (isLoading && cofres.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(NonnaDimens.screenPaddingHorizontal),
-                contentAlignment = Alignment.Center
-            ) {
-                androidx.compose.material3.CircularProgressIndicator()
-            }
-        } else if (cofres.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(NonnaDimens.screenPaddingHorizontal),
-                contentAlignment = Alignment.Center
-            ) {
-                EmptyStateWithButton(
-                    icon = Icons.Outlined.Favorite,
-                    title = stringResource(R.string.select_chest_empty_title),
-                    description = stringResource(R.string.select_chest_empty_description),
-                    buttonText = stringResource(R.string.select_chest_empty_button),
-                    onButtonClick = onCreateCofre
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(NonnaDimens.screenPaddingHorizontal),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = NonnaDimens.screenPaddingHorizontal)
+        ) {
+            ScreenTitleSection(
+                title = stringResource(R.string.select_chest_title),
+                subtitle = stringResource(R.string.select_chest_subtitle)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (isLoading && cofres.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator()
+                }
+            } else if (cofres.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    EmptyStateWithButton(
+                        icon = Icons.Outlined.Favorite,
+                        title = stringResource(R.string.select_chest_empty_title),
+                        description = stringResource(R.string.select_chest_empty_description),
+                        buttonText = stringResource(R.string.select_chest_empty_button),
+                        onButtonClick = onCreateCofre
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                 items(cofres) { cofre ->
                     CofreCard(
                         cofre = cofre,
@@ -184,6 +189,7 @@ fun SelectCofreScreen(
                     
                     Spacer(modifier = Modifier.height(32.dp))
                 }
+            }
             }
         }
     }

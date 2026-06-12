@@ -4,13 +4,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
+import com.cocido.nonna.data.repository.AuthRepository
 import com.cocido.nonna.data.repository.DataRefreshCoordinator
 import com.cocido.nonna.data.repository.EmocionesRepository
 import com.cocido.nonna.data.repository.RecuerdosRepository
 import com.cocido.nonna.data.repository.SuscripcionRepository
+import com.cocido.nonna.data.remote.dto.UserDto
 import com.cocido.nonna.ui.components.EmotionalTag
 import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.ui.components.MemoryUiModel
+import com.cocido.nonna.ui.permissions.canModifyMemory
+import com.cocido.nonna.util.EmotionPayloadResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +29,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EditMemoryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
+    private val authRepository: AuthRepository,
     private val recuerdosRepository: RecuerdosRepository,
     private val emocionesRepository: EmocionesRepository,
     private val suscripcionRepository: SuscripcionRepository,
@@ -53,6 +58,11 @@ class EditMemoryViewModel @Inject constructor(
     private val _maxArchivosPorRecuerdo = MutableStateFlow(3)
     val maxArchivosPorRecuerdo: StateFlow<Int> = _maxArchivosPorRecuerdo.asStateFlow()
 
+    private val _currentUser = MutableStateFlow<UserDto?>(null)
+
+    private val _editForbidden = MutableStateFlow(false)
+    val editForbidden: StateFlow<Boolean> = _editForbidden.asStateFlow()
+
     init {
         loadEmotions()
         loadSubscriptionLimits()
@@ -62,8 +72,17 @@ class EditMemoryViewModel @Inject constructor(
     fun load() {
         viewModelScope.launch {
             _isLoading.value = true
+            val currentUser = when (val me = authRepository.getMe()) {
+                is ApiResult.Success -> me.data
+                else -> null
+            }
+            _currentUser.value = currentUser
             when (val result = recuerdosRepository.getRecuerdo(memoryId)) {
-                is ApiResult.Success -> _memory.value = result.data
+                is ApiResult.Success -> {
+                    _memory.value = result.data
+                    val allowed = canModifyMemory(result.data, currentUser)
+                    _editForbidden.value = !allowed
+                }
                 is ApiResult.Error -> _errorMessage.emit(result.message)
                 else -> Unit
             }
@@ -81,26 +100,30 @@ class EditMemoryViewModel @Inject constructor(
         newPortadaAudio: java.io.File? = null,
         urlPortadaAudio: String? = null,
         galleryImages: List<java.io.File>? = null,
-        limpiarImagenesGaleria: Boolean = false
+        limpiarImagenesGaleria: Boolean = false,
+        keepExistingMainUrl: Boolean = true
     ) {
         viewModelScope.launch {
-            _isSaving.value = true
-            val customEmotionClean = customEmotion?.trim().takeUnless { it.isNullOrBlank() }
-            val emotionId = if (customEmotionClean == null) {
-                emotionalTag?.let { tag ->
-                    _emotionIdByName.value[normalizeKey(tag.label)]
-                }
-            } else {
-                null
-            }
-            val emotionCustomFallback = if (customEmotionClean == null && emotionId == null) {
-                emotionalTag?.label
-            } else {
-                null
-            }
             val current = _memory.value
+            if (current == null || !canModifyMemory(current, _currentUser.value)) {
+                _editForbidden.value = true
+                return@launch
+            }
+            _isSaving.value = true
+            val (emotionId, emocionPersonalizada) = EmotionPayloadResolver.buildPayload(
+                emotionalTag = emotionalTag,
+                customEmotion = customEmotion,
+                emotionIdByName = _emotionIdByName.value
+            )
+            val mediaUpdateRequested = replacementFile != null ||
+                !galleryImages.isNullOrEmpty() ||
+                limpiarImagenesGaleria ||
+                newPortadaAudio != null ||
+                urlPortadaAudio != null
             val urlArchivo = if (
+                mediaUpdateRequested &&
                 replacementFile == null &&
+                keepExistingMainUrl &&
                 current != null &&
                 current.type != MemoryType.Text &&
                 !current.mainMediaUrl.isNullOrBlank()
@@ -117,7 +140,7 @@ class EditMemoryViewModel @Inject constructor(
                     descripcion = description?.trim().takeUnless { it.isNullOrBlank() },
                     fecha = date?.trim().takeUnless { it.isNullOrBlank() },
                     emocionId = emotionId,
-                    emocionPersonalizada = customEmotionClean ?: emotionCustomFallback,
+                    emocionPersonalizada = emocionPersonalizada,
                     file = replacementFile,
                     urlArchivo = urlArchivo,
                     portadaAudio = newPortadaAudio,
@@ -156,23 +179,21 @@ class EditMemoryViewModel @Inject constructor(
         viewModelScope.launch {
             emocionesRepository.search().collect { result ->
                 if (result is ApiResult.Success) {
-                    _emotionIdByName.value = result.data
-                        .mapNotNull { emotion ->
+                    val map = result.data
+                        .flatMap { emotion ->
                             val id = emotion.idValue().trim()
                             val name = emotion.displayName().trim()
-                            if (id.isBlank() || name.isBlank()) null else normalizeKey(name) to id
+                            if (id.isBlank() || name.isBlank()) {
+                                emptyList()
+                            } else {
+                                listOf(EmotionPayloadResolver.normalizeKey(name) to id)
+                            }
                         }
                         .toMap()
+                    _emotionIdByName.value = map
                 }
             }
         }
-    }
-
-    private fun normalizeKey(value: String): String {
-        return java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
-            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
-            .lowercase()
-            .trim()
     }
 }
 

@@ -100,7 +100,11 @@ data class MemoryUiModel(
     /** Portada opcional para recuerdos de audio. */
     val audioCoverUrl: String? = null,
     /** URL del archivo principal (PATCH multipart `urlArchivo` si no se reemplaza el archivo). */
-    val mainMediaUrl: String? = null
+    val mainMediaUrl: String? = null,
+    /** Usuario que agregó el recuerdo (desde API `usuario`). */
+    val addedByDisplayName: String? = null,
+    val addedByUserId: String? = null,
+    val addedByEmail: String? = null
 )
 
 enum class MemoryCardViewMode {

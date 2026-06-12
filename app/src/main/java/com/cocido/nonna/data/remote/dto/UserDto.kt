@@ -9,6 +9,7 @@ data class UserDto(
     @SerializedName("email") val email: String = "",
     @SerializedName("nombreUsuario") val nombreUsuario: String? = null,
     @SerializedName("nombre") val nombre: String? = null,
+    @SerializedName("apellido") val apellido: String? = null,
     @SerializedName("name") val name: String? = null,
     @SerializedName("persona") val persona: PersonaDto? = null,
     @SerializedName("avatarUrl") val avatarUrl: String? = null,
@@ -34,9 +35,17 @@ data class UserDto(
         get() = idRaw.primitiveIdString()
 
     /** Nombre completo (persona nombre+apellido) o nombre de usuario o email. */
-    fun displayName(): String =
+    fun displayName(): String {
         listOfNotNull(persona?.nombre, persona?.apellido).joinToString(" ").trim()
-            .ifEmpty { nombreUsuario ?: nombre ?: name ?: email.substringBefore("@") }
+            .takeIf { it.isNotBlank() }
+            ?.let { return it }
+        listOfNotNull(nombre, apellido).joinToString(" ").trim()
+            .takeIf { it.isNotBlank() }
+            ?.let { return it }
+        return nombreUsuario?.trim()?.takeIf { it.isNotBlank() }
+            ?: name?.trim()?.takeIf { it.isNotBlank() }
+            ?: email.substringBefore("@")
+    }
 
     /** Para mostrar en perfil/listas: nombre de usuario si existe, si no displayName. */
     fun displayNameOrUsername(): String = nombreUsuario ?: displayName()

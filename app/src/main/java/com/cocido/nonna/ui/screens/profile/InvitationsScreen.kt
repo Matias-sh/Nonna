@@ -46,6 +46,7 @@ import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.ScreenTitleSection
 import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.NonnaDimens
@@ -99,8 +100,6 @@ fun InvitationsScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
                 PageHeader(
-                    title = stringResource(R.string.invites_title),
-                    subtitle = stringResource(R.string.invites_subtitle),
                     onBack = onBack
                 )
 
@@ -109,6 +108,10 @@ fun InvitationsScreen(
                         .fillMaxSize()
                         .padding(horizontal = NonnaDimens.screenPaddingHorizontal)
                 ) {
+                    ScreenTitleSection(
+                        title = stringResource(R.string.invites_title),
+                        subtitle = stringResource(R.string.invites_subtitle)
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                     FilterChipsRow(
                         chips = tabs,

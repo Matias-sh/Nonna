@@ -31,7 +31,7 @@ class AuthRepository @Inject constructor(
     private val meRequestMutex = Mutex()
     private var cachedMeUser: UserDto? = null
     private var cachedMeAtMs: Long = 0L
-    private val meCacheTtlMs: Long = 5_000L
+    private val meCacheTtlMs: Long = 60_000L
 
     val token: Flow<String?> = tokenManager.token
     val refreshToken: Flow<String?> = tokenManager.refreshToken

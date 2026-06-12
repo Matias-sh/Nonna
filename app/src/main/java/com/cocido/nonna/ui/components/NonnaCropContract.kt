@@ -16,7 +16,17 @@ data class NonnaCropRequest(
     val aspectRatio: Float,
     val title: String,
     val lockAspectRatio: Boolean = true
-)
+) {
+    companion object {
+        /** Recorte libre: el usuario define alto y ancho arrastrando las esquinas. */
+        fun freeForm(sourceUri: Uri, title: String) = NonnaCropRequest(
+            sourceUri = sourceUri,
+            aspectRatio = 1f,
+            title = title,
+            lockAspectRatio = false
+        )
+    }
+}
 
 class NonnaCropContract : ActivityResultContract<NonnaCropRequest, Uri?>() {
     private val delegate = CropImageContract()
@@ -31,12 +41,16 @@ class NonnaCropContract : ActivityResultContract<NonnaCropRequest, Uri?>() {
                 aspectRatioY = ratioY
             }
             outputCompressFormat = android.graphics.Bitmap.CompressFormat.JPEG
-            outputCompressQuality = 92
+            outputCompressQuality = 100
             allowRotation = true
-            allowFlipping = false
+            allowFlipping = !input.lockAspectRatio
             autoZoomEnabled = true
             multiTouchEnabled = true
+            centerMoveEnabled = true
             showCropOverlay = true
+            if (!input.lockAspectRatio) {
+                cropShape = CropImageView.CropShape.RECTANGLE
+            }
             showProgressBar = true
             guidelines = CropImageView.Guidelines.ON
             showCropLabel = true

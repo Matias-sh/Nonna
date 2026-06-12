@@ -51,7 +51,8 @@ data class RecuerdoDto(
     )
     val archivosDetalle: List<RecuerdoArchivoDetalleItemDto>? = null,
     @SerializedName(value = "urlsCarruselImagenes", alternate = ["urls_carrusel_imagenes", "carruselImagenes"])
-    val urlsCarruselImagenes: List<String>? = null
+    val urlsCarruselImagenes: List<String>? = null,
+    @SerializedName("usuario") val usuario: UsuarioDto? = null
 ) {
     /** id como string (backend puede devolver número). */
     fun idValue(): String = idRaw.primitiveIdString()

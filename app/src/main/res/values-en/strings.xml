@@ -321,7 +321,16 @@
     <string name="add_memory_type_audio_desc">Their voice, a song, or story</string>
     <string name="add_memory_type_text_desc">An anecdote, recipe, or letter</string>
     <string name="memory_selected_image_cd">Selected image</string>
-    <string name="memory_tap_image_change">Tap the image to change it</string>
+    <string name="memory_photos_select_hint">Select up to %1$d photos for this memory</string>
+    <string name="memory_photos_add_slot">Add photos</string>
+    <string name="memory_photos_main_badge">Main</string>
+    <string name="memory_photos_count">%1$d of %2$d photos</string>
+    <string name="memory_photos_drag_reorder">Press and hold a thumbnail, then drag to reorder. The first one is the main photo.</string>
+    <string name="memory_photo_source_title">Add photos</string>
+    <string name="memory_photo_source_gallery">Choose from gallery</string>
+    <string name="memory_photo_source_camera">Take photo</string>
+    <string name="memory_photo_remove_cd">Remove photo</string>
+    <string name="memory_tap_image_change">Tap to add or change photos</string>
     <string name="memory_upload_photo">Upload photo</string>
     <string name="memory_tap_choose_gallery">Tap here to choose from gallery</string>
     <string name="common_camera">Camera</string>
@@ -370,6 +379,7 @@
     <string name="memory_no_emotion">No emotion</string>
     <string name="memory_not_found">Memory not found</string>
     <string name="memory_detail_title">Memory</string>
+    <string name="memory_edit_forbidden">You can only edit memories you created.</string>
     <string name="memory_more_options_cd">More options</string>
     <string name="common_edit">Edit</string>
     <string name="memory_audio_fallback_subtitle">Audio memory</string>
@@ -385,6 +395,9 @@
     <string name="memory_audio_cover_optional_title">Audio cover image (optional)</string>
     <string name="memory_audio_cover_section_subtitle">Shown on the player and on the memory card. If you skip it, the default artwork is used.</string>
     <string name="memory_audio_cover_crop_title">Crop cover</string>
+    <string name="memory_photo_crop_title">Crop memory photo</string>
+    <string name="photo_crop_action">Crop</string>
+    <string name="photo_prepare_error">Could not prepare the image. Try another photo.</string>
     <string name="memory_audio_cover_pick">Choose cover image</string>
     <string name="memory_audio_cover_clear">Remove cover</string>
     <string name="memory_audio_cover_cd">Cover for this audio memory</string>

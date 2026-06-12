@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Crop
 import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,14 +51,14 @@ import com.cocido.nonna.data.mock.resolveRelationForEditForm
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
-import com.cocido.nonna.ui.components.NonnaCropContract
-import com.cocido.nonna.ui.components.NonnaCropRequest
+import com.cocido.nonna.ui.components.rememberPhotoCropFlow
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
 import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTextArea
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.ScreenTitleSection
 import com.cocido.nonna.ui.components.relationCategoryLabel
 import com.cocido.nonna.ui.components.relationOptionLabel
 import com.cocido.nonna.R
@@ -108,23 +109,17 @@ fun EditCofreScreen(
     val nameError = attemptedSubmit && !FormValidators.hasMinLength(normalizedName, 2)
     val relationError = attemptedSubmit && !FormValidators.hasMinLength(finalRelation, 2)
 
-    val cropLauncher = rememberLauncherForActivityResult(
-        contract = NonnaCropContract()
+    val coverCropTitle = stringResource(R.string.chest_cover_edit_title)
+    val coverCropFlow = rememberPhotoCropFlow(
+        title = coverCropTitle,
+        uploadProfile = com.cocido.nonna.util.PhotoUploadPreparer.Profile.Cover
     ) { result ->
-        result?.let { coverImageUri = it }
+        coverImageUri = result
     }
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = PickVisualMedia()
     ) { uri: Uri? ->
-        if (uri != null) {
-            cropLauncher.launch(
-                NonnaCropRequest(
-                    sourceUri = uri,
-                    aspectRatio = 16f / 9f,
-                    title = context.getString(R.string.chest_cover_edit_title)
-                )
-            )
-        }
+        uri?.let { coverCropFlow.cropSingle(it) }
     }
 
     RefreshOnResume { viewModel.load() }
@@ -156,8 +151,6 @@ fun EditCofreScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
                 PageHeader(
-                    title = stringResource(R.string.edit_chest_title),
-                    subtitle = stringResource(R.string.edit_chest_subtitle),
                     onBack = onBack
                 )
 
@@ -168,6 +161,10 @@ fun EditCofreScreen(
                         .imePadding()
                         .padding(NonnaDimens.screenPaddingHorizontal)
                 ) {
+                    ScreenTitleSection(
+                        title = stringResource(R.string.edit_chest_title),
+                        subtitle = stringResource(R.string.edit_chest_subtitle)
+                    )
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
@@ -191,6 +188,23 @@ fun EditCofreScreen(
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
+                            IconButton(
+                                onClick = { coverImageUri?.let { coverCropFlow.cropSingle(it) } },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(end = 52.dp, top = 12.dp)
+                                    .size(32.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                        shape = NonnaCorners.Full
+                                    )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Crop,
+                                    contentDescription = stringResource(R.string.photo_crop_action),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                             IconButton(
                                 onClick = { coverImageUri = null },
                                 modifier = Modifier

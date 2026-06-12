@@ -64,7 +64,7 @@ class CofreRepository @Inject constructor(
             val response = api.getById(id)
             if (response.isSuccessful) {
                 response.body()?.let {
-                    ApiResult.Success(enrichInviteesAvatar(it.toUiModel()))
+                    ApiResult.Success(it.toUiModel())
                 }
                     ?: ApiResult.Error("Cofre no encontrado")
             } else {
@@ -80,6 +80,8 @@ class CofreRepository @Inject constructor(
             ApiResult.Error(NetworkFailureMessageResolver.fromIOException(e))
         }
     }
+
+    suspend fun enrichInviteeAvatars(cofre: CofreUiModel): CofreUiModel = enrichInviteesAvatar(cofre)
 
     private suspend fun enrichInviteesAvatar(cofre: CofreUiModel): CofreUiModel {
         val unresolvedEmails = cofre.invited
@@ -474,7 +476,7 @@ private fun CofreDto.toUiModel(forceNotOwner: Boolean = false): CofreUiModel = C
     updatedAtIso = updatedAt ?: updated_at,
     coverImageUrl = coverUrl(),
     isOwner = if (forceNotOwner) false else isOwnerValue(),
-    ownerName = usuario?.displayNameValue(),
+    ownerName = usuario?.fullDisplayName(),
     ownerUsername = usuario?.nombreUsuario,
     ownerEmail = usuario?.email,
     ownerAvatarUrl = usuario?.profileImageUrlValue(),
@@ -491,13 +493,6 @@ private fun CofreDto.toUiModel(forceNotOwner: Boolean = false): CofreUiModel = C
         )
     }
 )
-
-private fun com.cocido.nonna.data.remote.dto.UsuarioDto.displayNameValue(): String {
-    return listOfNotNull(persona?.nombre, persona?.apellido)
-        .joinToString(" ")
-        .trim()
-        .ifBlank { nombreUsuario ?: email ?: "" }
-}
 
 private fun com.cocido.nonna.data.remote.dto.UsuarioDto.profileImageUrlValue(): String? {
     val raw = fotoPerfil?.takeIf { it.isNotBlank() && it != "string" } ?: return null

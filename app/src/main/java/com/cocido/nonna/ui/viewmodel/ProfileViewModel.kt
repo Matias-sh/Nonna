@@ -15,7 +15,7 @@ import com.cocido.nonna.data.repository.SuscripcionRepository
 import android.os.SystemClock
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import com.cocido.nonna.util.ImageCompressor
+import com.cocido.nonna.util.PhotoUploadPreparer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +24,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -152,11 +154,13 @@ class ProfileViewModel @Inject constructor(
 
                 val fotoPart: MultipartBody.Part? = avatarUri?.let { uri ->
                     try {
-                        val file = ImageCompressor.compressForUpload(
-                            context = context,
-                            uri = uri,
-                            maxBytes = 1024 * 1024
-                        ) ?: run {
+                        val file = withContext(Dispatchers.IO) {
+                            PhotoUploadPreparer.resolveFile(
+                                context = context,
+                                uri = uri,
+                                profile = PhotoUploadPreparer.Profile.Avatar
+                            )
+                        } ?: run {
                             val input = context.contentResolver.openInputStream(uri) ?: return@let null
                             val ext = "jpg"
                             val fallbackFile = File.createTempFile("avatar", ".$ext", context.cacheDir)
@@ -185,8 +189,12 @@ class ProfileViewModel @Inject constructor(
                 )
                 if (response.isSuccessful) {
                     authRepository.invalidateMeCache()
-                    _user.value = response.body()
+                    val refreshedUser = runCatching {
+                        usuarioApi.getById(current.id).body()
+                    }.getOrNull()
+                    _user.value = refreshedUser ?: response.body()
                     refreshCoordinator.invalidateProfile()
+                    refreshCoordinator.invalidateCofresList()
                     _updateSuccess.emit(Unit)
                 } else {
                     _errorMessage.value = NetworkErrorParser.parseOrGeneric(

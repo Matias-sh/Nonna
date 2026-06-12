@@ -138,6 +138,8 @@ dependencies {
     implementation(libs.compose.navigation)
     implementation(libs.compose.hilt.navigation)
     implementation(libs.coil.compose)
+    implementation("sh.calvin.reorderable:reorderable:3.1.0")
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("com.vanniktech:android-image-cropper:4.6.0")
     implementation("androidx.compose.ui:ui-text-google-fonts")
     debugImplementation(libs.compose.ui.tooling)

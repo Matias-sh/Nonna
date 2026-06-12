@@ -9,7 +9,7 @@ import com.cocido.nonna.data.repository.CofreRepository
 import com.cocido.nonna.data.repository.DataRefreshCoordinator
 import com.cocido.nonna.data.repository.SuscripcionRepository
 import com.cocido.nonna.ui.components.CofreUiModel
-import com.cocido.nonna.util.ImageCompressor
+import com.cocido.nonna.util.PhotoUploadPreparer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +40,12 @@ class CreateCofreViewModel @Inject constructor(
 
     private val _created = MutableSharedFlow<CofreUiModel>()
     val created: SharedFlow<CofreUiModel> = _created.asSharedFlow()
+
+    init {
+        viewModelScope.launch {
+            suscripcionRepository.getMiSuscripcion()
+        }
+    }
 
     fun create(
         name: String,
@@ -96,18 +102,18 @@ class CreateCofreViewModel @Inject constructor(
         }
     }
 
-    private suspend fun uriToTempFile(uri: Uri): File = withContext(Dispatchers.IO) {
-        ImageCompressor.compressForUpload(
+    private suspend fun uriToTempFile(uri: Uri): File? = withContext(Dispatchers.IO) {
+        PhotoUploadPreparer.resolveFile(
             context = context,
             uri = uri,
-            maxBytes = 1024 * 1024
+            profile = PhotoUploadPreparer.Profile.Cover
         ) ?: run {
             val ext = context.contentResolver.getType(uri)?.substringAfter("/") ?: "jpg"
             val file = File.createTempFile("cofre_cover", ".$ext", context.cacheDir)
             context.contentResolver.openInputStream(uri)?.use { input ->
                 file.outputStream().use { output -> input.copyTo(output) }
             }
-            file
+            file.takeIf { it.length() > 0L }
         }
     }
 }

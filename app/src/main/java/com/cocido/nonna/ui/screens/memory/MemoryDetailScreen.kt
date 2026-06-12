@@ -32,6 +32,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.material.icons.Icons
@@ -100,7 +103,10 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cocido.nonna.ui.components.CustomEmotionBadge
+import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.NonnaHeaderIconButton
 import com.cocido.nonna.ui.components.RefreshOnResume
+import com.cocido.nonna.ui.components.ScreenTitleSection
 import com.cocido.nonna.ui.components.EmotionalTagBadge
 import com.cocido.nonna.ui.components.MemoryType
 import com.cocido.nonna.ui.components.PlaceholderCover
@@ -137,6 +143,7 @@ fun MemoryDetailScreen(
     val memory by viewModel.memory.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isDeleting by viewModel.isDeleting.collectAsStateWithLifecycle()
+    val canModify by viewModel.canModify.collectAsStateWithLifecycle()
     RefreshOnResume { viewModel.refreshOnResume() }
 
     when {
@@ -174,6 +181,7 @@ fun MemoryDetailScreen(
                 memory = currentMemory,
                 cofreContextName = cofreContextName,
                 cofreCreatorDisplayName = cofreCreatorDisplayName,
+                canModify = canModify,
                 onBack = onBack,
                 onEdit = { onEdit(currentMemory.id) },
                 onDelete = {
@@ -189,10 +197,13 @@ private fun MemoryDetailContent(
     memory: com.cocido.nonna.ui.components.MemoryUiModel,
     cofreContextName: String?,
     cofreCreatorDisplayName: String?,
+    canModify: Boolean,
     onBack: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val addedByDisplayName = memory.addedByDisplayName?.trim()?.takeIf { it.isNotBlank() }
+        ?: cofreCreatorDisplayName?.trim()?.takeIf { it.isNotBlank() }
     val context = LocalContext.current
     val locale = remember { Locale.getDefault() }
     val displayDate = remember(memory.date, locale) {
@@ -245,42 +256,106 @@ private fun MemoryDetailContent(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = NonnaDimens.screenPaddingHorizontal, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.common_back),
-                    tint = MaterialTheme.colorScheme.onBackground
+        PageHeader(
+            onBack = onBack,
+            useSurface = false,
+            trailingIcons = {
+                NonnaHeaderIconButton(
+                    onClick = {
+                        sharingPolaroid = true
+                        scope.launch {
+                            try {
+                                val file = try {
+                                    MemorySharePolaroidGenerator.generate(
+                                        context = context,
+                                        memory = memory,
+                                        cofreContextName = cofreContextName,
+                                        cofreCreatorDisplayName = addedByDisplayName,
+                                        locale = locale
+                                    )
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (_: Exception) {
+                                    null
+                                }
+                                if (!isActive) return@launch
+
+                                val activity = context.findActivityForShare()
+                                if (activity == null) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.memory_share_image_error),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@launch
+                                }
+
+                                if (file != null) {
+                                    val uri = FileProvider.getUriForFile(
+                                        activity,
+                                        "${activity.packageName}.fileprovider",
+                                        file
+                                    )
+                                    val builder = ShareCompat.IntentBuilder(activity)
+                                        .setType("image/jpeg")
+                                        .setStream(uri)
+                                        .setSubject(
+                                            memory.title.ifBlank { activity.getString(R.string.memory_detail_title) }
+                                        )
+                                        .setChooserTitle(activity.getString(R.string.memory_share_chooser_title))
+                                    builder.intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    builder.intent.clipData = ClipData.newUri(
+                                        activity.contentResolver,
+                                        activity.getString(R.string.memory_share_cd),
+                                        uri
+                                    )
+                                    runCatching {
+                                        builder.startChooser()
+                                    }.onFailure {
+                                        Toast.makeText(
+                                            activity,
+                                            activity.getString(R.string.memory_share_image_error),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                } else {
+                                    Toast.makeText(
+                                        activity,
+                                        activity.getString(R.string.memory_share_image_error),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            } finally {
+                                if (isActive) {
+                                    sharingPolaroid = false
+                                }
+                            }
+                        }
+                    },
+                    icon = Icons.Outlined.Share,
+                    contentDescription = stringResource(R.string.memory_share_cd),
+                    enabled = !sharingPolaroid,
+                    tint = if (sharingPolaroid) {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 4.dp, end = 8.dp)
-            ) {
-                Text(
-                    text = memory.title.ifBlank { stringResource(R.string.memory_detail_title) },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (!cofreContextName.isNullOrBlank()) {
-                    Text(
-                        text = cofreContextName.trim(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                if (canModify) {
+                    NonnaHeaderIconButton(
+                        onClick = onEdit,
+                        icon = Icons.Outlined.Edit,
+                        contentDescription = stringResource(R.string.common_edit)
+                    )
+                    NonnaHeaderIconButton(
+                        onClick = { showDeleteConfirm = true },
+                        icon = Icons.Outlined.Delete,
+                        contentDescription = stringResource(R.string.common_delete),
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
             }
-        }
+        )
 
         Column(
             modifier = Modifier
@@ -290,153 +365,40 @@ private fun MemoryDetailContent(
                 .padding(horizontal = NonnaDimens.screenPaddingHorizontal)
                 .padding(bottom = 24.dp)
         ) {
+            ScreenTitleSection(
+                title = memory.title.ifBlank { stringResource(R.string.memory_detail_title) }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = memoryTypeIcon(memory.type),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Icon(
+                    imageVector = memoryTypeIcon(memory.type),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = MemoryDetailShareFormatter.mediaKindLabel(context, memory.type),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (memory.emotionalTag != null || !memory.emotionalCustomLabel.isNullOrBlank()) {
                     Text(
-                        text = MemoryDetailShareFormatter.mediaKindLabel(context, memory.type),
+                        text = stringResource(R.string.common_separator_dot),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (memory.emotionalTag != null || !memory.emotionalCustomLabel.isNullOrBlank()) {
-                        Text(
-                            text = stringResource(R.string.common_separator_dot),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        when {
-                            memory.emotionalTag != null -> EmotionalTagBadge(tag = memory.emotionalTag)
-                            else -> CustomEmotionBadge(text = memory.emotionalCustomLabel.orEmpty())
-                        }
-                    }
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(0.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        enabled = !sharingPolaroid,
-                        onClick = {
-                            sharingPolaroid = true
-                            scope.launch {
-                                try {
-                                    val file = try {
-                                        MemorySharePolaroidGenerator.generate(
-                                            context = context,
-                                            memory = memory,
-                                            cofreContextName = cofreContextName,
-                                            cofreCreatorDisplayName = cofreCreatorDisplayName,
-                                            locale = locale
-                                        )
-                                    } catch (e: CancellationException) {
-                                        throw e
-                                    } catch (_: Exception) {
-                                        null
-                                    }
-                                    if (!isActive) return@launch
-
-                                    val activity = context.findActivityForShare()
-                                    if (activity == null) {
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.memory_share_image_error),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        return@launch
-                                    }
-
-                                    if (file != null) {
-                                        val uri = FileProvider.getUriForFile(
-                                            activity,
-                                            "${activity.packageName}.fileprovider",
-                                            file
-                                        )
-                                        val builder = ShareCompat.IntentBuilder(activity)
-                                            .setType("image/jpeg")
-                                            .setStream(uri)
-                                            .setSubject(
-                                                memory.title.ifBlank { activity.getString(R.string.memory_detail_title) }
-                                            )
-                                            .setChooserTitle(activity.getString(R.string.memory_share_chooser_title))
-                                        builder.intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                        builder.intent.clipData = ClipData.newUri(
-                                            activity.contentResolver,
-                                            activity.getString(R.string.memory_share_cd),
-                                            uri
-                                        )
-                                        runCatching {
-                                            builder.startChooser()
-                                        }.onFailure {
-                                            Toast.makeText(
-                                                activity,
-                                                activity.getString(R.string.memory_share_image_error),
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    } else {
-                                        Toast.makeText(
-                                            activity,
-                                            activity.getString(R.string.memory_share_image_error),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                } finally {
-                                    // Si la pantalla se desmontó o la corrutina se canceló, no tocar estado de Compose
-                                    // (evita crash al cerrar el chooser sin elegir app o al volver atrás durante la generación).
-                                    if (isActive) {
-                                        sharingPolaroid = false
-                                    }
-                                }
-                            }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Share,
-                            contentDescription = stringResource(R.string.memory_share_cd),
-                            tint = if (sharingPolaroid) {
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-                        )
-                    }
-                    IconButton(onClick = onEdit) {
-                        Icon(
-                            imageVector = Icons.Outlined.Edit,
-                            contentDescription = stringResource(R.string.common_edit),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    IconButton(onClick = { showDeleteConfirm = true }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = stringResource(R.string.common_delete),
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                    when {
+                        memory.emotionalTag != null -> EmotionalTagBadge(tag = memory.emotionalTag)
+                        else -> CustomEmotionBadge(text = memory.emotionalCustomLabel.orEmpty())
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = memory.title.ifBlank { stringResource(R.string.memory_detail_title) },
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -456,7 +418,7 @@ private fun MemoryDetailContent(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (!cofreCreatorDisplayName.isNullOrBlank()) {
+                if (!addedByDisplayName.isNullOrBlank()) {
                     Text(
                         text = stringResource(R.string.common_separator_dot),
                         style = MaterialTheme.typography.bodyMedium,
@@ -469,7 +431,7 @@ private fun MemoryDetailContent(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = stringResource(R.string.memory_added_by, cofreCreatorDisplayName.trim()),
+                        text = stringResource(R.string.memory_added_by, addedByDisplayName),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -668,10 +630,9 @@ private fun MemoryPhotoCarouselSection(
     LaunchedEffect(memoryId, photoUrls) {
         pagerState.scrollToPage(0)
     }
-    var showTapHint by remember { mutableStateOf(true) }
-    LaunchedEffect(pagerState.settledPage) {
-        showTapHint = true
-        delay(5000)
+    var showTapHint by remember(memoryId) { mutableStateOf(true) }
+    LaunchedEffect(memoryId) {
+        delay(3500)
         showTapHint = false
     }
     val hintText = if (photoUrls.size > 1) {
@@ -705,7 +666,11 @@ private fun MemoryPhotoCarouselSection(
                         contentScale = ContentScale.Crop
                     )
                 }
-                if (showTapHint) {
+                AnimatedVisibility(
+                    visible = showTapHint,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)

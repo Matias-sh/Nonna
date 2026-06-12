@@ -52,6 +52,13 @@ data class UsuarioDto(
     @SerializedName("fotoPerfil") val fotoPerfil: String? = null,
     @SerializedName("persona") val persona: PersonaDto? = null
 ) {
+    /** Nombre legible para atribución (recuerdos, cofres, familia). */
+    fun fullDisplayName(): String =
+        listOfNotNull(persona?.nombre, persona?.apellido)
+            .joinToString(" ")
+            .trim()
+            .ifBlank { nombreUsuario?.trim()?.takeIf { it.isNotBlank() } ?: email.orEmpty() }
+
     fun toUserDto(): UserDto = UserDto(
         idRaw = JsonPrimitive(id?.toString() ?: ""),
         email = email ?: "",

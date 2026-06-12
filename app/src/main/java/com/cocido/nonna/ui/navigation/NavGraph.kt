@@ -613,7 +613,6 @@ fun NonnaNavHost(
                 cofreId = cofreId,
                 onBack = { navController.popBackStack() },
                 onSave = {
-                    cofreDetailViewModel?.load(forceRefresh = true, showLoading = false)
                     navController.popBackStack()
                 }
             )

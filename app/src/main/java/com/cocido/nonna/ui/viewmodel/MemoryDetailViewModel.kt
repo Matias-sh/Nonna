@@ -5,9 +5,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocido.nonna.data.repository.ApiResult
+import com.cocido.nonna.data.repository.AuthRepository
 import com.cocido.nonna.data.repository.DataRefreshCoordinator
 import com.cocido.nonna.data.repository.RecuerdosRepository
+import com.cocido.nonna.data.remote.dto.UserDto
 import com.cocido.nonna.ui.components.MemoryUiModel
+import com.cocido.nonna.ui.permissions.canModifyMemory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MemoryDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
+    private val authRepository: AuthRepository,
     private val recuerdosRepository: RecuerdosRepository,
     private val refreshCoordinator: DataRefreshCoordinator
 ) : ViewModel() {
@@ -27,6 +31,12 @@ class MemoryDetailViewModel @Inject constructor(
 
     private val _memory = MutableStateFlow<MemoryUiModel?>(null)
     val memory: StateFlow<MemoryUiModel?> = _memory.asStateFlow()
+
+    private val _currentUser = MutableStateFlow<UserDto?>(null)
+    val currentUser: StateFlow<UserDto?> = _currentUser.asStateFlow()
+
+    private val _canModify = MutableStateFlow(false)
+    val canModify: StateFlow<Boolean> = _canModify.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -40,6 +50,7 @@ class MemoryDetailViewModel @Inject constructor(
     private var lastPassiveRefreshAt: Long = 0L
 
     init {
+        loadCurrentUser()
         load()
         viewModelScope.launch {
             refreshCoordinator.events.collect { event ->
@@ -56,12 +67,31 @@ class MemoryDetailViewModel @Inject constructor(
             if (shouldShowLoading) _isLoading.value = true
             _errorMessage.value = null
             when (val result = recuerdosRepository.getRecuerdo(memoryId)) {
-                is ApiResult.Success -> _memory.value = result.data
+                is ApiResult.Success -> {
+                    _memory.value = result.data
+                    updateCanModify(result.data)
+                }
                 is ApiResult.Error -> _errorMessage.value = result.message
                 else -> { }
             }
             _isLoading.value = false
         }
+    }
+
+    private fun loadCurrentUser() {
+        viewModelScope.launch {
+            when (val result = authRepository.getMe()) {
+                is ApiResult.Success -> {
+                    _currentUser.value = result.data
+                    _memory.value?.let { updateCanModify(it) }
+                }
+                else -> Unit
+            }
+        }
+    }
+
+    private fun updateCanModify(memory: MemoryUiModel) {
+        _canModify.value = canModifyMemory(memory, _currentUser.value)
     }
 
     fun refreshOnResume(minIntervalMs: Long = 1500L) {

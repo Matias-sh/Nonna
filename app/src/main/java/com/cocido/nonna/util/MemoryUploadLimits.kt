@@ -4,9 +4,18 @@ import com.cocido.nonna.ui.components.MemoryType
 import java.util.Locale
 
 object MemoryUploadLimits {
+    /** Fotos extra permitidas en multipart `imagenesGaleria` (Swagger: órdenes 1 y 2). */
+    const val MAX_CAROUSEL_GALLERY_IMAGES = 2
+
+    /** Total de fotos por recuerdo imagen que acepta el backend (principal + galería). */
+    const val MAX_PHOTO_FILES_PER_MEMORY = 1 + MAX_CAROUSEL_GALLERY_IMAGES
+
     const val IMAGE_MAX_BYTES: Long = 1L * 1024L * 1024L
     const val AUDIO_MAX_BYTES: Long = 10L * 1024L * 1024L
     const val TEXT_MAX_BYTES: Long = 256L * 1024L
+
+    fun maxPhotoFilesForPlan(planMaxArchivos: Int): Int =
+        minOf(planMaxArchivos.coerceAtLeast(1), MAX_PHOTO_FILES_PER_MEMORY)
 
     fun maxBytesFor(type: MemoryType): Long = when (type) {
         MemoryType.Photo -> IMAGE_MAX_BYTES

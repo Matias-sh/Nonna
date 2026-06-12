@@ -11,6 +11,7 @@ import com.cocido.nonna.data.repository.RecuerdosRepository
 import com.cocido.nonna.data.repository.SuscripcionRepository
 import com.cocido.nonna.ui.components.EmotionalTag
 import com.cocido.nonna.ui.components.MemoryUiModel
+import com.cocido.nonna.util.EmotionPayloadResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,9 +69,13 @@ class AddMemoryViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             val startMs = SystemClock.elapsedRealtime()
-            if (!canCreateAnotherMemory()) return@launch
             _isLoading.value = true
             _uploadProgress.value = 0f
+            if (!canCreateAnotherMemory()) {
+                _isLoading.value = false
+                _uploadProgress.value = null
+                return@launch
+            }
             when (val result = recuerdosRepository.createRecuerdo(
                 cofreRecuerdosId = cofreRecuerdosId,
                 titulo = titulo,
@@ -135,14 +140,11 @@ class AddMemoryViewModel @Inject constructor(
     }
 
     fun resolveEmotionPayload(tag: EmotionalTag?): Pair<String?, String?> {
-        if (tag == null) return null to null
-        val normalizedTag = normalizeKey(tag.label)
-        val emotionId = _emotionIdByName.value[normalizedTag]
-        return if (!emotionId.isNullOrBlank()) {
-            emotionId to null
-        } else {
-            null to tag.label
-        }
+        return EmotionPayloadResolver.buildPayload(
+            emotionalTag = tag,
+            customEmotion = null,
+            emotionIdByName = _emotionIdByName.value
+        )
     }
 
     private fun loadSubscriptionLimits() {
@@ -165,23 +167,19 @@ class AddMemoryViewModel @Inject constructor(
             emocionesRepository.search().collect { result ->
                 if (result is ApiResult.Success) {
                     val map = result.data
-                        .mapNotNull { emotion ->
+                        .flatMap { emotion ->
                             val id = emotion.idValue().trim()
                             val name = emotion.displayName().trim()
-                            if (id.isBlank() || name.isBlank()) null
-                            else normalizeKey(name) to id
+                            if (id.isBlank() || name.isBlank()) {
+                                emptyList()
+                            } else {
+                                listOf(EmotionPayloadResolver.normalizeKey(name) to id)
+                            }
                         }
                         .toMap()
                     _emotionIdByName.value = map
                 }
             }
         }
-    }
-
-    private fun normalizeKey(value: String): String {
-        return java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
-            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
-            .lowercase()
-            .trim()
     }
 }

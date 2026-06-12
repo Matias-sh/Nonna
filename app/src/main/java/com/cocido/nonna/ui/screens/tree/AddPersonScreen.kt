@@ -44,6 +44,8 @@ import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
 import com.cocido.nonna.ui.components.NonnaDatePickerField
 import com.cocido.nonna.ui.components.NonnaTextField
+import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.ScreenTitleSection
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
 import com.cocido.nonna.ui.theme.NonnaTheme
@@ -74,34 +76,10 @@ fun AddPersonScreen(
                 .fillMaxSize()
                 .imePadding()
         ) {
-            // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.common_back),
-                    tint = MaterialTheme.colorScheme.onBackground
-                )
-            }
-            
-            Column(modifier = Modifier.padding(start = 8.dp)) {
-                Text(
-                    text = stringResource(R.string.add_person_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    text = stringResource(R.string.add_person_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
+            PageHeader(
+                onBack = onBack,
+                useSurface = false
+            )
         
         // Content
         Column(
@@ -110,6 +88,10 @@ fun AddPersonScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(NonnaDimens.screenPaddingHorizontal)
         ) {
+            ScreenTitleSection(
+                title = stringResource(R.string.add_person_title),
+                subtitle = stringResource(R.string.add_person_subtitle)
+            )
             Spacer(modifier = Modifier.height(16.dp))
             
             // Nombre completo

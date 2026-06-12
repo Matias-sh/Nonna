@@ -107,7 +107,14 @@ class CofreDetailViewModel @Inject constructor(
 
                     val me = _currentUser.value
                     when (val cofreResult = cofreDeferred.await()) {
-                        is ApiResult.Success -> _cofre.value = resolveOwnership(cofreResult.data, me)
+                        is ApiResult.Success -> {
+                            val resolved = resolveOwnership(cofreResult.data, me)
+                            _cofre.value = resolved
+                            launch {
+                                val enriched = cofreRepository.enrichInviteeAvatars(cofreResult.data)
+                                _cofre.value = resolveOwnership(enriched, me)
+                            }
+                        }
                         is ApiResult.Error -> _errorMessage.value = cofreResult.message
                         else -> { }
                     }

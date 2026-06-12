@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Crop
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,10 +52,10 @@ import com.cocido.nonna.R
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
-import com.cocido.nonna.ui.components.NonnaCropContract
-import com.cocido.nonna.ui.components.NonnaCropRequest
+import com.cocido.nonna.ui.components.rememberPhotoCropFlow
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.ScreenTitleSection
 import com.cocido.nonna.ui.theme.NonnaDimens
 
 @Composable
@@ -66,8 +67,13 @@ fun ProfileSettingsScreen(
     val user by viewModel.user.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    val initialFirstName = user?.persona?.nombre ?: user?.nombre ?: user?.name ?: ""
-    val initialLastName = user?.persona?.apellido ?: ""
+    val initialFirstName = user?.persona?.nombre?.trim()?.takeIf { it.isNotBlank() }
+        ?: user?.nombre?.trim()?.takeIf { it.isNotBlank() }
+        ?: user?.name?.trim()?.takeIf { it.isNotBlank() }
+        ?: ""
+    val initialLastName = user?.persona?.apellido?.trim()?.takeIf { it.isNotBlank() }
+        ?: user?.apellido?.trim()?.takeIf { it.isNotBlank() }
+        ?: ""
     val initialUsername = user?.nombreUsuario ?: ""
     var firstName by remember(initialFirstName) { mutableStateOf(initialFirstName) }
     var lastName by remember(initialLastName) { mutableStateOf(initialLastName) }
@@ -78,24 +84,18 @@ fun ProfileSettingsScreen(
 
     val currentAvatarUrl = user?.profileImageUrl()
     var avatarUri by remember { mutableStateOf<Uri?>(null) }
-    val cropLauncher = rememberLauncherForActivityResult(
-        contract = NonnaCropContract()
+    val cropTitle = stringResource(R.string.profile_edit_photo_title)
+    val photoCropFlow = rememberPhotoCropFlow(
+        title = cropTitle,
+        uploadProfile = com.cocido.nonna.util.PhotoUploadPreparer.Profile.Avatar
     ) { result ->
-        result?.let { avatarUri = it }
+        avatarUri = result
     }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = PickVisualMedia()
     ) { uri: Uri? ->
-        if (uri != null) {
-            cropLauncher.launch(
-                NonnaCropRequest(
-                    sourceUri = uri,
-                    aspectRatio = 1f,
-                    title = context.getString(R.string.profile_edit_photo_title)
-                )
-            )
-        }
+        uri?.let { photoCropFlow.cropSingle(it) }
     }
 
     LaunchedEffect(Unit) {
@@ -136,8 +136,6 @@ fun ProfileSettingsScreen(
                 .fillMaxSize()
         ) {
             PageHeader(
-                title = stringResource(R.string.profile_edit_title),
-                subtitle = stringResource(R.string.profile_edit_subtitle),
                 onBack = onBack
             )
             Column(
@@ -148,9 +146,14 @@ fun ProfileSettingsScreen(
                     .padding(horizontal = NonnaDimens.screenPaddingHorizontal),
                 verticalArrangement = Arrangement.Top
             ) {
+            ScreenTitleSection(
+                title = stringResource(R.string.profile_edit_title),
+                subtitle = stringResource(R.string.profile_edit_subtitle)
+            )
             Spacer(modifier = Modifier.height(24.dp))
 
             // Avatar block
+            val avatarModel: Any? = avatarUri ?: currentAvatarUrl
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -166,10 +169,9 @@ fun ProfileSettingsScreen(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    val model: Any? = avatarUri ?: currentAvatarUrl
-                    if (model != null) {
+                    if (avatarModel != null) {
                         AsyncImage(
-                            model = model,
+                            model = avatarModel,
                             contentDescription = stringResource(R.string.profile_photo_label),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -198,6 +200,16 @@ fun ProfileSettingsScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    avatarUri?.let { localUri ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        NonnaButton(
+                            text = stringResource(R.string.photo_crop_action),
+                            onClick = { photoCropFlow.cropSingle(localUri) },
+                            style = NonnaButtonStyle.Outline,
+                            icon = Icons.Outlined.Crop,
+                            modifier = Modifier.height(36.dp)
+                        )
+                    }
                 }
             }
 

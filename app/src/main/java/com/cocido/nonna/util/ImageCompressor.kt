@@ -3,15 +3,17 @@ package com.cocido.nonna.util
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
+import androidx.exifinterface.media.ExifInterface
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 
 /**
- * Comprime una imagen desde [uri] para subida, manteniendo el tamaño por debajo de [maxBytes].
- * Redimensiona a máximo [maxLongEdge] píxeles en el lado largo y comprime en JPEG.
- * Si la imagen ya es pequeña o no es decodificable, devuelve un archivo temporal con la copia del stream.
+ * Comprime una imagen para subida, manteniendo el tamaño por debajo de [maxBytes].
+ * Aplica orientación EXIF antes de comprimir para evitar fotos giradas.
  */
 object ImageCompressor {
 
@@ -21,11 +23,6 @@ object ImageCompressor {
     private const val MIN_BITMAP_EDGE = 320
     private const val DOWNSCALE_FACTOR = 0.8f
 
-    /**
-     * Comprime la imagen en [uri] y devuelve un archivo temporal listo para subir.
-     * @param maxBytes Tamaño máximo en bytes (por defecto 1 MB para evitar 413 en el servidor).
-     * @param maxLongEdge Máximo del lado largo en píxeles. Si es null, no redimensiona por resolución.
-     */
     fun compressForUpload(
         context: Context,
         uri: Uri,
@@ -33,6 +30,17 @@ object ImageCompressor {
         maxLongEdge: Int? = MAX_LONG_EDGE
     ): File? {
         return context.contentResolver.openInputStream(uri)?.use { input ->
+            compressStreamToFile(context, input, maxBytes, maxLongEdge)
+        }
+    }
+
+    fun compressForUpload(
+        context: Context,
+        file: File,
+        maxBytes: Long = 1024 * 1024,
+        maxLongEdge: Int? = MAX_LONG_EDGE
+    ): File? {
+        return file.inputStream().use { input ->
             compressStreamToFile(context, input, maxBytes, maxLongEdge)
         }
     }
@@ -54,10 +62,11 @@ object ImageCompressor {
 
         val sampleSize = computeSampleSize(w, h, maxLongEdge)
         val decodeOptions = BitmapFactory.Options().apply { inSampleSize = sampleSize }
-        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions) ?: return null
+        var workingBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions) ?: return null
 
-        var workingBitmap = scaleToMaxEdge(bitmap, maxLongEdge)
-        if (workingBitmap != bitmap) bitmap.recycle()
+        workingBitmap = applyExifOrientation(bytes, workingBitmap)
+        workingBitmap = scaleToMaxEdge(workingBitmap, maxLongEdge)
+
         val outFile = File.createTempFile("recuerdo_compressed", ".jpg", context.cacheDir)
         while (true) {
             var quality = DEFAULT_JPEG_QUALITY
@@ -92,6 +101,37 @@ object ImageCompressor {
         }
     }
 
+    private fun applyExifOrientation(sourceBytes: ByteArray, bitmap: Bitmap): Bitmap {
+        val orientation = runCatching {
+            ExifInterface(ByteArrayInputStream(sourceBytes)).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL
+            )
+        }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
+
+        val matrix = Matrix()
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.postScale(-1f, 1f)
+            ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.postScale(1f, -1f)
+            ExifInterface.ORIENTATION_TRANSPOSE -> {
+                matrix.postRotate(90f)
+                matrix.postScale(-1f, 1f)
+            }
+            ExifInterface.ORIENTATION_TRANSVERSE -> {
+                matrix.postRotate(270f)
+                matrix.postScale(-1f, 1f)
+            }
+            else -> return bitmap
+        }
+
+        val transformed = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        if (transformed != bitmap) bitmap.recycle()
+        return transformed
+    }
+
     private fun computeSampleSize(width: Int, height: Int, maxLongEdge: Int?): Int {
         if (maxLongEdge == null) return 1
         var size = 1
@@ -109,6 +149,8 @@ object ImageCompressor {
         val scale = maxEdge.toFloat() / long
         val newW = (w * scale).toInt().coerceAtLeast(1)
         val newH = (h * scale).toInt().coerceAtLeast(1)
-        return Bitmap.createScaledBitmap(bitmap, newW, newH, true)
+        val scaled = Bitmap.createScaledBitmap(bitmap, newW, newH, true)
+        if (scaled != bitmap) bitmap.recycle()
+        return scaled
     }
 }

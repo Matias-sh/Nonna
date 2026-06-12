@@ -3,7 +3,6 @@ package com.cocido.nonna.ui.screens.memory
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.provider.Settings
@@ -42,9 +41,19 @@ import androidx.compose.material.icons.outlined.AudioFile
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Mic
-import androidx.compose.material.icons.outlined.Upload
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -53,6 +62,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -77,7 +87,8 @@ import kotlinx.coroutines.withContext
 import com.cocido.nonna.ui.components.AudioRecorderComponent
 import com.cocido.nonna.ui.components.EmotionalTag
 import com.cocido.nonna.ui.components.MemoryType
-import com.cocido.nonna.util.ImageCompressor
+import com.cocido.nonna.util.CameraCaptureHelper
+import com.cocido.nonna.util.PhotoUploadPreparer
 import com.cocido.nonna.util.MemoryUploadLimits
 import com.cocido.nonna.util.FormValidators
 import com.cocido.nonna.util.UserMessages
@@ -85,13 +96,13 @@ import com.cocido.nonna.ui.components.emotionalTagLabel
 import com.cocido.nonna.ui.components.NonnaButton
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaBottomFeedbackBanner
-import com.cocido.nonna.ui.components.NonnaCropContract
-import com.cocido.nonna.ui.components.NonnaCropRequest
+import com.cocido.nonna.ui.components.rememberPhotoCropFlow
 import com.cocido.nonna.ui.components.NonnaDatePickerField
 import com.cocido.nonna.ui.components.NonnaFeedbackType
 import com.cocido.nonna.ui.components.NonnaTextArea
 import com.cocido.nonna.ui.components.NonnaTextField
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.ScreenTitleSection
 import com.cocido.nonna.R
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaCorners
@@ -125,6 +136,8 @@ fun AddMemoryScreen(
     var feedbackType by remember { mutableStateOf(NonnaFeedbackType.Success) }
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val uploadProgress by viewModel.uploadProgress.collectAsStateWithLifecycle()
+    var isPreparingSave by remember { mutableStateOf(false) }
+    val isSaving = isLoading || isPreparingSave
     LaunchedEffect(Unit) {
         viewModel.saved.collectLatest { _: com.cocido.nonna.ui.components.MemoryUiModel ->
             onSave()
@@ -148,63 +161,77 @@ fun AddMemoryScreen(
     var emotionalTag by remember { mutableStateOf<EmotionalTag?>(null) }
     var customEmotion by remember { mutableStateOf("") }
     var hasAudioRecording by remember { mutableStateOf(false) }
-    var hasImageSelected by remember { mutableStateOf(false) }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedPhotoUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var recordedAudioFile by remember { mutableStateOf<File?>(null) }
     var selectedAudioLabel by remember { mutableStateOf<String?>(null) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
     var attemptedSave by remember { mutableStateOf(false) }
-    val cropLauncher = rememberLauncherForActivityResult(
-        contract = NonnaCropContract()
-    ) { result ->
-        result?.let { croppedUri ->
-            selectedImageUri = croppedUri
-            hasImageSelected = true
+
+    val maxArchivosPlan by viewModel.maxArchivosPorRecuerdo.collectAsStateWithLifecycle()
+    val maxPhotosAllowed = remember(maxArchivosPlan) {
+        MemoryUploadLimits.maxPhotoFilesForPlan(maxArchivosPlan)
+    }
+
+    var pendingCropIndex by remember { mutableStateOf<Int?>(null) }
+    val memoryPhotoCropTitle = stringResource(R.string.memory_photo_crop_title)
+    val photoCropFlow = rememberPhotoCropFlow(
+        title = memoryPhotoCropTitle,
+        uploadProfile = PhotoUploadPreparer.Profile.Memory,
+        onPrepareFailed = {
+            feedbackMessage = context.getString(R.string.photo_prepare_error)
+            feedbackType = NonnaFeedbackType.Error
+            feedbackVisible = true
+            scope.launch {
+                delay(2600)
+                feedbackVisible = false
+            }
+        }
+    ) { croppedUri ->
+        val replaceAt = pendingCropIndex
+        pendingCropIndex = null
+        selectedPhotoUris = if (replaceAt != null && replaceAt in selectedPhotoUris.indices) {
+            selectedPhotoUris.toMutableList().apply { set(replaceAt, croppedUri) }
+        } else {
+            (selectedPhotoUris + croppedUri)
+                .distinctBy { it.toString() }
+                .take(maxPhotosAllowed)
         }
     }
 
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = PickVisualMedia()
-    ) { uri: Uri? ->
-        uri?.let {
-            cropLauncher.launch(
-                NonnaCropRequest(
-                    sourceUri = it,
-                    aspectRatio = 4f / 5f,
-                    title = context.getString(R.string.memory_edit_image_title),
-                    lockAspectRatio = false
-                )
-            )
+    val multiPhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = PickMultipleVisualMedia(maxOf(maxPhotosAllowed, 1))
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            val remaining = (maxPhotosAllowed - selectedPhotoUris.size).coerceAtLeast(0)
+            if (remaining > 0) {
+                pendingCropIndex = null
+                photoCropFlow.cropSequential(uris.take(remaining))
+            }
         }
     }
-    val cameraPreviewLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap: Bitmap? ->
-        bitmap?.let { capturedBitmap ->
-            scope.launch {
-                val imageFile = withContext(Dispatchers.Default) {
-                    val file = File.createTempFile("nonna_camera_", ".jpg", context.cacheDir)
-                    FileOutputStream(file).use { out ->
-                        capturedBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
-                    }
-                    file
-                }
-                cropLauncher.launch(
-                    NonnaCropRequest(
-                        sourceUri = Uri.fromFile(imageFile),
-                        aspectRatio = 4f / 5f,
-                        title = context.getString(R.string.memory_edit_image_title),
-                        lockAspectRatio = false
-                    )
-                )
-            }
+    var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        val uri = pendingCameraUri
+        pendingCameraUri = null
+        if (success && uri != null && selectedPhotoUris.size < maxPhotosAllowed) {
+            pendingCropIndex = null
+            photoCropFlow.cropSingle(uri)
+        }
+    }
+    val launchCameraCapture: () -> Unit = {
+        if (selectedPhotoUris.size < maxPhotosAllowed) {
+            val outputUri = CameraCaptureHelper.createOutputUri(context)
+            pendingCameraUri = outputUri
+            takePictureLauncher.launch(outputUri)
         }
     }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            cameraPreviewLauncher.launch(null)
+            launchCameraCapture()
         } else {
             val permanentlyDenied = activity != null &&
                 !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)
@@ -254,41 +281,43 @@ fun AddMemoryScreen(
         }
     }
 
-    val maxArchivosPlan by viewModel.maxArchivosPorRecuerdo.collectAsStateWithLifecycle()
-    val maxGalleryExtra = remember(maxArchivosPlan) {
-        (maxArchivosPlan - 1).coerceAtLeast(0)
-    }
-    var extraGalleryUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var audioCoverUri by remember { mutableStateOf<Uri?>(null) }
 
-    val audioCoverCropLauncher = rememberLauncherForActivityResult(
-        contract = NonnaCropContract()
-    ) { result ->
-        result?.let { audioCoverUri = it }
+    val audioCoverCropFlow = rememberPhotoCropFlow(
+        title = stringResource(R.string.memory_audio_cover_crop_title),
+        uploadProfile = PhotoUploadPreparer.Profile.Memory
+    ) { croppedUri ->
+        audioCoverUri = croppedUri
     }
     val audioCoverVisualLauncher = rememberLauncherForActivityResult(
         contract = PickVisualMedia()
     ) { uri: Uri? ->
-        uri?.let {
-            audioCoverCropLauncher.launch(
-                NonnaCropRequest(
-                    sourceUri = it,
-                    aspectRatio = 1f,
-                    title = context.getString(R.string.memory_audio_cover_crop_title),
-                    lockAspectRatio = false
-                )
+        uri?.let { audioCoverCropFlow.cropSingle(it) }
+    }
+
+    val openCropAtIndex: (Int) -> Unit = crop@{ index ->
+        val uri = selectedPhotoUris.getOrNull(index) ?: return@crop
+        pendingCropIndex = index
+        photoCropFlow.cropSingle(uri)
+    }
+    val openGalleryPicker: () -> Unit = {
+        if (selectedPhotoUris.size < maxPhotosAllowed) {
+            multiPhotoPickerLauncher.launch(
+                PickVisualMediaRequest(PickVisualMedia.ImageOnly)
             )
         }
     }
-
-    val galleryPickerLauncher = rememberLauncherForActivityResult(
-        contract = PickMultipleVisualMedia(maxOf(maxGalleryExtra, 1))
-    ) { uris ->
-        if (maxGalleryExtra > 0 && uris.isNotEmpty()) {
-            // Acumular: muchas galerías solo devuelven la última tanda; el usuario puede sumar con varios toques.
-            extraGalleryUris = (extraGalleryUris + uris)
-                .distinctBy { it.toString() }
-                .take(maxGalleryExtra)
+    val openCamera: () -> Unit = {
+        if (selectedPhotoUris.size < maxPhotosAllowed) {
+            val granted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (granted) {
+                launchCameraCapture()
+            } else {
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
         }
     }
     val stepTitle = when (step) {
@@ -331,8 +360,6 @@ fun AddMemoryScreen(
         }
 
         PageHeader(
-            title = stringResource(R.string.add_memory_title),
-            subtitle = stepTitle,
             onBack = {
                 when (step) {
                     AddMemoryStep.Type -> onBack()
@@ -342,7 +369,7 @@ fun AddMemoryScreen(
             }
         )
 
-        if (isLoading && uploadProgress != null) {
+        if (isSaving && uploadProgress != null) {
             LinearProgressIndicator(
                 progress = { uploadProgress ?: 0f },
                 modifier = Modifier
@@ -358,6 +385,10 @@ fun AddMemoryScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(NonnaDimens.screenPaddingHorizontal)
         ) {
+            ScreenTitleSection(
+                title = stringResource(R.string.add_memory_title),
+                subtitle = stepTitle
+            )
             Spacer(modifier = Modifier.height(24.dp))
             
             when (step) {
@@ -374,25 +405,12 @@ fun AddMemoryScreen(
                     onTextContentChange = { textContent = it },
                     hasAudioRecording = hasAudioRecording,
                     selectedAudioLabel = selectedAudioLabel,
-                    hasImageSelected = hasImageSelected,
-                    selectedImageUri = selectedImageUri,
-                    onRequestPickImage = {
-                        imagePickerLauncher.launch(
-                            PickVisualMediaRequest(PickVisualMedia.ImageOnly)
-                        )
-                    },
-                    onRequestCaptureImage = {
-                        val granted = ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.CAMERA
-                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                        if (granted) {
-                            cameraPreviewLauncher.launch(null)
-                        } else {
-                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                        }
-                    },
-                    onBackToType = { step = AddMemoryStep.Type },
+                    selectedPhotoUris = selectedPhotoUris,
+                    maxPhotos = maxPhotosAllowed,
+                    onPhotosChanged = { selectedPhotoUris = it },
+                    onPickGallery = openGalleryPicker,
+                    onTakePhoto = openCamera,
+                    onCropPhoto = openCropAtIndex,
                     onContinue = { step = AddMemoryStep.Details },
                     onRequestDictation = {
                         val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -411,15 +429,7 @@ fun AddMemoryScreen(
                 
                 AddMemoryStep.Details -> DetailsStep(
                     type = selectedType!!,
-                    selectedImageUri = selectedImageUri,
-                    maxGalleryExtra = maxGalleryExtra,
-                    extraGalleryUris = extraGalleryUris,
-                    onRequestPickGallery = {
-                        galleryPickerLauncher.launch(
-                            PickVisualMediaRequest(PickVisualMedia.ImageOnly)
-                        )
-                    },
-                    onClearGallery = { extraGalleryUris = emptyList() },
+                    selectedPhotoUris = selectedPhotoUris,
                     audioCoverUri = audioCoverUri,
                     onRequestPickAudioCover = {
                         audioCoverVisualLauncher.launch(
@@ -512,12 +522,14 @@ fun AddMemoryScreen(
                         val cid = cofreId
                         if (cid != null) {
                         scope.launch {
+                            isPreparingSave = true
+                            try {
                             if (selectedType == MemoryType.Photo &&
-                                1 + extraGalleryUris.size > maxArchivosPlan
+                                selectedPhotoUris.size > maxPhotosAllowed
                             ) {
                                 feedbackMessage = context.getString(
                                     R.string.memory_gallery_too_many,
-                                    maxArchivosPlan
+                                    maxPhotosAllowed
                                 )
                                 feedbackType = NonnaFeedbackType.Error
                                 feedbackVisible = true
@@ -525,14 +537,15 @@ fun AddMemoryScreen(
                                 feedbackVisible = false
                                 return@launch
                             }
+                            val mainPhotoUri = selectedPhotoUris.firstOrNull()
+                            val extraPhotoUris = selectedPhotoUris.drop(1)
                             val file = withContext(Dispatchers.IO) {
                                 when (selectedType) {
-                                    MemoryType.Photo -> selectedImageUri?.let { uri ->
-                                        ImageCompressor.compressForUpload(
+                                    MemoryType.Photo -> mainPhotoUri?.let { uri ->
+                                        PhotoUploadPreparer.resolveFile(
                                             context = context,
                                             uri = uri,
-                                            maxBytes = MemoryUploadLimits.maxBytesFor(MemoryType.Photo),
-                                            maxLongEdge = 1600
+                                            profile = PhotoUploadPreparer.Profile.Memory
                                         )
                                     }
                                     MemoryType.Text -> File.createTempFile("recuerdo", ".txt").apply {
@@ -542,19 +555,14 @@ fun AddMemoryScreen(
                                     null -> null
                                 }
                             }
-                            val galleryFiles = if (selectedType == MemoryType.Photo && extraGalleryUris.isNotEmpty()) {
+                            val galleryFiles = if (selectedType == MemoryType.Photo && extraPhotoUris.isNotEmpty()) {
                                 withContext(Dispatchers.IO) {
-                                    coroutineScope {
-                                        extraGalleryUris.map { uri ->
-                                            async {
-                                                ImageCompressor.compressForUpload(
-                                                    context = context,
-                                                    uri = uri,
-                                                    maxBytes = MemoryUploadLimits.maxBytesFor(MemoryType.Photo),
-                                                    maxLongEdge = 1600
-                                                )
-                                            }
-                                        }.awaitAll().filterNotNull()
+                                    extraPhotoUris.mapNotNull { uri ->
+                                        PhotoUploadPreparer.resolveFile(
+                                            context = context,
+                                            uri = uri,
+                                            profile = PhotoUploadPreparer.Profile.Memory
+                                        )
                                     }
                                 }
                             } else {
@@ -562,11 +570,10 @@ fun AddMemoryScreen(
                             }
                             val portadaFile = if (selectedType == MemoryType.Audio && audioCoverUri != null) {
                                 withContext(Dispatchers.IO) {
-                                    ImageCompressor.compressForUpload(
+                                    PhotoUploadPreparer.resolveFile(
                                         context = context,
                                         uri = audioCoverUri!!,
-                                        maxBytes = MemoryUploadLimits.maxBytesFor(MemoryType.Photo),
-                                        maxLongEdge = 1600
+                                        profile = PhotoUploadPreparer.Profile.Memory
                                     )
                                 }
                             } else {
@@ -605,6 +612,9 @@ fun AddMemoryScreen(
                                 delay(2600)
                                 feedbackVisible = false
                             }
+                            } finally {
+                                isPreparingSave = false
+                            }
                         }
                         } else {
                             onSave()
@@ -612,9 +622,9 @@ fun AddMemoryScreen(
                     },
                     canSave = FormValidators.hasMinLength(title, 2) &&
                         FormValidators.isValidIsoDate(date) &&
-                        !isLoading,
+                        !isSaving,
                     attemptedSave = attemptedSave,
-                    isLoading = isLoading
+                    isLoading = isSaving
                 )
             }
         }
@@ -727,27 +737,30 @@ private fun ContentStep(
     selectedAudioLabel: String?,
     onAudioRecorded: (File) -> Unit,
     onPickAudioFile: () -> Unit,
-    hasImageSelected: Boolean,
-    selectedImageUri: Uri?,
-    onRequestPickImage: () -> Unit,
-    onRequestCaptureImage: () -> Unit,
-    onBackToType: () -> Unit,
+    selectedPhotoUris: List<Uri>,
+    maxPhotos: Int,
+    onPhotosChanged: (List<Uri>) -> Unit,
+    onPickGallery: () -> Unit,
+    onTakePhoto: () -> Unit,
+    onCropPhoto: (Int) -> Unit,
     onContinue: () -> Unit,
     onRequestDictation: () -> Unit
 ) {
     val contentReady = when (type) {
-        MemoryType.Photo -> hasImageSelected
+        MemoryType.Photo -> selectedPhotoUris.isNotEmpty()
         MemoryType.Audio -> hasAudioRecording
         MemoryType.Text -> textContent.isNotBlank()
     }
 
     Column {
         when (type) {
-            MemoryType.Photo -> PhotoContent(
-                hasImage = hasImageSelected,
-                selectedImageUri = selectedImageUri,
-                onPickImageClick = onRequestPickImage,
-                onCaptureImageClick = onRequestCaptureImage
+            MemoryType.Photo -> MemoryPhotoSelectionContent(
+                selectedPhotos = selectedPhotoUris,
+                maxPhotos = maxPhotos,
+                onPhotosChanged = onPhotosChanged,
+                onPickGallery = onPickGallery,
+                onTakePhoto = onTakePhoto,
+                onCropPhoto = onCropPhoto
             )
             MemoryType.Audio -> AudioContent(
                 onRecorded = onAudioRecorded,
@@ -761,122 +774,13 @@ private fun ContentStep(
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Show continue button when content is ready (text, photo or audio)
         if (contentReady) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                NonnaButton(
-                    text = stringResource(R.string.common_back),
-                    onClick = onBackToType,
-                    style = NonnaButtonStyle.Outline,
-                    modifier = Modifier.weight(1f)
-                )
-                NonnaButton(
-                    text = stringResource(R.string.onboarding_continue),
-                    onClick = onContinue,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun PhotoContent(
-    hasImage: Boolean,
-    selectedImageUri: Uri?,
-    onPickImageClick: () -> Unit,
-    onCaptureImageClick: () -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(4f / 5f)
-                .clip(NonnaCorners.Large)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
-                    shape = NonnaCorners.Large
-                )
-                .clickable(onClick = onPickImageClick),
-            contentAlignment = Alignment.Center
-        ) {
-            if (hasImage && selectedImageUri != null) {
-                AsyncImage(
-                    model = selectedImageUri,
-                    contentDescription = stringResource(R.string.memory_selected_image_cd),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(NonnaCorners.Large)
-                        .border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                            shape = NonnaCorners.Large
-                        ),
-                    contentScale = ContentScale.Crop
-                )
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 12.dp),
-                    shape = NonnaCorners.Full,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
-                ) {
-                    Text(
-                        text = stringResource(R.string.memory_tap_image_change),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
-            } else {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Upload,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.memory_upload_photo),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(R.string.memory_tap_choose_gallery),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+            Spacer(modifier = Modifier.height(24.dp))
             NonnaButton(
-                text = if (hasImage) {
-                    stringResource(R.string.memory_change_image)
-                } else {
-                    stringResource(R.string.memory_gallery)
-                },
-                onClick = onPickImageClick
+                text = stringResource(R.string.onboarding_continue),
+                onClick = onContinue,
+                fullWidth = true
             )
-            NonnaButton(text = stringResource(R.string.common_camera), onClick = onCaptureImageClick, style = NonnaButtonStyle.Outline)
         }
     }
 }
@@ -938,11 +842,7 @@ private fun TextContent(
 @Composable
 private fun DetailsStep(
     type: MemoryType,
-    selectedImageUri: Uri?,
-    maxGalleryExtra: Int,
-    extraGalleryUris: List<Uri>,
-    onRequestPickGallery: () -> Unit,
-    onClearGallery: () -> Unit,
+    selectedPhotoUris: List<Uri>,
     audioCoverUri: Uri?,
     onRequestPickAudioCover: () -> Unit,
     onClearAudioCover: () -> Unit,
@@ -973,26 +873,43 @@ private fun DetailsStep(
         // Vista previa del contenido (foto real en memoria tipo imagen)
         when (type) {
             MemoryType.Photo -> {
-                if (selectedImageUri != null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(NonnaCorners.Large)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
-                                shape = NonnaCorners.Large
-                            )
-                    ) {
-                        AsyncImage(
-                            model = selectedImageUri,
-                            contentDescription = stringResource(R.string.memory_selected_image_cd),
+                if (selectedPhotoUris.isNotEmpty()) {
+                    if (selectedPhotoUris.size == 1) {
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .aspectRatio(4f / 3f),
-                            contentScale = ContentScale.Crop
-                        )
+                                .clip(NonnaCorners.Large)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+                                    shape = NonnaCorners.Large
+                                )
+                        ) {
+                            AsyncImage(
+                                model = selectedPhotoUris.first(),
+                                contentDescription = stringResource(R.string.memory_selected_image_cd),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(4f / 3f),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    } else {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            itemsIndexed(selectedPhotoUris) { _, uri ->
+                                AsyncImage(
+                                    model = uri,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(120.dp)
+                                        .clip(NonnaCorners.Medium),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
                     }
                 } else {
                     Box(
@@ -1079,56 +996,6 @@ private fun DetailsStep(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 4
                     )
-                }
-            }
-        }
-
-        if (type == MemoryType.Photo && maxGalleryExtra > 0) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = if (maxGalleryExtra <= 2) {
-                    stringResource(R.string.memory_gallery_extra_up_to_two)
-                } else {
-                    stringResource(R.string.memory_gallery_extra_plan_limit, maxGalleryExtra)
-                },
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                NonnaButton(
-                    text = stringResource(R.string.memory_carousel_pick),
-                    onClick = onRequestPickGallery,
-                    style = NonnaButtonStyle.Outline
-                )
-                if (extraGalleryUris.isNotEmpty()) {
-                    NonnaButton(
-                        text = stringResource(R.string.memory_carousel_clear),
-                        onClick = onClearGallery,
-                        style = NonnaButtonStyle.Ghost
-                    )
-                }
-            }
-            if (extraGalleryUris.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(10.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    extraGalleryUris.forEach { u ->
-                        AsyncImage(
-                            model = u,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(NonnaCorners.Medium),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
                 }
             }
         }

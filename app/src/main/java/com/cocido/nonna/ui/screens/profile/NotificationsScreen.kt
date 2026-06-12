@@ -28,6 +28,7 @@ import com.cocido.nonna.ui.components.NonnaButtonSize
 import com.cocido.nonna.ui.components.NonnaButtonStyle
 import com.cocido.nonna.ui.components.NonnaDetailScaffold
 import com.cocido.nonna.ui.components.PageHeader
+import com.cocido.nonna.ui.components.ScreenTitleSection
 import com.cocido.nonna.ui.components.RefreshOnResume
 import com.cocido.nonna.ui.theme.NonnaDimens
 import com.cocido.nonna.ui.theme.NonnaSpacing
@@ -95,8 +96,6 @@ fun NotificationsScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             PageHeader(
-                title = stringResource(R.string.notifications_title),
-                subtitle = stringResource(R.string.notifications_subtitle),
                 onBack = { onEvent(NotificationsEvent.Back) }
             )
 
@@ -105,6 +104,10 @@ fun NotificationsScreen(
                     .fillMaxSize()
                     .padding(horizontal = NonnaDimens.screenPaddingHorizontal)
             ) {
+                ScreenTitleSection(
+                    title = stringResource(R.string.notifications_title),
+                    subtitle = stringResource(R.string.notifications_subtitle)
+                )
                 Spacer(modifier = Modifier.height(NonnaSpacing.lg))
                 FilterChipsRow(
                     chips = tabs,

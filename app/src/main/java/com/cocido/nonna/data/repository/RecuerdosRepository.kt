@@ -14,6 +14,7 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import com.cocido.nonna.util.MemoryMediaUrlHeuristics
+import com.cocido.nonna.util.MemoryUploadLimits
 import com.cocido.nonna.util.NetworkFailureMessageResolver
 import com.google.gson.JsonParseException
 import retrofit2.HttpException
@@ -98,10 +99,11 @@ class RecuerdosRepository @Inject constructor(
     ): ApiResult<MemoryUiModel> {
         return try {
             val mediaType = mediaTypeForFile(file)
+            val galleryForApi = galleryImages.take(MemoryUploadLimits.MAX_CAROUSEL_GALLERY_IMAGES)
             val progressFiles = buildList {
                 add(file)
                 if (portadaAudio != null) add(portadaAudio)
-                addAll(galleryImages)
+                addAll(galleryForApi)
             }.filter { it.exists() && it.length() > 0L }
             val totalUploadBytes = progressFiles.sumOf { it.length() }
             val uploadedBytes = AtomicLong(0L)
@@ -138,8 +140,8 @@ class RecuerdosRepository @Inject constructor(
                 null
             }
 
-            val galleryParts = if (isMainImage && galleryImages.isNotEmpty()) {
-                galleryImages.map { g ->
+            val galleryParts = if (isMainImage && galleryForApi.isNotEmpty()) {
+                galleryForApi.map { g ->
                     val gt = mediaTypeForFile(g)
                     createProgressPart(
                         partName = "imagenesGaleria",
@@ -220,6 +222,7 @@ class RecuerdosRepository @Inject constructor(
             val urlPortadaBody = urlPortadaAudio?.let { it.toRequestBody(contentType = textPlain) }
             val galleryParts = galleryImages
                 ?.filter { it.exists() && it.length() > 0 }
+                ?.take(MemoryUploadLimits.MAX_CAROUSEL_GALLERY_IMAGES)
                 ?.takeIf { it.isNotEmpty() }
                 ?.map { g ->
                     val gt = mediaTypeForFile(g)
@@ -255,11 +258,17 @@ class RecuerdosRepository @Inject constructor(
                 } ?: ApiResult.Error("Error al actualizar")
             } else {
                 val raw = response.errorBody()?.string() ?: "Error"
+                if (response.code() == 403) {
+                    Log.w(TOMCAT_EMOTION_TAG, "PATCH recuerdos/$id -> 403 body: $raw")
+                }
                 val message = mapRecuerdoBackendError(raw, response.code())
                 ApiResult.Error(message, response.code())
             }
         } catch (e: HttpException) {
             val raw = e.response()?.errorBody()?.string() ?: e.message() ?: "Error"
+            if (e.code() == 403) {
+                Log.w(TOMCAT_EMOTION_TAG, "PATCH recuerdos/$id -> 403 body: $raw")
+            }
             val message = mapRecuerdoBackendError(raw, e.code())
             ApiResult.Error(message ?: "Error", e.code())
         } catch (e: JsonParseException) {
@@ -335,6 +344,11 @@ private fun mapRecuerdoBackendError(raw: String, code: Int?): String {
     val parsed = NetworkErrorParser.parse(raw, code)
     if (!parsed.isNullOrBlank() && !parsed.equals("Datos de entrada no válidos.", ignoreCase = true)) {
         return parsed
+    }
+    if (normalized.contains("imagenesgaleria") && normalized.contains("unexpected field")) {
+        return "Podés subir como máximo ${MemoryUploadLimits.MAX_CAROUSEL_GALLERY_IMAGES} fotos extra " +
+            "(${MemoryUploadLimits.MAX_PHOTO_FILES_PER_MEMORY} en total incluida la principal). " +
+            "Reducí la cantidad e intentá de nuevo."
     }
     if (code == 413 || normalized.contains("too large") || normalized.contains("payload too large")) {
         val type = detectUploadType(normalized)
@@ -523,6 +537,9 @@ private fun RecuerdoDto.toUiModel(): MemoryUiModel {
         duration = displayDuration(),
         carouselImageUrls = if (memoryType == MemoryType.Photo) carousel else emptyList(),
         audioCoverUrl = coverAudio,
-        mainMediaUrl = mainUrl
+        mainMediaUrl = mainUrl,
+        addedByDisplayName = usuario?.fullDisplayName()?.trim()?.takeIf { it.isNotBlank() },
+        addedByUserId = usuario?.id?.toString()?.trim()?.takeIf { it.isNotBlank() },
+        addedByEmail = usuario?.email?.trim()?.takeIf { it.isNotBlank() }
     )
 }
